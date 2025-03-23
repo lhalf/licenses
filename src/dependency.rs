@@ -1,12 +1,17 @@
-#[derive(PartialEq, Debug)]
-struct Dependency {
-    name: String,
-    version: String,
+#[derive(PartialEq, Debug, PartialOrd, Eq, Ord)]
+pub struct Dependency {
+    pub name: String,
+    pub version: String,
 }
 
 impl Dependency {
     pub fn parse(input: &str) -> Result<Self, anyhow::Error> {
-        let (name, version) = input
+        let dependency = match input.strip_suffix(" (proc-macro)") {
+            Some(dependency) => dependency,
+            None => input,
+        };
+
+        let (name, version) = dependency
             .split_once(" v")
             .ok_or_else(|| anyhow::anyhow!("no seperator found in dependency"))?;
 
@@ -43,7 +48,7 @@ fn validate_name(input: &str) -> Result<String, anyhow::Error> {
 
 #[cfg(test)]
 mod tests {
-    use crate::dependencies::Dependency;
+    use crate::dependency::Dependency;
 
     #[test]
     fn invalid_name() {
@@ -86,6 +91,17 @@ mod tests {
                 .unwrap_err()
                 .root_cause()
                 .to_string()
+        )
+    }
+
+    #[test]
+    fn valid_procedural_macro_dependency() {
+        assert_eq!(
+            Dependency {
+                name: "example".to_string(),
+                version: "0.1.2".to_string()
+            },
+            Dependency::parse("example v0.1.2 (proc-macro)").unwrap()
         )
     }
 

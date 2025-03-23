@@ -1,5 +1,8 @@
-mod dependencies;
+mod cargo_tree;
+mod dependency;
 
-fn main() {
-    println!("Hello, world!");
+fn main() -> Result<(), anyhow::Error> {
+    let dependencies = cargo_tree::get_dependencies(1)?;
+    dbg!(dependencies);
+    Ok(())
 }

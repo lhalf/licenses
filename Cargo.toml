@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 clap = { version = "*", features = ["derive"] }
 anyhow = "*"
+itertools = "*"
