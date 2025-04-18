@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-clap = { version = "*", features = ["derive"] }
-anyhow = "*"
-itertools = "*"
+clap = { version = "*", default-features = false, features = ["std", "derive"] }
+anyhow = { version = "*", default-features = false }
+itertools = { version = "*", default-features = false, features = ["use_std"] }
