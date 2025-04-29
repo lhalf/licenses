@@ -40,9 +40,9 @@ fn validate_name(input: &str) -> Result<String, anyhow::Error> {
         .chars()
         .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
     {
-        return Ok(input.to_string());
+        Ok(input.to_string())
     } else {
-        return Err(anyhow::anyhow!("invalid dependency name"));
+        Err(anyhow::anyhow!("invalid dependency name"))
     }
 }
 

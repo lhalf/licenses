@@ -17,13 +17,10 @@ pub fn get_dependencies(depth: u8) -> Result<BTreeSet<Dependency>, anyhow::Error
 }
 
 fn args(depth: u8) -> Vec<String> {
-    format!(
-        "tree --depth {} --format {{p}} --prefix none --no-dedupe",
-        depth
-    )
-    .split_whitespace()
-    .map(String::from)
-    .collect()
+    format!("tree --depth {depth} --format {{p}} --prefix none --no-dedupe")
+        .split_whitespace()
+        .map(String::from)
+        .collect()
 }
 
 fn parse_dependencies(input: &str) -> Result<BTreeSet<Dependency>, anyhow::Error> {

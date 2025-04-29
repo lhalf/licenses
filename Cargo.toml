@@ -7,3 +7,16 @@ edition = "2024"
 clap = { version = "*", default-features = false, features = ["std", "derive"] }
 anyhow = { version = "*", default-features = false }
 itertools = { version = "*", default-features = false, features = ["use_std"] }
+ 
+[workspace]
+resolver = "2"
+ 
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+todo = "forbid"
+dbg_macro = "forbid"
+unwrap_used = "forbid"
+print_stdout = "forbid"
+print_stderr = "forbid"
