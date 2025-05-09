@@ -1,14 +1,16 @@
+mod file_system;
+
+use file_system::FileSystem;
+
 fn main() -> Result<(), anyhow::Error> {
     Ok(())
 }
-
-trait FileSystem {}
 
 fn find_and_copy_licenses(_crate_directories: Vec<()>, _filesystem: &impl FileSystem) {}
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{FileSystem, find_and_copy_licenses};
 
     #[derive(Default)]
     struct FileSystemSpy {
