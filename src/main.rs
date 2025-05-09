@@ -10,14 +10,8 @@ fn find_and_copy_licenses(_crate_directories: Vec<()>, _filesystem: &impl FileSy
 
 #[cfg(test)]
 mod tests {
-    use super::{FileSystem, find_and_copy_licenses};
-
-    #[derive(Default)]
-    struct FileSystemSpy {
-        files_copied: Vec<()>,
-    }
-
-    impl FileSystem for FileSystemSpy {}
+    use super::find_and_copy_licenses;
+    use crate::file_system::FileSystemSpy;
 
     #[test]
     fn when_there_are_no_crates_no_license_files_are_copied() {
