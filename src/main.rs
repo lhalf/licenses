@@ -18,7 +18,7 @@ mod tests {
     impl FileSystem for FileSystemSpy {}
 
     #[test]
-    fn no_dependencies_copies_no_licenses() {
+    fn when_there_are_no_crates_no_license_files_are_copied() {
         let file_system_spy = FileSystemSpy::default();
 
         find_and_copy_licenses(Vec::new(), &file_system_spy);
