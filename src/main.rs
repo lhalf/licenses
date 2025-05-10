@@ -1,15 +1,13 @@
+mod crate_directory;
 mod file_system;
 
 use std::path::PathBuf;
 
+use crate_directory::CrateDirectory;
 use file_system::FileSystem;
 
 fn main() -> Result<(), anyhow::Error> {
     Ok(())
-}
-
-trait CrateDirectory {
-    fn get_license(&self) -> Option<PathBuf>;
 }
 
 fn find_and_copy_licenses<C: CrateDirectory>(
@@ -25,10 +23,8 @@ fn find_and_copy_licenses<C: CrateDirectory>(
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
-
     use super::find_and_copy_licenses;
-    use crate::{CrateDirectory, file_system::FileSystemSpy};
+    use crate::{crate_directory::CrateDirectoryFake, file_system::FileSystemSpy};
 
     #[test]
     fn when_there_are_no_crates_no_license_files_are_copied() {
@@ -37,24 +33,6 @@ mod tests {
         find_and_copy_licenses(Vec::<CrateDirectoryFake>::new(), &file_system_spy);
 
         assert!(file_system_spy.files_copied.take().is_empty())
-    }
-
-    struct CrateDirectoryFake {
-        license: Option<String>,
-    }
-
-    impl CrateDirectoryFake {
-        fn containing_license(license_name: Option<&str>) -> Self {
-            Self {
-                license: license_name.map(|license_name| license_name.to_string()),
-            }
-        }
-    }
-
-    impl CrateDirectory for CrateDirectoryFake {
-        fn get_license(&self) -> Option<PathBuf> {
-            self.license.as_ref().map(|license| PathBuf::from(license))
-        }
     }
 
     #[test]
