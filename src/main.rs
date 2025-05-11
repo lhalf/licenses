@@ -54,4 +54,15 @@ mod tests {
 
         assert_eq!(vec!["LICENSE-MIT"], file_system_spy.files_copied.take())
     }
+
+    #[test]
+    fn when_there_is_two_crates_one_with_license_one_without_then_one_license_file_copied() {
+        let file_system_spy = FileSystemSpy::default();
+        let crate_1_directory_fake = CrateDirectoryFake::containing_license(Some("LICENSE-MIT"));
+        let crate_2_directory_fake = CrateDirectoryFake::containing_license(None);
+
+        find_and_copy_licenses(vec![crate_1_directory_fake, crate_2_directory_fake], &file_system_spy);
+
+        assert_eq!(vec!["LICENSE-MIT"], file_system_spy.files_copied.take())
+    }
 }
