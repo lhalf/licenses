@@ -1,6 +1,8 @@
 use std::{cell::RefCell, path::Path};
 
-pub trait FileSystem {
+pub struct FileSystem {}
+
+pub trait FileOperations {
     fn copy_file(&self, from: &Path, to: &Path);
 }
 
@@ -11,7 +13,7 @@ pub struct FileSystemSpy {
 }
 
 #[cfg(test)]
-impl FileSystem for FileSystemSpy {
+impl FileOperations for FileSystemSpy {
     fn copy_file(&self, from: &Path, _to: &Path) {
         self.files_copied
             .borrow_mut()

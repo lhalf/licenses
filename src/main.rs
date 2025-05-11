@@ -4,7 +4,7 @@ mod file_system;
 use std::path::PathBuf;
 
 use crate_directory::CrateDirectory;
-use file_system::FileSystem;
+use file_system::FileOperations;
 
 fn main() -> Result<(), anyhow::Error> {
     Ok(())
@@ -12,7 +12,7 @@ fn main() -> Result<(), anyhow::Error> {
 
 fn find_and_copy_licenses<C: CrateDirectory>(
     crate_directories: Vec<C>,
-    filesystem: &impl FileSystem,
+    filesystem: &impl FileOperations,
 ) {
     crate_directories
         .into_iter()
