@@ -16,7 +16,7 @@ fn find_and_copy_licenses<G: GetLicenses>(
 ) {
     crate_directories
         .into_iter()
-        .filter_map(|crate_directory| crate_directory.get_licenses().unwrap_or(None))
+        .map(|crate_directory| crate_directory.get_licenses().unwrap_or(vec![]))
         .flatten()
         .for_each(|license_path| {
             filesystem.copy_file(&license_path, &PathBuf::new());
@@ -50,7 +50,7 @@ mod tests {
     #[test]
     fn when_there_is_one_crate_with_no_licenses_then_no_license_files_are_copied() {
         let file_system_spy = FileSystemSpy::default();
-        let crate_directory_fake = CrateDirectoryFake::containing_licenses(None);
+        let crate_directory_fake = CrateDirectoryFake::containing_licenses(vec![]);
 
         find_and_copy_licenses(vec![crate_directory_fake], &file_system_spy);
 
@@ -60,8 +60,7 @@ mod tests {
     #[test]
     fn when_there_is_one_crate_with_one_license_then_one_license_file_copied() {
         let file_system_spy = FileSystemSpy::default();
-        let crate_directory_fake =
-            CrateDirectoryFake::containing_licenses(Some(vec!["LICENSE-MIT"]));
+        let crate_directory_fake = CrateDirectoryFake::containing_licenses(vec!["LICENSE-MIT"]);
 
         find_and_copy_licenses(vec![crate_directory_fake], &file_system_spy);
 
@@ -71,9 +70,8 @@ mod tests {
     #[test]
     fn when_there_is_two_crates_one_with_license_one_without_then_one_license_file_copied() {
         let file_system_spy = FileSystemSpy::default();
-        let crate_1_directory_fake =
-            CrateDirectoryFake::containing_licenses(Some(vec!["LICENSE-MIT"]));
-        let crate_2_directory_fake = CrateDirectoryFake::containing_licenses(None);
+        let crate_1_directory_fake = CrateDirectoryFake::containing_licenses(vec!["LICENSE-MIT"]);
+        let crate_2_directory_fake = CrateDirectoryFake::containing_licenses(vec![]);
 
         find_and_copy_licenses(
             vec![crate_1_directory_fake, crate_2_directory_fake],
@@ -87,7 +85,7 @@ mod tests {
     fn when_there_is_one_crate_with_multiple_licenses_then_multiple_license_files_copied() {
         let file_system_spy = FileSystemSpy::default();
         let crate_directory_fake =
-            CrateDirectoryFake::containing_licenses(Some(vec!["LICENSE-MIT", "LICENSE-APACHE"]));
+            CrateDirectoryFake::containing_licenses(vec!["LICENSE-MIT", "LICENSE-APACHE"]);
 
         find_and_copy_licenses(vec![crate_directory_fake], &file_system_spy);
 
