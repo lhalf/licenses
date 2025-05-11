@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
-pub trait GetLicenses {
-    fn get_licenses(&self) -> Result<Vec<PathBuf>, anyhow::Error>;
+pub trait FindLicenses {
+    fn find_licenses(&self) -> Result<Vec<PathBuf>, anyhow::Error>;
 }
 
 #[cfg(test)]
@@ -28,8 +28,8 @@ impl CrateDirectoryFake {
 }
 
 #[cfg(test)]
-impl GetLicenses for CrateDirectoryFake {
-    fn get_licenses(&self) -> Result<Vec<PathBuf>, anyhow::Error> {
+impl FindLicenses for CrateDirectoryFake {
+    fn find_licenses(&self) -> Result<Vec<PathBuf>, anyhow::Error> {
         if self.fails {
             return Err(anyhow::anyhow!("deliberate test error"));
         }
