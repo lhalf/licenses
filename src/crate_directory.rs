@@ -1,26 +1,28 @@
 use std::path::PathBuf;
 
 pub trait CrateDirectory {
-    fn get_license(&self) -> Option<PathBuf>;
+    fn get_licenses(&self) -> Option<Vec<PathBuf>>;
 }
 
 #[cfg(test)]
 pub struct CrateDirectoryFake {
-    license: Option<String>,
+    licenses: Option<Vec<String>>,
 }
 
 #[cfg(test)]
 impl CrateDirectoryFake {
-    pub fn containing_license(license_name: Option<&str>) -> Self {
+    pub fn containing_licenses(licenses: Option<Vec<&str>>) -> Self {
         Self {
-            license: license_name.map(|license_name| license_name.to_string()),
+            licenses: licenses.map(|license| license.into_iter().map(String::from).collect()),
         }
     }
 }
 
 #[cfg(test)]
 impl CrateDirectory for CrateDirectoryFake {
-    fn get_license(&self) -> Option<PathBuf> {
-        self.license.as_ref().map(|license| PathBuf::from(license))
+    fn get_licenses(&self) -> Option<Vec<PathBuf>> {
+        self.licenses.as_ref().map(|licenses| {
+            licenses.iter().map(PathBuf::from).collect()
+        })
     }
 }
