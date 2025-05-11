@@ -6,6 +6,13 @@ pub trait FileOperations {
     fn copy_file(&self, from: &Path, to: &Path);
 }
 
+impl FileOperations for FileSystem {
+    fn copy_file(&self, from: &Path, to: &Path) {
+        // change this to a result and add new tests for failing to copy
+        let _ = std::fs::copy(from, to);
+    }
+}
+
 #[cfg(test)]
 #[derive(Default)]
 pub struct FileSystemSpy {

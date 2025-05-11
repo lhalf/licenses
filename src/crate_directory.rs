@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-pub trait CrateDirectory {
+pub trait GetLicenses {
     fn get_licenses(&self) -> Option<Vec<PathBuf>>;
 }
 
@@ -19,10 +19,10 @@ impl CrateDirectoryFake {
 }
 
 #[cfg(test)]
-impl CrateDirectory for CrateDirectoryFake {
+impl GetLicenses for CrateDirectoryFake {
     fn get_licenses(&self) -> Option<Vec<PathBuf>> {
-        self.licenses.as_ref().map(|licenses| {
-            licenses.iter().map(PathBuf::from).collect()
-        })
+        self.licenses
+            .as_ref()
+            .map(|licenses| licenses.iter().map(PathBuf::from).collect())
     }
 }
