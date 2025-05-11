@@ -16,7 +16,7 @@ fn find_and_copy_licenses<G: GetLicenses>(
 ) {
     crate_directories
         .into_iter()
-        .filter_map(|crate_directory| crate_directory.get_licenses())
+        .filter_map(|crate_directory| crate_directory.get_licenses().unwrap_or(None))
         .flatten()
         .for_each(|license_path| {
             filesystem.copy_file(&license_path, &PathBuf::new());
@@ -33,6 +33,16 @@ mod tests {
         let file_system_spy = FileSystemSpy::default();
 
         find_and_copy_licenses(Vec::<CrateDirectoryFake>::new(), &file_system_spy);
+
+        assert!(file_system_spy.files_copied.take().is_empty())
+    }
+
+    #[test]
+    fn when_there_is_one_crate_and_finding_licenses_fails_no_license_files_are_copied() {
+        let file_system_spy = FileSystemSpy::default();
+        let crate_directory_fake = CrateDirectoryFake::failing();
+
+        find_and_copy_licenses(vec![crate_directory_fake], &file_system_spy);
 
         assert!(file_system_spy.files_copied.take().is_empty())
     }
