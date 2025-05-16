@@ -10,7 +10,6 @@ fn main() -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-
 fn find_and_copy_licenses<F: FindLicenses>(
     crate_directories: Vec<F>,
     filesystem: &impl FileOperations,
