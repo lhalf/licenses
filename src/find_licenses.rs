@@ -59,4 +59,12 @@ mod tests {
             find_licenses_in_directory(Vec::<DirEntryFake>::new().into_iter()).unwrap()
         )
     }
+    
+    #[test]
+    fn crate_directory_with_no_licences() {
+        assert_eq!(
+            Vec::<PathBuf>::new(),
+            find_licenses_in_directory([DirEntryFake{}].into_iter()).unwrap()
+        )
+    }
 }
