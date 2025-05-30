@@ -1,12 +1,8 @@
 use std::path::PathBuf;
+use crate::dir_entry::DirEntry;
 
 pub trait FindLicenses {
     fn find_licenses(&self) -> Result<Vec<PathBuf>, anyhow::Error>;
-}
-
-trait DirEntry {
-    fn filename(&self) -> String;
-    fn path(&self) -> PathBuf;
 }
 
 fn find_licenses_in_directory(
@@ -54,21 +50,9 @@ impl FindLicenses for CrateDirectoryFake {
 
 #[cfg(test)]
 mod tests {
-    use super::PathBuf;
-    use super::{DirEntry, find_licenses_in_directory};
-    pub struct DirEntryFake {
-        pub filename: &'static str,
-        pub path: PathBuf,
-    }
-    impl DirEntry for DirEntryFake {
-        fn filename(&self) -> String {
-            self.filename.to_string()
-        }
+    use super::*;
+    use crate::dir_entry::DirEntryFake;
 
-        fn path(&self) -> PathBuf {
-            self.path.clone()
-        }
-    }
     #[test]
     fn empty_crate_directory_has_no_licences() {
         assert_eq!(

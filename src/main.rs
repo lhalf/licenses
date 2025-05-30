@@ -1,5 +1,6 @@
 mod file_system;
 mod find_licenses;
+mod dir_entry;
 
 use std::path::PathBuf;
 
