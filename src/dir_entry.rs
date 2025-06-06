@@ -5,6 +5,17 @@ pub trait DirEntry {
     fn path(&self) -> PathBuf;
 }
 
+impl DirEntry for std::fs::DirEntry {
+    fn filename(&self) -> String {
+        // currently ignore filename containing invalid utf8
+        self.file_name().into_string().unwrap_or_else(|_| String::new())
+    }
+
+    fn path(&self) -> PathBuf {
+        self.path()
+    }
+}
+
 #[cfg(test)]
 pub struct DirEntryFake {
     pub filename: &'static str,
