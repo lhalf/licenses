@@ -90,4 +90,22 @@ mod tests {
             .unwrap()
         )
     }
+
+    fn crate_directory_with_multiple_licences_returns_path_for_licences() {
+        assert_eq!(
+            vec![PathBuf::from("path/license"),PathBuf::from("path/stuff_license_blah")],
+            find_licenses_in_directory(
+                [DirEntryFake {
+                    filename: "license",
+                    path: PathBuf::from("path/license")
+                },
+                DirEntryFake {
+                    filename: "stuff_license_blah",
+                    path: PathBuf::from("path/stuff_license_blah")
+                }]
+                .into_iter()
+            )
+            .unwrap()
+        )
+    }
 }
