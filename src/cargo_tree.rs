@@ -125,6 +125,35 @@ mod tests {
     }
 
     #[test]
+    fn depth_1_args() {
+        assert_eq!(vec![
+            "tree".to_string(),
+            "--format".to_string(),
+            "{lib}".to_string(),
+            "--prefix".to_string(),
+            "none".to_string(),
+            "--no-dedupe".to_string(),
+            "--depth".to_string(),
+            "1".to_string()
+        ], args(Some(1), true, true, vec![]));
+    }
+
+    #[test]
+    fn excludes_specific_workspace_args() {
+        assert_eq!(vec![
+            "tree".to_string(),
+            "--format".to_string(),
+            "{lib}".to_string(),
+            "--prefix".to_string(),
+            "none".to_string(),
+            "--no-dedupe".to_string(),
+            "--workspace".to_string(),
+            "--exclude".to_string(),
+            "excluded".to_string(),
+        ], args(None, true, true, vec!["excluded".to_string()]));
+    }
+
+    #[test]
     fn invalid_utf8_in_cargo_tree_output() {
         assert_eq!(
             "cargo tree output contained invalid UTF-8",
