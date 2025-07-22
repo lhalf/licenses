@@ -1,6 +1,6 @@
+mod cargo_tree;
 mod file_system;
 mod find_licenses;
-mod cargo_tree;
 
 use std::path::PathBuf;
 
