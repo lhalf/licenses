@@ -1,98 +1,37 @@
+use clap::Parser;
+use crate::cargo_tree::crate_names;
+
 mod cargo_tree;
 mod file_system;
 mod find_licenses;
+mod find_and_copy_licenses;
 
-use std::path::PathBuf;
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// The output license folder path
+    #[arg(short, long, default_value_t = String::from("licenses"))]
+    output_file: String,
 
-use file_system::FileOperations;
-use find_licenses::FindLicenses;
+    /// Include dev dependencies [default: excluded]
+    #[arg(short, long)]
+    dev: bool,
 
-fn main() -> Result<(), anyhow::Error> {
+    /// Include build dependencies [default: excluded]
+    #[arg(short, long)]
+    build: bool,
+
+    /// Exclude specified workspace [default: all included]
+    #[arg(short, long)]
+    exclude: Vec<String>,
+
+    /// The depth of dependencies to collect licenses for [default: all sub dependencies]
+    #[arg(short = 'D', long)]
+    depth: Option<u8>,
+}
+
+fn main() -> anyhow::Result<()> {
+    let args = Args::parse();
+    let _crates = crate_names(args.depth, args.dev, args.build, args.exclude)?;
     Ok(())
-}
-
-fn find_and_copy_licenses<F: FindLicenses>(
-    crate_directories: Vec<F>,
-    filesystem: &impl FileOperations,
-) {
-    crate_directories
-        .into_iter()
-        .map(|crate_directory| crate_directory.find_licenses().unwrap_or(vec![]))
-        .flatten()
-        .for_each(|license_path| {
-            filesystem.copy_file(&license_path, &PathBuf::new());
-        });
-}
-
-#[cfg(test)]
-mod tests {
-    use super::find_and_copy_licenses;
-    use crate::{file_system::FileSystemSpy, find_licenses::CrateDirectoryFake};
-
-    #[test]
-    fn when_there_are_no_crates_no_license_files_are_copied() {
-        let file_system_spy = FileSystemSpy::default();
-
-        find_and_copy_licenses(Vec::<CrateDirectoryFake>::new(), &file_system_spy);
-
-        assert!(file_system_spy.files_copied.take().is_empty())
-    }
-
-    #[test]
-    fn when_there_is_one_crate_and_finding_licenses_fails_no_license_files_are_copied() {
-        let file_system_spy = FileSystemSpy::default();
-        let crate_directory_fake = CrateDirectoryFake::failing();
-
-        find_and_copy_licenses(vec![crate_directory_fake], &file_system_spy);
-
-        assert!(file_system_spy.files_copied.take().is_empty())
-    }
-
-    #[test]
-    fn when_there_is_one_crate_with_no_licenses_then_no_license_files_are_copied() {
-        let file_system_spy = FileSystemSpy::default();
-        let crate_directory_fake = CrateDirectoryFake::containing_licenses(vec![]);
-
-        find_and_copy_licenses(vec![crate_directory_fake], &file_system_spy);
-
-        assert!(file_system_spy.files_copied.take().is_empty())
-    }
-
-    #[test]
-    fn when_there_is_one_crate_with_one_license_then_one_license_file_copied() {
-        let file_system_spy = FileSystemSpy::default();
-        let crate_directory_fake = CrateDirectoryFake::containing_licenses(vec!["LICENSE-MIT"]);
-
-        find_and_copy_licenses(vec![crate_directory_fake], &file_system_spy);
-
-        assert_eq!(vec!["LICENSE-MIT"], file_system_spy.files_copied.take())
-    }
-
-    #[test]
-    fn when_there_is_two_crates_one_with_license_one_without_then_one_license_file_copied() {
-        let file_system_spy = FileSystemSpy::default();
-        let crate_1_directory_fake = CrateDirectoryFake::containing_licenses(vec!["LICENSE-MIT"]);
-        let crate_2_directory_fake = CrateDirectoryFake::containing_licenses(vec![]);
-
-        find_and_copy_licenses(
-            vec![crate_1_directory_fake, crate_2_directory_fake],
-            &file_system_spy,
-        );
-
-        assert_eq!(vec!["LICENSE-MIT"], file_system_spy.files_copied.take())
-    }
-
-    #[test]
-    fn when_there_is_one_crate_with_multiple_licenses_then_multiple_license_files_copied() {
-        let file_system_spy = FileSystemSpy::default();
-        let crate_directory_fake =
-            CrateDirectoryFake::containing_licenses(vec!["LICENSE-MIT", "LICENSE-APACHE"]);
-
-        find_and_copy_licenses(vec![crate_directory_fake], &file_system_spy);
-
-        assert_eq!(
-            vec!["LICENSE-MIT", "LICENSE-APACHE"],
-            file_system_spy.files_copied.take()
-        )
-    }
 }
