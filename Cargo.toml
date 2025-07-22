@@ -1,21 +1,8 @@
 [package]
 name = "cargo-license-folder"
-version = "0.1.0"
+version = "0.0.0"
 edition = "2024"
 
 [dependencies]
 anyhow = { version = "1.0.98", default-features = false }
 itertools = { version = "0.14.0", default-features = false, features = ["use_std"] }
- 
-[workspace]
-resolver = "2"
- 
-[workspace.lints.rust]
-unsafe_code = "forbid"
-
-[workspace.lints.clippy]
-todo = "forbid"
-dbg_macro = "forbid"
-unwrap_used = "forbid"
-print_stdout = "forbid"
-print_stderr = "forbid"
