@@ -81,76 +81,91 @@ fn to_crate_names(output: Vec<u8>) -> anyhow::Result<BTreeSet<String>> {
 mod tests {
     use crate::cargo_tree::{args, to_crate_names};
     use std::collections::BTreeSet;
-    
+
     #[test]
     fn default_args() {
-        assert_eq!(vec![
-            "tree".to_string(),
-            "--format".to_string(),
-            "{lib}".to_string(),
-            "--prefix".to_string(),
-            "none".to_string(),
-            "--no-dedupe".to_string(),
-            "--edges".to_string(),
-            "no-dev,no-build".to_string(),
-        ], args(None, false, false, vec![]));
+        assert_eq!(
+            vec![
+                "tree".to_string(),
+                "--format".to_string(),
+                "{lib}".to_string(),
+                "--prefix".to_string(),
+                "none".to_string(),
+                "--no-dedupe".to_string(),
+                "--edges".to_string(),
+                "no-dev,no-build".to_string(),
+            ],
+            args(None, false, false, vec![])
+        );
     }
 
     #[test]
     fn include_dev_dependencies_args() {
-        assert_eq!(vec![
-            "tree".to_string(),
-            "--format".to_string(),
-            "{lib}".to_string(),
-            "--prefix".to_string(),
-            "none".to_string(),
-            "--no-dedupe".to_string(),
-            "--edges".to_string(),
-            "no-build".to_string(),
-        ], args(None, true, false, vec![]));
+        assert_eq!(
+            vec![
+                "tree".to_string(),
+                "--format".to_string(),
+                "{lib}".to_string(),
+                "--prefix".to_string(),
+                "none".to_string(),
+                "--no-dedupe".to_string(),
+                "--edges".to_string(),
+                "no-build".to_string(),
+            ],
+            args(None, true, false, vec![])
+        );
     }
 
     #[test]
     fn include_build_dependencies_args() {
-        assert_eq!(vec![
-            "tree".to_string(),
-            "--format".to_string(),
-            "{lib}".to_string(),
-            "--prefix".to_string(),
-            "none".to_string(),
-            "--no-dedupe".to_string(),
-            "--edges".to_string(),
-            "no-dev".to_string(),
-        ], args(None, false, true, vec![]));
+        assert_eq!(
+            vec![
+                "tree".to_string(),
+                "--format".to_string(),
+                "{lib}".to_string(),
+                "--prefix".to_string(),
+                "none".to_string(),
+                "--no-dedupe".to_string(),
+                "--edges".to_string(),
+                "no-dev".to_string(),
+            ],
+            args(None, false, true, vec![])
+        );
     }
 
     #[test]
     fn depth_1_args() {
-        assert_eq!(vec![
-            "tree".to_string(),
-            "--format".to_string(),
-            "{lib}".to_string(),
-            "--prefix".to_string(),
-            "none".to_string(),
-            "--no-dedupe".to_string(),
-            "--depth".to_string(),
-            "1".to_string()
-        ], args(Some(1), true, true, vec![]));
+        assert_eq!(
+            vec![
+                "tree".to_string(),
+                "--format".to_string(),
+                "{lib}".to_string(),
+                "--prefix".to_string(),
+                "none".to_string(),
+                "--no-dedupe".to_string(),
+                "--depth".to_string(),
+                "1".to_string()
+            ],
+            args(Some(1), true, true, vec![])
+        );
     }
 
     #[test]
     fn excludes_specific_workspace_args() {
-        assert_eq!(vec![
-            "tree".to_string(),
-            "--format".to_string(),
-            "{lib}".to_string(),
-            "--prefix".to_string(),
-            "none".to_string(),
-            "--no-dedupe".to_string(),
-            "--workspace".to_string(),
-            "--exclude".to_string(),
-            "excluded".to_string(),
-        ], args(None, true, true, vec!["excluded".to_string()]));
+        assert_eq!(
+            vec![
+                "tree".to_string(),
+                "--format".to_string(),
+                "{lib}".to_string(),
+                "--prefix".to_string(),
+                "none".to_string(),
+                "--no-dedupe".to_string(),
+                "--workspace".to_string(),
+                "--exclude".to_string(),
+                "excluded".to_string(),
+            ],
+            args(None, true, true, vec!["excluded".to_string()])
+        );
     }
 
     #[test]

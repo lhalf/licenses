@@ -7,3 +7,9 @@ edition = "2024"
 anyhow = { version = "1.0.98", default-features = false }
 itertools = { version = "0.14.0", default-features = false, features = ["use_std"] }
 clap = { version = "4.5.41", default-features = false, features = ["derive", "std", "help", "usage"] }
+cargo_metadata = { version = "0.21.0", default-features = false }
+
+[dev-dependencies]
+autospy = { version = "0.0.8", default-features = false, features = ["test"]}
+serde_json = { version = "1.0.141", default-features = false }
+cargo-util-schemas = { version = "0.8.2", default-features = false }
