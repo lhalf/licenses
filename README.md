@@ -1,7 +1,7 @@
 # licenses
 
 [![crates.io](https://img.shields.io/crates/v/licenses)](https://crates.io/crates/licenses)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/lhalf/licenses/on_commit.yml)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/lhalf/licenses/on_commit.yml)]((https://github.com/lhalf/licenses/actions/workflows/on_commit.yml))
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 
 Command line tool for collecting licenses.
