@@ -9,6 +9,10 @@ categories = ["command-line-interface"]
 repository = "https://github.com/lhalf/licenses"
 exclude = [".gitignore", "/.github", "justfile"]
 
+[[bin]]
+name = "cargo-licenses"
+path = "src/main.rs"
+
 [dependencies]
 anyhow = { version = "1.0.98", default-features = false }
 itertools = { version = "0.14.0", default-features = false, features = ["use_std"] }
