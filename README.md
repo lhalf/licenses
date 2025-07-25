@@ -18,7 +18,7 @@ cargo install licenses
 $ cargo licenses --help
 Command line tool for collecting licenses.
 
-Usage: licenses [OPTIONS] <COMMAND>
+Usage: cargo licenses [OPTIONS] <COMMAND>
 
 Commands:
   folder  Collects all licenses into a folder
