@@ -129,7 +129,7 @@ mod tests {
         file_io_spy.read_dir.returns.push_back(Ok(vec![DirEntry {
             name: OsString::from("license_directory"),
             path: Default::default(),
-            is_file: false
+            is_file: false,
         }]));
         assert!(
             copy_licenses(

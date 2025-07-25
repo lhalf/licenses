@@ -17,7 +17,7 @@ mod tests {
     use crate::file_io::DirEntry;
     use crate::is_license::is_license;
     use std::ffi::OsString;
-    
+
     #[test]
     fn directories_are_not_licenses() {
         assert!(!is_license(&DirEntry {
@@ -26,7 +26,7 @@ mod tests {
             is_file: false,
         }))
     }
-    
+
     #[test]
     fn license_file_with_valid_name() {
         for license in [

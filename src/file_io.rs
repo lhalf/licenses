@@ -31,7 +31,7 @@ impl FileIO for FileSystem {
 pub struct DirEntry {
     pub name: OsString,
     pub path: PathBuf,
-    pub is_file: bool
+    pub is_file: bool,
 }
 
 impl DirEntry {
@@ -40,7 +40,7 @@ impl DirEntry {
         Ok(Self {
             name: dir_entry.file_name(),
             path: dir_entry.path(),
-            is_file: dir_entry.path().is_file()
+            is_file: dir_entry.path().is_file(),
         })
     }
 }
