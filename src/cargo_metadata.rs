@@ -1,11 +1,11 @@
 use anyhow::Context;
-use cargo_metadata::camino::{Utf8PathBuf};
+use cargo_metadata::camino::Utf8PathBuf;
 
 #[derive(Debug)]
 pub struct Package {
-    normalised_name: String,
-    path: Utf8PathBuf,
-    url: String,
+    pub normalised_name: String,
+    pub path: Utf8PathBuf,
+    pub url: String,
 }
 
 impl Package {
@@ -34,13 +34,14 @@ pub fn try_get_packages() -> anyhow::Result<Vec<Package>> {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-    use cargo_metadata::camino::{Utf8PathBuf};
-    use cargo_util_schemas::manifest::PackageName;
     use super::Package;
+    use cargo_metadata::camino::Utf8PathBuf;
+    use cargo_util_schemas::manifest::PackageName;
+    use std::str::FromStr;
 
     fn metadata_package() -> cargo_metadata::Package {
-        serde_json::from_str(r#"{
+        serde_json::from_str(
+            r#"{
             "name": "example",
             "version": "0.0.0",
             "authors": [],
@@ -65,25 +66,42 @@ mod tests {
             "publish": null,
             "default_run": null,
             "rust_version": null
-        }"#).unwrap()
+        }"#,
+        )
+        .unwrap()
     }
 
     #[test]
     fn package_names_are_normalised() {
         let mut metadata_package = metadata_package();
         metadata_package.name = PackageName::from_str("normalised-name").unwrap();
-        assert_eq!("normalised_name", Package::try_from_metadata(metadata_package).unwrap().normalised_name)
+        assert_eq!(
+            "normalised_name",
+            Package::try_from_metadata(metadata_package)
+                .unwrap()
+                .normalised_name
+        )
     }
 
     #[test]
     fn packages_without_valid_manifest_path_parent_fail() {
         let mut metadata_package = metadata_package();
         metadata_package.manifest_path = Utf8PathBuf::from("/");
-        assert_eq!("could not get parent path from manifest path", Package::try_from_metadata(metadata_package).unwrap_err().to_string())
+        assert_eq!(
+            "could not get parent path from manifest path",
+            Package::try_from_metadata(metadata_package)
+                .unwrap_err()
+                .to_string()
+        )
     }
 
     #[test]
     fn packages_without_repository_sets_link_to_empty() {
-        assert!(Package::try_from_metadata(metadata_package()).unwrap().url.is_empty())
+        assert!(
+            Package::try_from_metadata(metadata_package())
+                .unwrap()
+                .url
+                .is_empty()
+        )
     }
 }

@@ -1,5 +1,5 @@
 [package]
-name = "cargo-license-folder"
+name = "licenses"
 version = "0.0.0"
 edition = "2024"
 
@@ -8,6 +8,7 @@ anyhow = { version = "1.0.98", default-features = false }
 itertools = { version = "0.14.0", default-features = false, features = ["use_std"] }
 clap = { version = "4.5.41", default-features = false, features = ["derive", "std", "help", "usage"] }
 cargo_metadata = { version = "0.21.0", default-features = false }
+colored = { version = "3.0.0", default-features = false }
 
 [dev-dependencies]
 autospy = { version = "0.0.8", default-features = false, features = ["test"]}
