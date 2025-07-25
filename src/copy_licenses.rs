@@ -1,10 +1,11 @@
 use crate::cargo_metadata::Package;
 use crate::file_io::{DirEntry, FileIO};
+use crate::is_license::is_license;
+use crate::warn;
 use anyhow::Context;
 use colored::Colorize;
 use std::collections::BTreeSet;
 use std::path::PathBuf;
-use crate::warn;
 
 pub fn copy_licenses(
     file_io: impl FileIO,
@@ -20,18 +21,16 @@ pub fn copy_licenses(
         let licenses: Vec<DirEntry> = file_io
             .read_dir(package.path.as_ref())?
             .into_iter()
-            .filter(|dir_entry| {
-                file_io.is_file(&dir_entry.path)
-                    && dir_entry
-                        .name
-                        .to_string_lossy()
-                        .to_lowercase()
-                        .starts_with("license")
-            })
+            .filter(|dir_entry| file_io.is_file(&dir_entry.path))
+            .filter(is_license)
             .collect();
 
         if licenses.is_empty() {
-            warn!("did not find any licenses for {} - try looking here: {}", package.normalised_name.bold(), package.url);
+            warn!(
+                "did not find any licenses for {} - try looking here: {}",
+                package.normalised_name.bold(),
+                package.url
+            );
             continue;
         }
 
@@ -144,9 +143,12 @@ mod tests {
                 }],
                 PathBuf::default()
             )
-                .is_ok()
+            .is_ok()
         );
-        assert_eq!(vec![PathBuf::from("/example")], file_io_spy.read_dir.arguments.take_all());
+        assert_eq!(
+            vec![PathBuf::from("/example")],
+            file_io_spy.read_dir.arguments.take_all()
+        );
         assert!(file_io_spy.copy_file.arguments.take_all().is_empty());
     }
 }
