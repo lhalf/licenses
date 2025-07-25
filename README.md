@@ -16,13 +16,10 @@ cargo install licenses
 
 ```
 $ cargo licenses --help
-Command line tool for collecting licenses.
-
 Usage: cargo licenses [OPTIONS] <COMMAND>
 
 Commands:
   folder  Collects all licenses into a folder
-  help    Print this message or the help of the given subcommand(s)
 
 Options:
   -d, --dev                  Include dev dependencies [default: excluded]
@@ -30,7 +27,6 @@ Options:
   -e, --exclude <WORKSPACE>  Exclude specified workspace [default: all included]
   -D, --depth <DEPTH>        The depth of dependencies to collect licenses for [default: all sub dependencies]
   -h, --help                 Print help
-  -V, --version              Print version
 ```
 
 ## Example

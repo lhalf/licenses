@@ -14,15 +14,15 @@ mod file_io;
 mod is_license;
 mod macros;
 
-#[derive(Parser, Debug)]
-#[command(bin_name = "cargo")]
-enum CargoSubCommand {
-    #[command(author, version, about, long_about = None)]
-    Licenses(LicenseCommand),
+#[derive(Parser)]
+#[command(bin_name = "cargo", disable_help_subcommand = true)]
+enum CargoSubcommand {
+    #[command(name = "licenses", version, author, disable_version_flag = true)]
+    Licenses(Licenses),
 }
 
-#[derive(Parser, Debug)]
-struct LicenseCommand {
+#[derive(Parser)]
+struct Licenses {
     /// Include dev dependencies [default: excluded]
     #[arg(short, long)]
     dev: bool,
@@ -40,11 +40,11 @@ struct LicenseCommand {
     depth: Option<u8>,
 
     #[command(subcommand)]
-    command: LicenseSubCommand,
+    command: LicensesSubcommand,
 }
 
-#[derive(Debug, Subcommand)]
-enum LicenseSubCommand {
+#[derive(Subcommand)]
+enum LicensesSubcommand {
     /// Collects all licenses into a folder
     Folder {
         /// The output license folder path
@@ -54,14 +54,14 @@ enum LicenseSubCommand {
 }
 
 fn main() -> anyhow::Result<()> {
-    let CargoSubCommand::Licenses(args) = CargoSubCommand::parse();
+    let CargoSubcommand::Licenses(args) = CargoSubcommand::parse();
 
     let crates = crate_names(args.depth, args.dev, args.build, args.exclude)?;
 
     let all_packages = try_get_packages()?;
 
     match args.command {
-        LicenseSubCommand::Folder { path } => {
+        LicensesSubcommand::Folder { path } => {
             copy_licenses_to_folder(PathBuf::from(path), crates, all_packages)
         }
     }
