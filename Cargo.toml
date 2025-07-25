@@ -13,4 +13,4 @@ colored = { version = "3.0.0", default-features = false }
 [dev-dependencies]
 autospy = { version = "0.0.8", default-features = false, features = ["test"]}
 serde_json = { version = "1.0.141", default-features = false }
-cargo-util-schemas = { version = "0.8.2", default-features = false }
+cargo-util-schemas = { version = "0.8.2", default-features = false}
