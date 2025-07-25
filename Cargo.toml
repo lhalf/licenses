@@ -7,7 +7,7 @@ description = "Command line tool for collecting licenses."
 keywords = ["cargo-subcommand", "tool", "licenses"]
 categories = ["command-line-interface"]
 repository = "https://github.com/lhalf/licenses"
-exclude = [".gitignore", "/.github"]
+exclude = [".gitignore", "/.github", "justfile"]
 
 [dependencies]
 anyhow = { version = "1.0.98", default-features = false }
