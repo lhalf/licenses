@@ -4,6 +4,7 @@ use anyhow::Context;
 use colored::Colorize;
 use std::collections::BTreeSet;
 use std::path::PathBuf;
+use crate::warn;
 
 pub fn copy_licenses(
     file_io: impl FileIO,
@@ -30,12 +31,7 @@ pub fn copy_licenses(
             .collect();
 
         if licenses.is_empty() {
-            println!(
-                "{}: did not find any licenses for {} - try looking here: {}",
-                "warning".yellow().bold(),
-                package.normalised_name,
-                package.url
-            );
+            warn!("did not find any licenses for {} - try looking here: {}", package.normalised_name.bold(), package.url);
             continue;
         }
 
@@ -55,6 +51,7 @@ pub fn copy_licenses(
         }
     }
 
+    println!("{}", output_folder.to_string_lossy());
     Ok(())
 }
 

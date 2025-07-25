@@ -10,6 +10,7 @@ mod cargo_metadata;
 mod cargo_tree;
 mod copy_licenses;
 mod file_io;
+mod macros;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
