@@ -62,9 +62,10 @@ pub fn copy_licenses(
 mod tests {
     use crate::cargo_metadata::Package;
     use crate::copy_licenses::copy_licenses;
-    use crate::file_io::FileIOSpy;
+    use crate::file_io::{DirEntry, FileIOSpy};
     use cargo_metadata::camino::Utf8PathBuf;
     use std::collections::BTreeSet;
+    use std::ffi::OsString;
     use std::path::PathBuf;
 
     #[test]
@@ -125,5 +126,30 @@ mod tests {
             .unwrap_err()
             .to_string()
         );
+    }
+
+    #[test]
+    fn does_not_copy_directories_starting_with_license() {
+        let file_io_spy = FileIOSpy::default();
+        file_io_spy.read_dir.returns.push_back(Ok(vec![DirEntry {
+            name: OsString::from("license_directory"),
+            path: Default::default(),
+        }]));
+        file_io_spy.is_file.returns.push_back(false);
+        assert!(
+            copy_licenses(
+                file_io_spy.clone(),
+                BTreeSet::from(["example".to_string()]),
+                vec![Package {
+                    normalised_name: "example".to_string(),
+                    path: Utf8PathBuf::from("/example"),
+                    url: String::new(),
+                }],
+                PathBuf::default()
+            )
+                .is_ok()
+        );
+        assert_eq!(vec![PathBuf::from("/example")], file_io_spy.read_dir.arguments.take_all());
+        assert!(file_io_spy.copy_file.arguments.take_all().is_empty());
     }
 }
