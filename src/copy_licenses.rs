@@ -57,3 +57,73 @@ pub fn copy_licenses(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::cargo_metadata::Package;
+    use crate::copy_licenses::copy_licenses;
+    use crate::file_io::FileIOSpy;
+    use cargo_metadata::camino::Utf8PathBuf;
+    use std::collections::BTreeSet;
+    use std::path::PathBuf;
+
+    #[test]
+    fn no_packages_causes_no_directory_read_or_files_copied() {
+        let file_io_spy = FileIOSpy::default();
+        assert!(
+            copy_licenses(
+                file_io_spy.clone(),
+                BTreeSet::new(),
+                Vec::new(),
+                PathBuf::default()
+            )
+            .is_ok()
+        );
+        assert!(file_io_spy.read_dir.arguments.take_all().is_empty());
+        assert!(file_io_spy.copy_file.arguments.take_all().is_empty());
+    }
+
+    #[test]
+    fn no_crates_required_causes_no_directory_read_or_files_copied() {
+        let file_io_spy = FileIOSpy::default();
+        assert!(
+            copy_licenses(
+                file_io_spy.clone(),
+                BTreeSet::new(),
+                vec![Package {
+                    normalised_name: "example".to_string(),
+                    path: Utf8PathBuf::from("/example"),
+                    url: String::new(),
+                }],
+                PathBuf::default()
+            )
+            .is_ok()
+        );
+        assert!(file_io_spy.read_dir.arguments.take_all().is_empty());
+        assert!(file_io_spy.copy_file.arguments.take_all().is_empty());
+    }
+
+    #[test]
+    fn failure_to_read_dir_causes_error() {
+        let file_io_spy = FileIOSpy::default();
+        file_io_spy
+            .read_dir
+            .returns
+            .push_back(Err(anyhow::anyhow!("deliberate test error")));
+        assert_eq!(
+            "deliberate test error",
+            copy_licenses(
+                file_io_spy.clone(),
+                BTreeSet::from(["example".to_string()]),
+                vec![Package {
+                    normalised_name: "example".to_string(),
+                    path: Default::default(),
+                    url: String::new(),
+                }],
+                PathBuf::default()
+            )
+            .unwrap_err()
+            .to_string()
+        );
+    }
+}
