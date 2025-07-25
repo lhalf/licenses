@@ -8,7 +8,6 @@ pub struct FileSystem {}
 pub trait FileIO {
     fn copy_file(&self, from: &Path, to: &Path) -> anyhow::Result<()>;
     fn read_dir(&self, path: &Path) -> anyhow::Result<Vec<DirEntry>>;
-    fn is_file(&self, path: &Path) -> bool;
 }
 
 impl FileIO for FileSystem {
@@ -27,15 +26,12 @@ impl FileIO for FileSystem {
             .map(DirEntry::try_from)
             .collect()
     }
-
-    fn is_file(&self, path: &Path) -> bool {
-        path.is_file()
-    }
 }
 
 pub struct DirEntry {
     pub name: OsString,
     pub path: PathBuf,
+    pub is_file: bool
 }
 
 impl DirEntry {
@@ -44,6 +40,7 @@ impl DirEntry {
         Ok(Self {
             name: dir_entry.file_name(),
             path: dir_entry.path(),
+            is_file: dir_entry.path().is_file()
         })
     }
 }

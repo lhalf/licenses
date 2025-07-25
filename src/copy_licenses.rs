@@ -21,7 +21,6 @@ pub fn copy_licenses(
         let licenses: Vec<DirEntry> = file_io
             .read_dir(package.path.as_ref())?
             .into_iter()
-            .filter(|dir_entry| file_io.is_file(&dir_entry.path))
             .filter(is_license)
             .collect();
 
@@ -130,8 +129,8 @@ mod tests {
         file_io_spy.read_dir.returns.push_back(Ok(vec![DirEntry {
             name: OsString::from("license_directory"),
             path: Default::default(),
+            is_file: false
         }]));
-        file_io_spy.is_file.returns.push_back(false);
         assert!(
             copy_licenses(
                 file_io_spy.clone(),
