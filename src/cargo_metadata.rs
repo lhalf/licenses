@@ -5,7 +5,7 @@ use cargo_metadata::camino::Utf8PathBuf;
 pub struct Package {
     pub normalised_name: String,
     pub path: Utf8PathBuf,
-    pub url: String,
+    pub url: Option<String>,
     pub license: Option<String>,
 }
 
@@ -18,7 +18,7 @@ impl Package {
                 .parent()
                 .context("could not get parent path from manifest path")?
                 .to_path_buf(),
-            url: package.repository.unwrap_or_default(),
+            url: package.repository,
             license: package.license,
         })
     }
@@ -98,12 +98,22 @@ mod tests {
     }
 
     #[test]
-    fn packages_without_repository_sets_link_to_empty() {
+    fn packages_without_repository_sets_link_to_none() {
         assert!(
             Package::try_from_metadata(metadata_package())
                 .unwrap()
                 .url
-                .is_empty()
+                .is_none()
+        )
+    }
+
+    #[test]
+    fn packages_without_license_set_to_none() {
+        assert!(
+            Package::try_from_metadata(metadata_package())
+                .unwrap()
+                .license
+                .is_none()
         )
     }
 }

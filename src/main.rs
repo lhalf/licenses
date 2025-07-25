@@ -2,9 +2,9 @@ use crate::cargo_metadata::{Package, try_get_packages};
 use crate::cargo_tree::crate_names;
 use crate::copy_licenses::copy_licenses;
 use crate::file_io::FileSystem;
+use crate::summarise::summarise;
 use anyhow::Context;
 use clap::{Parser, Subcommand};
-use itertools::Itertools;
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 
@@ -14,6 +14,7 @@ mod copy_licenses;
 mod file_io;
 mod is_license;
 mod macros;
+mod summarise;
 
 #[derive(Parser)]
 #[command(bin_name = "cargo", disable_help_subcommand = true)]
@@ -68,7 +69,7 @@ fn main() -> anyhow::Result<()> {
             copy_licenses_to_folder(PathBuf::from(path), crates, all_packages)?;
         }
         LicensesSubcommand::Summary => {
-            summarise_licenses(crates, all_packages);
+            summarise(crates, all_packages);
         }
     }
 
@@ -86,14 +87,4 @@ fn copy_licenses_to_folder(
     copy_licenses(FileSystem {}, crates, all_packages, folder)?;
 
     Ok(())
-}
-
-fn summarise_licenses(crates: BTreeSet<String>, all_packages: Vec<Package>) {
-    all_packages
-        .into_iter()
-        .filter(|package| crates.contains(&package.normalised_name))
-        .filter_map(|package| package.license)
-        .unique()
-        .sorted()
-        .for_each(|license| println!("{license}"))
 }

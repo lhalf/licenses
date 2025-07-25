@@ -26,11 +26,13 @@ pub fn copy_licenses(
 
         if licenses.is_empty() {
             warn!(
-                "did not find any licenses for {} - try looking here: {}",
+                "did not find any licenses for {} - {}",
                 package.normalised_name.bold(),
-                package.url
+                match package.url {
+                    Some(url) => format!("try looking here: {url}"),
+                    None => "no url".to_string(),
+                }
             );
-            continue;
         }
 
         for license in licenses {
@@ -89,7 +91,7 @@ mod tests {
                 vec![Package {
                     normalised_name: "example".to_string(),
                     path: Utf8PathBuf::from("/example"),
-                    url: String::new(),
+                    url: None,
                     license: None,
                 }],
                 PathBuf::default()
@@ -115,7 +117,7 @@ mod tests {
                 vec![Package {
                     normalised_name: "example".to_string(),
                     path: Default::default(),
-                    url: String::new(),
+                    url: None,
                     license: None,
                 }],
                 PathBuf::default()
@@ -140,7 +142,7 @@ mod tests {
                 vec![Package {
                     normalised_name: "example".to_string(),
                     path: Utf8PathBuf::from("/example"),
-                    url: String::new(),
+                    url: None,
                     license: None,
                 }],
                 PathBuf::default()

@@ -19,7 +19,8 @@ $ cargo licenses --help
 Usage: cargo licenses [OPTIONS] <COMMAND>
 
 Commands:
-  folder  Collects all licenses into a folder
+  folder   Collects all licenses into a folder
+  summary  Provides a summary of all licenses
 
 Options:
   -d, --dev                  Include dev dependencies [default: excluded]
@@ -43,4 +44,10 @@ licenses
 ├── colored-LICENSE
 ├── itertools-LICENSE-APACHE
 └── itertools-LICENSE-MIT
+```
+```
+$ cargo licenses --depth 1 summary
+MIT
+MIT OR Apache-2.0
+MPL-2.0
 ```
