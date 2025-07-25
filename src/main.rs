@@ -4,6 +4,7 @@ use crate::copy_licenses::copy_licenses;
 use crate::file_io::FileSystem;
 use anyhow::Context;
 use clap::{Parser, Subcommand};
+use itertools::Itertools;
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 
@@ -51,6 +52,8 @@ enum LicensesSubcommand {
         #[arg(short, long, default_value_t = String::from("licenses"))]
         path: String,
     },
+    /// Provides a summary of all licenses
+    Summary,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -62,9 +65,14 @@ fn main() -> anyhow::Result<()> {
 
     match args.command {
         LicensesSubcommand::Folder { path } => {
-            copy_licenses_to_folder(PathBuf::from(path), crates, all_packages)
+            copy_licenses_to_folder(PathBuf::from(path), crates, all_packages)?;
+        }
+        LicensesSubcommand::Summary => {
+            summarise_licenses(crates, all_packages);
         }
     }
+
+    Ok(())
 }
 
 fn copy_licenses_to_folder(
@@ -78,4 +86,14 @@ fn copy_licenses_to_folder(
     copy_licenses(FileSystem {}, crates, all_packages, folder)?;
 
     Ok(())
+}
+
+fn summarise_licenses(crates: BTreeSet<String>, all_packages: Vec<Package>) {
+    all_packages
+        .into_iter()
+        .filter(|package| crates.contains(&package.normalised_name))
+        .filter_map(|package| package.license)
+        .unique()
+        .sorted()
+        .for_each(|license| println!("{license}"))
 }

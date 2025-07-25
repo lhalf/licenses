@@ -6,6 +6,7 @@ pub struct Package {
     pub normalised_name: String,
     pub path: Utf8PathBuf,
     pub url: String,
+    pub license: Option<String>,
 }
 
 impl Package {
@@ -18,6 +19,7 @@ impl Package {
                 .context("could not get parent path from manifest path")?
                 .to_path_buf(),
             url: package.repository.unwrap_or_default(),
+            license: package.license,
         })
     }
 }

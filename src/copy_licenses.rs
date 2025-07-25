@@ -90,6 +90,7 @@ mod tests {
                     normalised_name: "example".to_string(),
                     path: Utf8PathBuf::from("/example"),
                     url: String::new(),
+                    license: None,
                 }],
                 PathBuf::default()
             )
@@ -115,6 +116,7 @@ mod tests {
                     normalised_name: "example".to_string(),
                     path: Default::default(),
                     url: String::new(),
+                    license: None,
                 }],
                 PathBuf::default()
             )
@@ -139,6 +141,7 @@ mod tests {
                     normalised_name: "example".to_string(),
                     path: Utf8PathBuf::from("/example"),
                     url: String::new(),
+                    license: None,
                 }],
                 PathBuf::default()
             )
