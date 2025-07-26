@@ -31,7 +31,12 @@ impl LicenseStatus {
                     package.normalised_name.bold()
                 );
             }
-            LicenseStatus::Mismatch => {}
+            LicenseStatus::Mismatch => {
+                note!(
+                    "declared licenses did not match found licenses for {}",
+                    package.normalised_name.bold()
+                );
+            }
         }
     }
 }

@@ -9,7 +9,7 @@ pub fn is_license(dir_entry: &DirEntry) -> bool {
         .name
         .to_string_lossy()
         .to_lowercase()
-        .starts_with("license")
+        .contains("license")
 }
 
 #[cfg(test)]
@@ -35,6 +35,7 @@ mod tests {
             "LICENSE",
             "license",
             "licenseother",
+            "UNLICENSE",
         ] {
             assert!(is_license(&DirEntry {
                 name: OsString::from(license),
