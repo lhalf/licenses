@@ -42,15 +42,29 @@ pub fn validate_licenses(package: &Package, actual_licenses: &[DirEntry]) -> Lic
     }
 
     match &package.license {
-        None => return LicenseStatus::NoneDeclared,
-        Some(license) => {
-            if license.split("OR").collect::<Vec<_>>().len() != actual_licenses.len() {
-                return LicenseStatus::Mismatch;
-            }
+        None => LicenseStatus::NoneDeclared,
+        Some(license) if split_license(license).len() != actual_licenses.len() => {
+            LicenseStatus::Mismatch
         }
+        _ => LicenseStatus::Valid,
+    }
+}
+
+fn split_license(license: &str) -> Vec<&str> {
+    let mut parts = vec![license];
+
+    for seperator in ["OR", "AND", "/"] {
+        parts = parts
+            .into_iter()
+            .flat_map(|license| license.split(seperator).map(str::trim))
+            .collect();
     }
 
-    LicenseStatus::Valid
+    parts
+        .into_iter()
+        .map(|s| s.trim_matches(&['(', ')'][..]))
+        .filter(|s| !s.is_empty())
+        .collect()
 }
 
 #[cfg(test)]
@@ -98,6 +112,45 @@ mod tests {
                     is_file: true,
                 }]
             )
-        )
+        );
+        assert_eq!(
+            LicenseStatus::Mismatch,
+            validate_licenses(
+                &Package {
+                    normalised_name: String::new(),
+                    path: Default::default(),
+                    url: None,
+                    license: Some("MIT/Apache-2.0".to_string()),
+                },
+                &[DirEntry {
+                    name: OsString::from("LICENSE_MIT"),
+                    path: Default::default(),
+                    is_file: true,
+                }]
+            )
+        );
+        assert_eq!(
+            LicenseStatus::Mismatch,
+            validate_licenses(
+                &Package {
+                    normalised_name: String::new(),
+                    path: Default::default(),
+                    url: None,
+                    license: Some("(MIT OR Apache-2.0) AND Unicode-3.".to_string()),
+                },
+                &[
+                    DirEntry {
+                        name: OsString::from("LICENSE_MIT"),
+                        path: Default::default(),
+                        is_file: true,
+                    },
+                    DirEntry {
+                        name: OsString::from("LICENSE_UNICODE"),
+                        path: Default::default(),
+                        is_file: true,
+                    }
+                ]
+            )
+        );
     }
 }
