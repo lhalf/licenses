@@ -1,9 +1,8 @@
 use crate::cargo_metadata::Package;
 use crate::file_io::{DirEntry, FileIO};
 use crate::is_license::is_license;
-use crate::warn;
+use crate::validate_licenses::validate_licenses;
 use anyhow::Context;
-use colored::Colorize;
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 
@@ -24,16 +23,7 @@ pub fn copy_licenses(
             .filter(is_license)
             .collect();
 
-        if licenses.is_empty() {
-            warn!(
-                "did not find any licenses for {} - {}",
-                package.normalised_name.bold(),
-                match package.url {
-                    Some(url) => format!("try looking here: {url}"),
-                    None => "no url".to_string(),
-                }
-            );
-        }
+        validate_licenses(&package, &licenses).warn(&package);
 
         for license in licenses {
             file_io.copy_file(

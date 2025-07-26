@@ -15,6 +15,7 @@ mod file_io;
 mod is_license;
 mod macros;
 mod summarise;
+mod validate_licenses;
 
 #[derive(Parser)]
 #[command(bin_name = "cargo", disable_help_subcommand = true)]

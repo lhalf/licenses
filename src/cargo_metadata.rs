@@ -1,6 +1,7 @@
 use anyhow::Context;
 use cargo_metadata::camino::Utf8PathBuf;
 
+#[cfg_attr(test, derive(Default))]
 #[derive(Debug)]
 pub struct Package {
     pub normalised_name: String,
