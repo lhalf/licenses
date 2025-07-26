@@ -8,6 +8,7 @@ pub enum LicenseStatus {
     Valid,
     Empty,
     NoListing,
+    Mismatch,
 }
 
 impl LicenseStatus {
@@ -27,6 +28,7 @@ impl LicenseStatus {
             LicenseStatus::NoListing => {
                 note!("no listed licenses for {}", package.normalised_name.bold());
             }
+            LicenseStatus::Mismatch => {}
         }
     }
 }
@@ -36,8 +38,13 @@ pub fn validate_licenses(package: &Package, actual_licenses: &[DirEntry]) -> Lic
         return LicenseStatus::Empty;
     }
 
-    if package.license.is_none() {
-        return LicenseStatus::NoListing;
+    match &package.license {
+        None => return LicenseStatus::NoListing,
+        Some(license) => {
+            if license.split("OR").collect::<Vec<_>>().len() != actual_licenses.len() {
+                return LicenseStatus::Mismatch;
+            }
+        }
     }
 
     LicenseStatus::Valid
@@ -46,6 +53,7 @@ pub fn validate_licenses(package: &Package, actual_licenses: &[DirEntry]) -> Lic
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::ffi::OsString;
 
     #[test]
     fn no_licenses_found() {
@@ -68,5 +76,25 @@ mod tests {
                 }]
             )
         );
+    }
+
+    #[test]
+    fn mismatch_license() {
+        assert_eq!(
+            LicenseStatus::Mismatch,
+            validate_licenses(
+                &Package {
+                    normalised_name: String::new(),
+                    path: Default::default(),
+                    url: None,
+                    license: Some("MIT OR Apache-2.0".to_string()),
+                },
+                &[DirEntry {
+                    name: OsString::from("LICENSE_MIT"),
+                    path: Default::default(),
+                    is_file: true,
+                }]
+            )
+        )
     }
 }
