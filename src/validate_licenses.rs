@@ -7,7 +7,7 @@ use colored::Colorize;
 pub enum LicenseStatus {
     Valid,
     Empty,
-    NoListing,
+    NoneDeclared,
     Mismatch,
 }
 
@@ -25,8 +25,11 @@ impl LicenseStatus {
                     }
                 );
             }
-            LicenseStatus::NoListing => {
-                note!("no listed licenses for {}", package.normalised_name.bold());
+            LicenseStatus::NoneDeclared => {
+                note!(
+                    "no declared licenses for {}",
+                    package.normalised_name.bold()
+                );
             }
             LicenseStatus::Mismatch => {}
         }
@@ -39,7 +42,7 @@ pub fn validate_licenses(package: &Package, actual_licenses: &[DirEntry]) -> Lic
     }
 
     match &package.license {
-        None => return LicenseStatus::NoListing,
+        None => return LicenseStatus::NoneDeclared,
         Some(license) => {
             if license.split("OR").collect::<Vec<_>>().len() != actual_licenses.len() {
                 return LicenseStatus::Mismatch;
@@ -66,7 +69,7 @@ mod tests {
     #[test]
     fn no_listed_license() {
         assert_eq!(
-            LicenseStatus::NoListing,
+            LicenseStatus::NoneDeclared,
             validate_licenses(
                 &Package::default(),
                 &[DirEntry {
