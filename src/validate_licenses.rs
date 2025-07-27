@@ -2,6 +2,7 @@ use crate::cargo_metadata::Package;
 use crate::file_io::DirEntry;
 use crate::{note, warn};
 use colored::Colorize;
+use crate::split_licenses::split_licenses;
 
 #[derive(PartialEq, Debug)]
 pub enum LicenseStatus {
@@ -48,29 +49,14 @@ pub fn validate_licenses(package: &Package, actual_licenses: &[DirEntry]) -> Lic
 
     match &package.license {
         None => LicenseStatus::NoneDeclared,
-        Some(license) if split_license(license).len() != actual_licenses.len() => {
+        Some(license) if split_licenses(license).len() != actual_licenses.len() => {
             LicenseStatus::Mismatch
         }
         _ => LicenseStatus::Valid,
     }
 }
 
-fn split_license(license: &str) -> Vec<&str> {
-    let mut parts = vec![license];
 
-    for seperator in ["OR", "AND", "/"] {
-        parts = parts
-            .into_iter()
-            .flat_map(|license| license.split(seperator).map(str::trim))
-            .collect();
-    }
-
-    parts
-        .into_iter()
-        .map(|s| s.trim_matches(&['(', ')'][..]))
-        .filter(|s| !s.is_empty())
-        .collect()
-}
 
 #[cfg(test)]
 mod tests {

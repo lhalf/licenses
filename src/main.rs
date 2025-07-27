@@ -16,6 +16,7 @@ mod is_license;
 mod macros;
 mod summarise;
 mod validate_licenses;
+mod split_licenses;
 
 #[derive(Parser)]
 #[command(bin_name = "cargo", disable_help_subcommand = true)]
