@@ -1,8 +1,8 @@
 use crate::cargo_metadata::Package;
 use crate::file_io::DirEntry;
+use crate::split_licenses::split_licenses;
 use crate::{note, warn};
 use colored::Colorize;
-use crate::split_licenses::split_licenses;
 
 #[derive(PartialEq, Debug)]
 pub enum LicenseStatus {
@@ -55,8 +55,6 @@ pub fn validate_licenses(package: &Package, actual_licenses: &[DirEntry]) -> Lic
         _ => LicenseStatus::Valid,
     }
 }
-
-
 
 #[cfg(test)]
 mod tests {

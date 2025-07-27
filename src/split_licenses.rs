@@ -26,13 +26,19 @@ mod tests {
 
     #[test]
     fn split_licenses_with_or() {
-        assert_eq!(vec!["MIT", "Apache-2.0"], split_licenses("MIT OR Apache-2.0"));
+        assert_eq!(
+            vec!["MIT", "Apache-2.0"],
+            split_licenses("MIT OR Apache-2.0")
+        );
         assert_eq!(vec!["MIT", "Apache-2.0"], split_licenses("MIT/Apache-2.0"));
     }
 
     #[test]
     fn split_licenses_with_and() {
-        assert_eq!(vec!["MIT", "Apache-2.0"], split_licenses("MIT AND Apache-2.0"));
+        assert_eq!(
+            vec!["MIT", "Apache-2.0"],
+            split_licenses("MIT AND Apache-2.0")
+        );
     }
 
     #[test]
@@ -54,7 +60,11 @@ mod tests {
     #[test]
     fn split_licenses_with_nested_parentheses() {
         assert_eq!(
-            vec!["MIT", "GPL-2.0-or-later WITH Bison-exception-2.2", "UNICODE"],
+            vec![
+                "MIT",
+                "GPL-2.0-or-later WITH Bison-exception-2.2",
+                "UNICODE"
+            ],
             split_licenses("(MIT OR (GPL-2.0-or-later WITH Bison-exception-2.2)) AND UNICODE")
         );
     }
