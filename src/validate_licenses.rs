@@ -101,7 +101,7 @@ mod tests {
     }
 
     #[test]
-    fn mismatch_license() {
+    fn mismatch_too_few_licenses() {
         assert_eq!(
             LicenseStatus::Mismatch,
             validate_licenses(
