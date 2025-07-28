@@ -3,20 +3,14 @@ use crate::file_io::{DirEntry, FileIO};
 use crate::is_license::is_license;
 use crate::validate_licenses::validate_licenses;
 use anyhow::Context;
-use std::collections::BTreeSet;
 use std::path::PathBuf;
 
 pub fn copy_licenses(
     file_io: impl FileIO,
-    crates: BTreeSet<String>,
-    all_packages: Vec<Package>,
+    filtered_packages: Vec<Package>,
     output_folder: PathBuf,
 ) -> anyhow::Result<()> {
-    for package in all_packages {
-        if !crates.contains(&package.normalised_name) {
-            continue;
-        }
-
+    for package in filtered_packages {
         let licenses: Vec<DirEntry> = file_io
             .read_dir(package.path.as_ref())?
             .into_iter()
@@ -51,43 +45,13 @@ mod tests {
     use crate::copy_licenses::copy_licenses;
     use crate::file_io::{DirEntry, FileIOSpy};
     use cargo_metadata::camino::Utf8PathBuf;
-    use std::collections::BTreeSet;
     use std::ffi::OsString;
     use std::path::PathBuf;
 
     #[test]
-    fn no_packages_causes_no_directory_read_or_files_copied() {
+    fn no_filtered_packages_causes_no_directory_read_or_files_copied() {
         let file_io_spy = FileIOSpy::default();
-        assert!(
-            copy_licenses(
-                file_io_spy.clone(),
-                BTreeSet::new(),
-                Vec::new(),
-                PathBuf::default()
-            )
-            .is_ok()
-        );
-        assert!(file_io_spy.read_dir.arguments.take_all().is_empty());
-        assert!(file_io_spy.copy_file.arguments.take_all().is_empty());
-    }
-
-    #[test]
-    fn no_crates_required_causes_no_directory_read_or_files_copied() {
-        let file_io_spy = FileIOSpy::default();
-        assert!(
-            copy_licenses(
-                file_io_spy.clone(),
-                BTreeSet::new(),
-                vec![Package {
-                    normalised_name: "example".to_string(),
-                    path: Utf8PathBuf::from("/example"),
-                    url: None,
-                    license: None,
-                }],
-                PathBuf::default()
-            )
-            .is_ok()
-        );
+        assert!(copy_licenses(file_io_spy.clone(), Vec::new(), PathBuf::default()).is_ok());
         assert!(file_io_spy.read_dir.arguments.take_all().is_empty());
         assert!(file_io_spy.copy_file.arguments.take_all().is_empty());
     }
@@ -103,7 +67,6 @@ mod tests {
             "deliberate test error",
             copy_licenses(
                 file_io_spy.clone(),
-                BTreeSet::from(["example".to_string()]),
                 vec![Package {
                     normalised_name: "example".to_string(),
                     path: Default::default(),
@@ -128,7 +91,6 @@ mod tests {
         assert!(
             copy_licenses(
                 file_io_spy.clone(),
-                BTreeSet::from(["example".to_string()]),
                 vec![Package {
                     normalised_name: "example".to_string(),
                     path: Utf8PathBuf::from("/example"),

@@ -1,10 +1,11 @@
-use crate::cargo_metadata::try_get_packages;
+use crate::cargo_metadata::{Package, try_get_packages};
 use crate::cargo_tree::crate_names;
 use crate::copy_licenses::copy_licenses;
 use crate::file_io::FileSystem;
 use crate::summarise::summarise;
 use anyhow::Context;
 use clap::{Parser, Subcommand};
+use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
 mod cargo_metadata;
@@ -62,17 +63,17 @@ fn main() -> anyhow::Result<()> {
     let CargoSubcommand::Licenses(args) = CargoSubcommand::parse();
 
     let crates = crate_names(args.depth, args.dev, args.build, args.exclude)?;
-
     let all_packages = try_get_packages()?;
+    let filtered_packages = filter_packages(crates, all_packages);
 
     match args.command {
         LicensesSubcommand::Folder { path } => {
             let path = PathBuf::from(path);
             create_output_folder(&path)?;
-            copy_licenses(FileSystem {}, crates, all_packages, path)?;
+            copy_licenses(FileSystem {}, filtered_packages, path)?;
         }
         LicensesSubcommand::Summary => {
-            summarise(crates, all_packages);
+            summarise(filtered_packages);
         }
     }
 
@@ -82,4 +83,11 @@ fn main() -> anyhow::Result<()> {
 fn create_output_folder(path: &Path) -> anyhow::Result<()> {
     let _ = std::fs::remove_dir_all(path);
     std::fs::create_dir(path).context("failed to create output folder")
+}
+
+fn filter_packages(crates: BTreeSet<String>, all_packages: Vec<Package>) -> Vec<Package> {
+    all_packages
+        .into_iter()
+        .filter(|package| crates.contains(&package.normalised_name))
+        .collect()
 }
