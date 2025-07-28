@@ -1,12 +1,11 @@
-use crate::cargo_metadata::{Package, try_get_packages};
+use crate::cargo_metadata::try_get_packages;
 use crate::cargo_tree::crate_names;
 use crate::copy_licenses::copy_licenses;
 use crate::file_io::FileSystem;
 use crate::summarise::summarise;
 use anyhow::Context;
 use clap::{Parser, Subcommand};
-use std::collections::BTreeSet;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 mod cargo_metadata;
 mod cargo_tree;
@@ -68,7 +67,9 @@ fn main() -> anyhow::Result<()> {
 
     match args.command {
         LicensesSubcommand::Folder { path } => {
-            copy_licenses_to_folder(PathBuf::from(path), crates, all_packages)?;
+            let path = PathBuf::from(path);
+            create_output_folder(&path)?;
+            copy_licenses(FileSystem {}, crates, all_packages, path)?;
         }
         LicensesSubcommand::Summary => {
             summarise(crates, all_packages);
@@ -78,15 +79,7 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn copy_licenses_to_folder(
-    folder: PathBuf,
-    crates: BTreeSet<String>,
-    all_packages: Vec<Package>,
-) -> Result<(), anyhow::Error> {
-    let _ = std::fs::remove_dir_all(&folder);
-    std::fs::create_dir(&folder).context("failed to create output folder")?;
-
-    copy_licenses(FileSystem {}, crates, all_packages, folder)?;
-
-    Ok(())
+fn create_output_folder(path: &Path) -> anyhow::Result<()> {
+    let _ = std::fs::remove_dir_all(path);
+    std::fs::create_dir(path).context("failed to create output folder")
 }
