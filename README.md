@@ -9,7 +9,7 @@ Command line tool for collecting licenses.
 ## Install
 
 ```bash
-cargo install licenses
+$ cargo install licenses
 ```
 
 ## Usage
@@ -33,7 +33,7 @@ Options:
 ## Example
 
 ```bash
-cargo licenses --depth 1 folder
+$ cargo licenses --depth 1 folder
 ```
 ```
 licenses
