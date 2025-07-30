@@ -5,7 +5,7 @@ edition = "2024"
 license = "MIT"
 description = "Command line tool for collecting licenses."
 keywords = ["cargo-subcommand", "tool", "licenses"]
-categories = ["command-line-interface"]
+categories = ["development-tools::cargo-plugins"]
 repository = "https://github.com/lhalf/licenses"
 exclude = [".gitignore", "/.github", "justfile"]
 
