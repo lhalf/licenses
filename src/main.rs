@@ -4,7 +4,7 @@ use crate::copy_licenses::copy_licenses;
 use crate::file_io::FileSystem;
 use crate::summarise::summarise;
 use anyhow::Context;
-use clap::{Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
@@ -22,35 +22,38 @@ mod validate_licenses;
 #[command(bin_name = "cargo", disable_help_subcommand = true)]
 enum CargoSubcommand {
     #[command(name = "licenses", version, author, disable_version_flag = true)]
-    Licenses(Licenses),
+    Licenses {
+        #[command(flatten)]
+        args: GlobalArgs,
+
+        #[command(subcommand)]
+        command: LicensesSubcommand,
+    },
 }
 
-#[derive(Parser)]
-struct Licenses {
+#[derive(Args)]
+struct GlobalArgs {
     /// Include dev dependencies [default: excluded]
-    #[arg(short, long)]
+    #[arg(short, long, global = true)]
     dev: bool,
 
     /// Include build dependencies [default: excluded]
-    #[arg(short, long)]
+    #[arg(short, long, global = true)]
     build: bool,
 
     /// Exclude specified workspace [default: all included]
-    #[arg(short, long, value_name = "WORKSPACE")]
+    #[arg(short, long, value_name = "WORKSPACE", global = true)]
     exclude: Vec<String>,
 
-    /// The depth of dependencies to collect licenses for [default: all sub dependencies]
-    #[arg(short = 'D', long)]
+    /// The depth of dependencies to include [default: all sub dependencies]
+    #[arg(short = 'D', long, global = true)]
     depth: Option<u8>,
-
-    #[command(subcommand)]
-    command: LicensesSubcommand,
 }
 
 #[derive(Subcommand)]
 enum LicensesSubcommand {
     /// Collects all licenses into a folder
-    Folder {
+    Collect {
         /// The output license folder path
         #[arg(short, long, default_value_t = String::from("licenses"))]
         path: String,
@@ -60,14 +63,14 @@ enum LicensesSubcommand {
 }
 
 fn main() -> anyhow::Result<()> {
-    let CargoSubcommand::Licenses(args) = CargoSubcommand::parse();
+    let CargoSubcommand::Licenses { args, command } = CargoSubcommand::parse();
 
     let crates = crate_names(args.depth, args.dev, args.build, args.exclude)?;
     let all_packages = try_get_packages()?;
     let filtered_packages = filter_packages(crates, all_packages);
 
-    match args.command {
-        LicensesSubcommand::Folder { path } => {
+    match command {
+        LicensesSubcommand::Collect { path } => {
             let path = PathBuf::from(path);
             create_output_folder(&path)?;
             copy_licenses(FileSystem {}, filtered_packages, path)?;
