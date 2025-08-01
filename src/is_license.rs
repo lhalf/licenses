@@ -5,11 +5,11 @@ pub fn is_license(dir_entry: &DirEntry) -> bool {
         return false;
     }
 
-    dir_entry
-        .name
-        .to_string_lossy()
-        .to_lowercase()
-        .contains("license")
+    let filename = dir_entry.name.to_string_lossy().to_lowercase();
+
+    ["license", "copying", "copyright"]
+        .iter()
+        .any(|license_name| filename.contains(license_name))
 }
 
 #[cfg(test)]
@@ -36,6 +36,8 @@ mod tests {
             "license",
             "licenseother",
             "UNLICENSE",
+            "COPYING",
+            "COPYRIGHT",
         ] {
             assert!(is_license(&DirEntry {
                 name: OsString::from(license),
@@ -47,7 +49,7 @@ mod tests {
 
     #[test]
     fn license_file_with_invalid_name() {
-        for license in ["LICENS_APACHE", "COPYING", "COPYRIGHT", "PATENT", "README"] {
+        for license in ["LICENS_APACHE", "PATENT", "README"] {
             assert!(!is_license(&DirEntry {
                 name: OsString::from(license),
                 path: Default::default(),
