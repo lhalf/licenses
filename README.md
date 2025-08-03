@@ -53,10 +53,10 @@ $ cargo licenses summary --depth 1
 ```
 <pre>
 <strong>MIT</strong>
-<span style="opacity: 0.6;">cargo_metadata</span>
+<span style="color: #777;">cargo_metadata</span>
 <strong>MIT OR Apache-2.0</strong>
-<span style="opacity: 0.6;">anyhow,clap,itertools</span>
+<span style="color: #777;">anyhow,clap,itertools</span>
 <strong>MPL-2.0</strong>
-<span style="opacity: 0.6;">colored</span>
+<span style="color: #777;">colored</span>
 </pre>
 
