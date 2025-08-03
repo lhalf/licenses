@@ -2,7 +2,7 @@ use crate::cargo_metadata::{Package, try_get_packages};
 use crate::cargo_tree::crate_names;
 use crate::copy_licenses::copy_licenses;
 use crate::file_io::FileSystem;
-use crate::summarise::summarise;
+use crate::summarise::{crates_per_license, summarise};
 use anyhow::Context;
 use clap::{Args, Parser, Subcommand};
 use std::collections::BTreeSet;
@@ -60,7 +60,11 @@ enum LicensesSubcommand {
         path: String,
     },
     /// Provides a summary of all licenses
-    Summary,
+    Summary {
+        /// Display the summary as JSON
+        #[arg(long)]
+        json: bool,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -76,8 +80,15 @@ fn main() -> anyhow::Result<()> {
             create_output_folder(&path)?;
             copy_licenses(FileSystem {}, filtered_packages, path)?;
         }
-        LicensesSubcommand::Summary => {
-            println!("{}", summarise(filtered_packages));
+        LicensesSubcommand::Summary { json } => {
+            let crates_per_license = crates_per_license(filtered_packages);
+            println!(
+                "{}",
+                match json {
+                    true => serde_json::to_string_pretty(&crates_per_license)?,
+                    false => summarise(crates_per_license),
+                }
+            )
         }
     }
 

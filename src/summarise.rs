@@ -1,8 +1,9 @@
 use crate::cargo_metadata::Package;
 use colored::Colorize;
 use itertools::Itertools;
+use std::collections::HashMap;
 
-pub fn summarise(filtered_packages: Vec<Package>) -> String {
+pub fn crates_per_license(filtered_packages: Vec<Package>) -> HashMap<String, Vec<String>> {
     filtered_packages
         .into_iter()
         .filter_map(|package| {
@@ -11,6 +12,10 @@ pub fn summarise(filtered_packages: Vec<Package>) -> String {
                 .map(|license| (license, package.normalised_name))
         })
         .into_group_map()
+}
+
+pub fn summarise(crates_per_license: HashMap<String, Vec<String>>) -> String {
+    crates_per_license
         .into_iter()
         .map(|(license, mut normalised_names)| {
             normalised_names.sort();
@@ -27,23 +32,23 @@ pub fn summarise(filtered_packages: Vec<Package>) -> String {
 #[cfg(test)]
 mod tests {
     use crate::cargo_metadata::Package;
-    use crate::summarise::summarise;
+    use crate::summarise::{crates_per_license, summarise};
     use colored::Colorize;
 
     #[test]
     fn no_packages() {
-        assert!(summarise(Vec::new()).is_empty())
+        assert!(summarise(crates_per_license(Vec::new())).is_empty())
     }
 
     #[test]
     fn single_package_with_no_license() {
         assert!(
-            summarise(vec![Package {
+            summarise(crates_per_license(vec![Package {
                 normalised_name: "no_license".to_string(),
                 path: Default::default(),
                 url: None,
                 license: None,
-            }])
+            }]))
             .is_empty()
         )
     }
@@ -52,12 +57,12 @@ mod tests {
     fn single_package() {
         assert_eq!(
             format!("{}\n{}", "MIT".bold(), "example".dimmed()),
-            summarise(vec![Package {
+            summarise(crates_per_license(vec![Package {
                 normalised_name: "example".to_string(),
                 path: Default::default(),
                 url: None,
                 license: Some("MIT".to_string()),
-            }])
+            }]))
         )
     }
 
@@ -71,7 +76,7 @@ mod tests {
                 "MIT".bold(),
                 "example".dimmed()
             ),
-            summarise(vec![
+            summarise(crates_per_license(vec![
                 Package {
                     normalised_name: "example".to_string(),
                     path: Default::default(),
@@ -84,7 +89,7 @@ mod tests {
                     url: None,
                     license: Some("Apache-2.0".to_string()),
                 }
-            ])
+            ]))
         )
     }
 
@@ -92,7 +97,7 @@ mod tests {
     fn multiple_same_license_packages() {
         assert_eq!(
             format!("{}\n{}", "MIT".bold(), "a,b,c".dimmed()),
-            summarise(vec![
+            summarise(crates_per_license(vec![
                 Package {
                     normalised_name: "c".to_string(),
                     path: Default::default(),
@@ -111,7 +116,7 @@ mod tests {
                     url: None,
                     license: Some("MIT".to_string()),
                 }
-            ])
+            ]))
         )
     }
 }
