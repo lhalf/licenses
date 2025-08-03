@@ -77,7 +77,7 @@ fn main() -> anyhow::Result<()> {
             copy_licenses(FileSystem {}, filtered_packages, path)?;
         }
         LicensesSubcommand::Summary => {
-            summarise(filtered_packages);
+            println!("{}", summarise(filtered_packages));
         }
     }
 

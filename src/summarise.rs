@@ -1,11 +1,117 @@
 use crate::cargo_metadata::Package;
+use colored::Colorize;
 use itertools::Itertools;
 
-pub fn summarise(filtered_packages: Vec<Package>) {
+pub fn summarise(filtered_packages: Vec<Package>) -> String {
     filtered_packages
         .into_iter()
-        .filter_map(|package| package.license)
-        .unique()
+        .filter_map(|package| {
+            package
+                .license
+                .map(|license| (license, package.normalised_name))
+        })
+        .into_group_map()
+        .into_iter()
+        .map(|(license, mut normalised_names)| {
+            normalised_names.sort();
+            format!(
+                "{}\n{}",
+                license.bold(),
+                normalised_names.join(",").dimmed()
+            )
+        })
         .sorted()
-        .for_each(|license| println!("{license}"))
+        .join("\n")
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::cargo_metadata::Package;
+    use crate::summarise::summarise;
+    use colored::Colorize;
+
+    #[test]
+    fn no_packages() {
+        assert!(summarise(Vec::new()).is_empty())
+    }
+
+    #[test]
+    fn single_package_with_no_license() {
+        assert!(
+            summarise(vec![Package {
+                normalised_name: "no_license".to_string(),
+                path: Default::default(),
+                url: None,
+                license: None,
+            }])
+            .is_empty()
+        )
+    }
+
+    #[test]
+    fn single_package() {
+        assert_eq!(
+            format!("{}\n{}", "MIT".bold(), "example".dimmed()),
+            summarise(vec![Package {
+                normalised_name: "example".to_string(),
+                path: Default::default(),
+                url: None,
+                license: Some("MIT".to_string()),
+            }])
+        )
+    }
+
+    #[test]
+    fn multiple_different_license_packages() {
+        assert_eq!(
+            format!(
+                "{}\n{}\n{}\n{}",
+                "Apache-2.0".bold(),
+                "another".dimmed(),
+                "MIT".bold(),
+                "example".dimmed()
+            ),
+            summarise(vec![
+                Package {
+                    normalised_name: "example".to_string(),
+                    path: Default::default(),
+                    url: None,
+                    license: Some("MIT".to_string()),
+                },
+                Package {
+                    normalised_name: "another".to_string(),
+                    path: Default::default(),
+                    url: None,
+                    license: Some("Apache-2.0".to_string()),
+                }
+            ])
+        )
+    }
+
+    #[test]
+    fn multiple_same_license_packages() {
+        assert_eq!(
+            format!("{}\n{}", "MIT".bold(), "a,b,c".dimmed()),
+            summarise(vec![
+                Package {
+                    normalised_name: "c".to_string(),
+                    path: Default::default(),
+                    url: None,
+                    license: Some("MIT".to_string()),
+                },
+                Package {
+                    normalised_name: "a".to_string(),
+                    path: Default::default(),
+                    url: None,
+                    license: Some("MIT".to_string()),
+                },
+                Package {
+                    normalised_name: "b".to_string(),
+                    path: Default::default(),
+                    url: None,
+                    license: Some("MIT".to_string()),
+                }
+            ])
+        )
+    }
 }

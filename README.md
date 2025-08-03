@@ -31,7 +31,7 @@ Options:
 ```
 
 ## Examples
-
+### Collect
 ```bash
 $ cargo licenses collect --depth 1
 ```
@@ -47,10 +47,16 @@ licenses
 ├── itertools-LICENSE-APACHE
 └── itertools-LICENSE-MIT
 ```
-
+### Summary
 ```
 $ cargo licenses summary --depth 1
-MIT
-MIT OR Apache-2.0
-MPL-2.0
 ```
+<pre>
+<strong>MIT</strong>
+<span style="opacity: 0.6;">cargo_metadata</span>
+<strong>MIT OR Apache-2.0</strong>
+<span style="opacity: 0.6;">anyhow,clap,itertools</span>
+<strong>MPL-2.0</strong>
+<span style="opacity: 0.6;">colored</span>
+</pre>
+
