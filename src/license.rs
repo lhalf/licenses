@@ -46,8 +46,14 @@ impl Display for License {
 }
 
 impl From<&str> for License {
-    fn from(_license: &str) -> Self {
-        License::MIT
+    fn from(license: &str) -> Self {
+        match license {
+            "MIT" => License::MIT,
+            "Unicode-3.0" => License::Unicode,
+            "Unlicense" => License::Unlicense,
+            "BSL-1.0" => License::BSL,
+            _ => License::Unknown(license.to_string()),
+        }
     }
 }
 
@@ -86,5 +92,12 @@ mod tests {
     #[test]
     fn licenses_parse_from_spdx() {
         assert_eq!(License::MIT, License::from("MIT"));
+        assert_eq!(License::Unicode, License::from("Unicode-3.0"));
+        assert_eq!(License::Unlicense, License::from("Unlicense"));
+        assert_eq!(License::BSL, License::from("BSL-1.0"));
+        assert_eq!(
+            License::Unknown("Sleepycat".to_string()),
+            License::from("Sleepycat")
+        );
     }
 }
