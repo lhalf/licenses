@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 use std::fmt::{Display, Formatter};
+use std::str::FromStr;
 
 type Version = f32;
 
@@ -45,21 +46,27 @@ impl Display for License {
     }
 }
 
-impl From<&str> for License {
-    fn from(license: &str) -> Self {
-        match license {
+impl FromStr for License {
+    type Err = anyhow::Error;
+
+    fn from_str(license: &str) -> anyhow::Result<Self> {
+        Ok(match license {
             "MIT" => License::MIT,
             "Unicode-3.0" => License::Unicode,
             "Unlicense" => License::Unlicense,
             "BSL-1.0" => License::BSL,
+            _ if license.starts_with("Apache-") => License::Apache(license[7..].parse()?),
+            _ if license.starts_with("AGPL-") => License::AGPL(license[5..].parse()?),
+            _ if license.starts_with("MPL-") => License::MPL(license[4..].parse()?),
             _ => License::Unknown(license.to_string()),
-        }
+        })
     }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::license::{GNU, License};
+    use std::str::FromStr;
 
     #[test]
     fn licenses_display_as_spdx() {
@@ -91,13 +98,19 @@ mod tests {
 
     #[test]
     fn licenses_parse_from_spdx() {
-        assert_eq!(License::MIT, License::from("MIT"));
-        assert_eq!(License::Unicode, License::from("Unicode-3.0"));
-        assert_eq!(License::Unlicense, License::from("Unlicense"));
-        assert_eq!(License::BSL, License::from("BSL-1.0"));
+        assert_eq!(License::MIT, License::from_str("MIT").unwrap());
+        assert_eq!(License::Unicode, License::from_str("Unicode-3.0").unwrap());
+        assert_eq!(License::Unlicense, License::from_str("Unlicense").unwrap());
+        assert_eq!(License::BSL, License::from_str("BSL-1.0").unwrap());
+        assert_eq!(
+            License::Apache(2.0),
+            License::from_str("Apache-2.0").unwrap()
+        );
+        assert_eq!(License::AGPL(1.0), License::from_str("AGPL-1.0").unwrap());
+        assert_eq!(License::MPL(1.1), License::from_str("MPL-1.1").unwrap());
         assert_eq!(
             License::Unknown("Sleepycat".to_string()),
-            License::from("Sleepycat")
+            License::from_str("Sleepycat").unwrap()
         );
     }
 }
