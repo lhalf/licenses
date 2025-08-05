@@ -17,7 +17,7 @@ enum License {
     // missing MPL-2.0-no-copyleft-exception
     MPL(Version),
     BSL,
-    Unknown(String),
+    Other(String),
 }
 
 #[allow(clippy::upper_case_acronyms)]
@@ -41,7 +41,7 @@ impl Display for License {
             License::AGPL(version) => write!(f, "AGPL-{version:.1}"),
             License::MPL(version) => write!(f, "MPL-{version:.1}"),
             License::BSL => write!(f, "BSL-1.0"),
-            License::Unknown(license) => write!(f, "{license}"),
+            License::Other(license) => write!(f, "{license}"),
         }
     }
 }
@@ -50,6 +50,10 @@ impl FromStr for License {
     type Err = anyhow::Error;
 
     fn from_str(license: &str) -> anyhow::Result<Self> {
+        if license.to_uppercase().contains(" WITH ") {
+            return Ok(License::Other(license.to_string()));
+        }
+
         if license == "MIT" {
             return Ok(License::MIT);
         }
@@ -83,7 +87,7 @@ impl FromStr for License {
             return parse_gnu_license(suffix).map(License::LGPL);
         }
 
-        Ok(License::Unknown(license.to_string()))
+        Ok(License::Other(license.to_string()))
     }
 }
 
@@ -128,7 +132,7 @@ mod tests {
         assert_eq!("BSL-1.0", format!("{}", License::BSL));
         assert_eq!(
             "Sleepycat",
-            format!("{}", License::Unknown("Sleepycat".to_string()))
+            format!("{}", License::Other("Sleepycat".to_string()))
         );
     }
 
@@ -177,8 +181,16 @@ mod tests {
             License::from_str("LGPL-2.0+").unwrap()
         );
         assert_eq!(
-            License::Unknown("Sleepycat".to_string()),
+            License::Other("Sleepycat".to_string()),
             License::from_str("Sleepycat").unwrap()
+        );
+    }
+
+    #[test]
+    fn handles_licenses_with_with_clause() {
+        assert_eq!(
+            License::Other("GPL-2.0-or-later WITH Bison-exception-2.2".to_string()),
+            License::from_str("GPL-2.0-or-later WITH Bison-exception-2.2").unwrap()
         );
     }
 }
