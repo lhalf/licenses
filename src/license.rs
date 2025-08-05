@@ -50,7 +50,7 @@ impl FromStr for License {
     type Err = anyhow::Error;
 
     fn from_str(license: &str) -> anyhow::Result<Self> {
-        if license.to_uppercase().contains(" WITH ") {
+        if license.contains(" WITH ") {
             return Ok(License::Other(license.to_string()));
         }
 
