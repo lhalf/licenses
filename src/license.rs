@@ -50,16 +50,52 @@ impl FromStr for License {
     type Err = anyhow::Error;
 
     fn from_str(license: &str) -> anyhow::Result<Self> {
-        Ok(match license {
-            "MIT" => License::MIT,
-            "Unicode-3.0" => License::Unicode,
-            "Unlicense" => License::Unlicense,
-            "BSL-1.0" => License::BSL,
-            _ if license.starts_with("Apache-") => License::Apache(license[7..].parse()?),
-            _ if license.starts_with("AGPL-") => License::AGPL(license[5..].parse()?),
-            _ if license.starts_with("MPL-") => License::MPL(license[4..].parse()?),
-            _ => License::Unknown(license.to_string()),
-        })
+        if license == "MIT" {
+            return Ok(License::MIT);
+        }
+        if license == "Unicode-3.0" {
+            return Ok(License::Unicode);
+        }
+        if license == "Unlicense" {
+            return Ok(License::Unlicense);
+        }
+        if license == "BSL-1.0" {
+            return Ok(License::BSL);
+        }
+
+        if let Some(version) = license.strip_prefix("Apache-") {
+            return Ok(License::Apache(version.parse()?));
+        }
+
+        if let Some(version) = license.strip_prefix("AGPL-") {
+            return Ok(License::AGPL(version.parse()?));
+        }
+
+        if let Some(version) = license.strip_prefix("MPL-") {
+            return Ok(License::MPL(version.parse()?));
+        }
+
+        if let Some(suffix) = license.strip_prefix("GPL-") {
+            return parse_gnu_license(suffix).map(License::GPL);
+        }
+
+        if let Some(suffix) = license.strip_prefix("LGPL-") {
+            return parse_gnu_license(suffix).map(License::LGPL);
+        }
+
+        Ok(License::Unknown(license.to_string()))
+    }
+}
+
+fn parse_gnu_license(suffix: &str) -> anyhow::Result<GNU> {
+    if let Some(version) = suffix.strip_suffix("-only") {
+        Ok(GNU::Only(version.parse()?))
+    } else if let Some(version) = suffix.strip_suffix("-or-later") {
+        Ok(GNU::OrLater(version.parse()?))
+    } else if let Some(version) = suffix.strip_suffix("+") {
+        Ok(GNU::OrLater(version.parse()?))
+    } else {
+        Ok(GNU::Only(suffix.parse()?))
     }
 }
 
@@ -108,6 +144,38 @@ mod tests {
         );
         assert_eq!(License::AGPL(1.0), License::from_str("AGPL-1.0").unwrap());
         assert_eq!(License::MPL(1.1), License::from_str("MPL-1.1").unwrap());
+        assert_eq!(
+            License::GPL(GNU::Only(2.0)),
+            License::from_str("GPL-2.0-only").unwrap()
+        );
+        assert_eq!(
+            License::GPL(GNU::Only(2.0)),
+            License::from_str("GPL-2.0").unwrap()
+        );
+        assert_eq!(
+            License::GPL(GNU::OrLater(2.0)),
+            License::from_str("GPL-2.0-or-later").unwrap()
+        );
+        assert_eq!(
+            License::GPL(GNU::OrLater(2.0)),
+            License::from_str("GPL-2.0+").unwrap()
+        );
+        assert_eq!(
+            License::LGPL(GNU::Only(2.0)),
+            License::from_str("LGPL-2.0-only").unwrap()
+        );
+        assert_eq!(
+            License::LGPL(GNU::Only(2.0)),
+            License::from_str("LGPL-2.0").unwrap()
+        );
+        assert_eq!(
+            License::LGPL(GNU::OrLater(2.0)),
+            License::from_str("LGPL-2.0-or-later").unwrap()
+        );
+        assert_eq!(
+            License::LGPL(GNU::OrLater(2.0)),
+            License::from_str("LGPL-2.0+").unwrap()
+        );
         assert_eq!(
             License::Unknown("Sleepycat".to_string()),
             License::from_str("Sleepycat").unwrap()
