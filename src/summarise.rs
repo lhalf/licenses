@@ -20,7 +20,7 @@ pub fn summarise(crates_per_license: HashMap<String, Vec<String>>) -> String {
         .map(|(license, mut normalised_names)| {
             normalised_names.sort();
             format!(
-                "{}\n{}",
+                "{}: {}",
                 license.bold(),
                 normalised_names.join(",").dimmed()
             )
@@ -56,7 +56,7 @@ mod tests {
     #[test]
     fn single_package() {
         assert_eq!(
-            format!("{}\n{}", "MIT".bold(), "example".dimmed()),
+            format!("{}: {}", "MIT".bold(), "example".dimmed()),
             summarise(crates_per_license(vec![Package {
                 normalised_name: "example".to_string(),
                 path: Default::default(),
@@ -70,7 +70,7 @@ mod tests {
     fn multiple_different_license_packages() {
         assert_eq!(
             format!(
-                "{}\n{}\n{}\n{}",
+                "{}: {}\n{}: {}",
                 "Apache-2.0".bold(),
                 "another".dimmed(),
                 "MIT".bold(),
@@ -96,7 +96,7 @@ mod tests {
     #[test]
     fn multiple_same_license_packages() {
         assert_eq!(
-            format!("{}\n{}", "MIT".bold(), "a,b,c".dimmed()),
+            format!("{}: {}", "MIT".bold(), "a,b,c".dimmed()),
             summarise(crates_per_license(vec![
                 Package {
                     normalised_name: "c".to_string(),
