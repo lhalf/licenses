@@ -8,6 +8,7 @@ pub fn crate_names(
     include_dev_dependencies: bool,
     include_build_dependencies: bool,
     excluded_workspaces: Vec<String>,
+    ignored_crates: Vec<String>,
 ) -> anyhow::Result<BTreeSet<String>> {
     to_crate_names(
         Command::new("cargo")
@@ -20,6 +21,7 @@ pub fn crate_names(
             .output()
             .context("failed to call cargo tree")?
             .stdout,
+        ignored_crates,
     )
 }
 
@@ -66,13 +68,16 @@ fn args(
     args
 }
 
-fn to_crate_names(output: Vec<u8>) -> anyhow::Result<BTreeSet<String>> {
+fn to_crate_names(
+    output: Vec<u8>,
+    ignored_crates: Vec<String>,
+) -> anyhow::Result<BTreeSet<String>> {
     Ok(String::from_utf8(output)
         .context("cargo tree output contained invalid UTF-8")?
         .replace(" ", "")
         .split('\n')
-        .map(|package| package.to_string().replace("-", "_"))
-        .filter(|package| !package.is_empty())
+        .map(|crate_name| crate_name.to_string().replace("-", "_"))
+        .filter(|crate_name| !crate_name.is_empty() && !ignored_crates.contains(crate_name))
         .unique()
         .collect())
 }
@@ -172,7 +177,9 @@ mod tests {
     fn invalid_utf8_in_cargo_tree_output() {
         assert_eq!(
             "cargo tree output contained invalid UTF-8",
-            to_crate_names(vec![255]).unwrap_err().to_string()
+            to_crate_names(vec![255], Vec::new())
+                .unwrap_err()
+                .to_string()
         );
     }
 
@@ -180,20 +187,23 @@ mod tests {
     fn strips_whitespace_from_cargo_tree_output() {
         assert_eq!(
             BTreeSet::new(),
-            to_crate_names(b"                 ".to_vec()).unwrap()
+            to_crate_names(b"                 ".to_vec(), Vec::new()).unwrap()
         );
         assert_eq!(
             BTreeSet::from(["example".to_string()]),
-            to_crate_names(b"       example".to_vec()).unwrap()
+            to_crate_names(b"       example".to_vec(), Vec::new()).unwrap()
         );
     }
 
     #[test]
     fn ignores_empty_entries_in_cargo_tree_output() {
-        assert_eq!(BTreeSet::new(), to_crate_names(b"\n\n\n".to_vec()).unwrap());
+        assert_eq!(
+            BTreeSet::new(),
+            to_crate_names(b"\n\n\n".to_vec(), Vec::new()).unwrap()
+        );
         assert_eq!(
             BTreeSet::from(["example".to_string()]),
-            to_crate_names(b"\nexample\n\n".to_vec()).unwrap()
+            to_crate_names(b"\nexample\n\n".to_vec(), Vec::new()).unwrap()
         );
     }
 
@@ -201,7 +211,7 @@ mod tests {
     fn normalises_crate_names_in_cargo_tree_output() {
         assert_eq!(
             BTreeSet::from(["example_one".to_string(), "example_two".to_string()]),
-            to_crate_names(b"example-one\nexample_two".to_vec()).unwrap()
+            to_crate_names(b"example-one\nexample_two".to_vec(), Vec::new()).unwrap()
         );
     }
 
@@ -209,7 +219,35 @@ mod tests {
     fn only_returns_unique_crate_names_in_cargo_tree_output() {
         assert_eq!(
             BTreeSet::from(["example".to_string()]),
-            to_crate_names(b"example\n   example    \n\nexample".to_vec()).unwrap()
+            to_crate_names(b"example\n   example    \n\nexample".to_vec(), Vec::new()).unwrap()
+        );
+    }
+
+    #[test]
+    fn ignores_single_specified_crate() {
+        assert_eq!(
+            BTreeSet::from(["one".to_string()]),
+            to_crate_names(b"one\nignore_two".to_vec(), vec!["ignore_two".to_string()]).unwrap()
+        );
+    }
+
+    #[test]
+    fn ignores_multiple_specified_crates() {
+        assert_eq!(
+            BTreeSet::from(["one".to_string()]),
+            to_crate_names(
+                b"one\nignore_two\nignore_three".to_vec(),
+                vec!["ignore_two".to_string(), "ignore_three".to_string()]
+            )
+            .unwrap()
+        );
+    }
+
+    #[test]
+    fn ignores_invalid_ignored_crates() {
+        assert_eq!(
+            BTreeSet::from(["one".to_string(), "two".to_string(), "three".to_string()]),
+            to_crate_names(b"one\ntwo\nthree".to_vec(), vec!["four".to_string()]).unwrap()
         );
     }
 }

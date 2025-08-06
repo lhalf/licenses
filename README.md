@@ -25,8 +25,9 @@ Commands:
 Options:
   -d, --dev                  Include dev dependencies [default: excluded]
   -b, --build                Include build dependencies [default: excluded]
-  -e, --exclude <WORKSPACE>  Exclude specified workspace [default: all included]
   -D, --depth <DEPTH>        The depth of dependencies to include [default: all sub dependencies]
+  -e, --exclude <WORKSPACE>  Exclude specified workspace [default: all included]
+  -i, --ignore <CRATE>       Ignore specified crate [default: all included]
   -h, --help                 Print help
 ```
 

@@ -42,13 +42,17 @@ struct GlobalArgs {
     #[arg(short, long, global = true)]
     build: bool,
 
+    /// The depth of dependencies to include [default: all sub dependencies]
+    #[arg(short = 'D', long, global = true)]
+    depth: Option<u8>,
+
     /// Exclude specified workspace [default: all included]
     #[arg(short, long, value_name = "WORKSPACE", global = true)]
     exclude: Vec<String>,
 
-    /// The depth of dependencies to include [default: all sub dependencies]
-    #[arg(short = 'D', long, global = true)]
-    depth: Option<u8>,
+    /// Ignore specified crate [default: all included]
+    #[arg(short, long, value_name = "CRATE", global = true)]
+    ignore: Vec<String>,
 }
 
 #[derive(Subcommand)]
@@ -70,9 +74,9 @@ enum LicensesSubcommand {
 fn main() -> anyhow::Result<()> {
     let CargoSubcommand::Licenses { args, command } = CargoSubcommand::parse();
 
-    let crates = crate_names(args.depth, args.dev, args.build, args.exclude)?;
+    let crates_we_want = crate_names(args.depth, args.dev, args.build, args.exclude, args.ignore)?;
     let all_packages = try_get_packages()?;
-    let filtered_packages = filter_packages(crates, all_packages);
+    let filtered_packages = filter_packages(crates_we_want, all_packages);
 
     match command {
         LicensesSubcommand::Collect { path } => {
