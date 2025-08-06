@@ -17,7 +17,7 @@ pub fn copy_licenses(
             .filter(is_license)
             .collect();
 
-        validate_licenses(&package, &licenses).warn(&package);
+        validate_licenses(&package.license, &licenses).warn(&package);
 
         for license in licenses {
             file_io.copy_file(

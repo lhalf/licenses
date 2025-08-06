@@ -42,14 +42,17 @@ impl LicenseStatus {
     }
 }
 
-pub fn validate_licenses(package: &Package, actual_licenses: &[DirEntry]) -> LicenseStatus {
+pub fn validate_licenses(
+    declared_licenses: &Option<String>,
+    actual_licenses: &[DirEntry],
+) -> LicenseStatus {
     if actual_licenses.is_empty() {
         return LicenseStatus::Empty;
     }
 
-    match &package.license {
+    match declared_licenses {
         None => LicenseStatus::NoneDeclared,
-        Some(license) if split_licenses(license).len() != actual_licenses.len() => {
+        Some(licenses) if split_licenses(licenses).len() != actual_licenses.len() => {
             LicenseStatus::Mismatch
         }
         _ => LicenseStatus::Valid,
@@ -65,7 +68,7 @@ mod tests {
     fn no_licenses_found() {
         assert_eq!(
             LicenseStatus::Empty,
-            validate_licenses(&Package::default(), &[])
+            validate_licenses(&Some("MIT".to_string()), &[])
         );
     }
 
@@ -74,7 +77,7 @@ mod tests {
         assert_eq!(
             LicenseStatus::NoneDeclared,
             validate_licenses(
-                &Package::default(),
+                &None,
                 &[DirEntry {
                     name: Default::default(),
                     path: Default::default(),
@@ -89,12 +92,7 @@ mod tests {
         assert_eq!(
             LicenseStatus::Mismatch,
             validate_licenses(
-                &Package {
-                    normalised_name: String::new(),
-                    path: Default::default(),
-                    url: None,
-                    license: Some("MIT OR Apache-2.0".to_string()),
-                },
+                &Some("MIT OR Apache-2.0".to_string()),
                 &[DirEntry {
                     name: OsString::from("LICENSE_MIT"),
                     path: Default::default(),
@@ -105,12 +103,7 @@ mod tests {
         assert_eq!(
             LicenseStatus::Mismatch,
             validate_licenses(
-                &Package {
-                    normalised_name: String::new(),
-                    path: Default::default(),
-                    url: None,
-                    license: Some("MIT/Apache-2.0".to_string()),
-                },
+                &Some("MIT/Apache-2.0".to_string()),
                 &[DirEntry {
                     name: OsString::from("LICENSE_MIT"),
                     path: Default::default(),
@@ -121,12 +114,7 @@ mod tests {
         assert_eq!(
             LicenseStatus::Mismatch,
             validate_licenses(
-                &Package {
-                    normalised_name: String::new(),
-                    path: Default::default(),
-                    url: None,
-                    license: Some("(MIT OR Apache-2.0) AND Unicode-3.".to_string()),
-                },
+                &Some("(MIT OR Apache-2.0) AND Unicode-3.".to_string()),
                 &[
                     DirEntry {
                         name: OsString::from("LICENSE_MIT"),
