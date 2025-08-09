@@ -13,6 +13,7 @@ mod cargo_tree;
 mod copy_licenses;
 mod file_io;
 mod is_license;
+mod license;
 mod macros;
 mod split_licenses;
 mod summarise;

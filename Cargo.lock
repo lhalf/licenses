@@ -340,7 +340,9 @@ dependencies = [
  "clap",
  "colored",
  "itertools",
+ "serde",
  "serde_json",
+ "spdx",
 ]
 
 [[package]]
@@ -488,6 +490,15 @@ name = "smallvec"
 version = "1.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67b1b7a3b5fe4f1376887184045fcf45c69e92af734b7aaddc05fb777b6fbd03"
+
+[[package]]
+name = "spdx"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "df5ec63bc5addfb5cb6619f181ecd8e3da343b01bdb43f4e4001dddc7cd0ab93"
+dependencies = [
+ "smallvec",
+]
 
 [[package]]
 name = "stable_deref_trait"

@@ -1,27 +1,28 @@
 use crate::cargo_metadata::Package;
+use crate::license::License;
 use colored::Colorize;
 use itertools::Itertools;
 use std::collections::HashMap;
 
-pub fn crates_per_license(filtered_packages: Vec<Package>) -> HashMap<String, Vec<String>> {
+pub fn crates_per_license(filtered_packages: Vec<Package>) -> HashMap<License, Vec<String>> {
     filtered_packages
         .into_iter()
         .filter_map(|package| {
             package
                 .license
-                .map(|license| (license, package.normalised_name))
+                .map(|license| (License::parse(&license), package.normalised_name))
         })
         .into_group_map()
 }
 
-pub fn summarise(crates_per_license: HashMap<String, Vec<String>>) -> String {
+pub fn summarise(crates_per_license: HashMap<License, Vec<String>>) -> String {
     crates_per_license
         .into_iter()
         .map(|(license, mut normalised_names)| {
             normalised_names.sort();
             format!(
                 "{}: {}",
-                license.bold(),
+                license.to_string().bold(),
                 normalised_names.join(",").dimmed()
             )
         })
