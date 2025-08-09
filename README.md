@@ -54,23 +54,25 @@ licenses
 <pre>
 $ cargo licenses summary --depth 1
 <strong>MIT</strong>: <span style="opacity: 0.5;">cargo_metadata</span>
-<strong>MIT OR Apache-2.0</strong>: <span style="opacity: 0.5;">anyhow,clap,itertools,serde_json</span>
+<strong>MIT OR Apache-2.0</strong>: <span style="opacity: 0.5;">anyhow,clap,itertools,serde_json,spdx</span>
 <strong>MPL-2.0</strong>: <span style="opacity: 0.5;">colored</span>
 </pre>
 ```
 $ cargo licenses summary --depth 1 --json
 {
-  "MPL-2.0": [
-    "colored"
-  ],
   "MIT": [
     "cargo_metadata"
+  ],
+  "MPL-2.0": [
+    "colored"
   ],
   "MIT OR Apache-2.0": [
     "anyhow",
     "clap",
     "itertools",
-    "serde_json"
+    "serde",
+    "serde_json",
+    "spdx"
   ]
 }
 ```
