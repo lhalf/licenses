@@ -96,4 +96,20 @@ mod tests {
             License::parse("Apache-2.0 OR MIT")
         );
     }
+
+    #[test]
+    fn licenses_with_parentheses_are_not_equal() {
+        assert_ne!(
+            License::parse("MIT OR Apache-2.0"),
+            License::parse("(MIT OR Apache-2.0)")
+        );
+    }
+
+    #[test]
+    fn licenses_with_with_clause_are_not_equal() {
+        assert_ne!(
+            License::parse("(MIT WITH Bison-exception-2.2) OR Apache-2.0"),
+            License::parse("MIT OR (Apache-2.0 WITH Bison-exception-2.2)")
+        );
+    }
 }
