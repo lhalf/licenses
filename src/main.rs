@@ -15,7 +15,6 @@ mod file_io;
 mod is_license;
 mod license;
 mod macros;
-mod split_licenses;
 mod summarise;
 mod validate_licenses;
 

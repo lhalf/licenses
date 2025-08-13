@@ -1,6 +1,7 @@
 use crate::cargo_metadata::Package;
 use crate::file_io::{DirEntry, FileIO};
 use crate::is_license::is_license;
+use crate::license::License;
 use crate::validate_licenses::validate_licenses;
 use anyhow::Context;
 use std::path::PathBuf;
@@ -17,7 +18,8 @@ pub fn copy_licenses(
             .filter(is_license)
             .collect();
 
-        validate_licenses(&package.license, &licenses).warn(&package);
+        validate_licenses(&package.license.as_deref().map(License::parse), &licenses)
+            .warn(&package);
 
         for license in licenses {
             file_io.copy_file(

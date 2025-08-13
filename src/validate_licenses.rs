@@ -1,6 +1,6 @@
 use crate::cargo_metadata::Package;
 use crate::file_io::DirEntry;
-use crate::split_licenses::split_licenses;
+use crate::license::License;
 use crate::{note, warn};
 use colored::Colorize;
 
@@ -43,7 +43,7 @@ impl LicenseStatus {
 }
 
 pub fn validate_licenses(
-    declared_licenses: &Option<String>,
+    declared_licenses: &Option<License>,
     actual_licenses: &[DirEntry],
 ) -> LicenseStatus {
     if actual_licenses.is_empty() {
@@ -52,7 +52,7 @@ pub fn validate_licenses(
 
     match declared_licenses {
         None => LicenseStatus::NoneDeclared,
-        Some(licenses) if split_licenses(licenses).len() != actual_licenses.len() => {
+        Some(licenses) if licenses.requirements().count() != actual_licenses.len() => {
             LicenseStatus::Mismatch
         }
         _ => LicenseStatus::Valid,
@@ -68,7 +68,7 @@ mod tests {
     fn no_licenses_found() {
         assert_eq!(
             LicenseStatus::Empty,
-            validate_licenses(&Some("MIT".to_string()), &[])
+            validate_licenses(&Some(License::parse("MIT")), &[])
         );
     }
 
@@ -92,7 +92,7 @@ mod tests {
         assert_eq!(
             LicenseStatus::Mismatch,
             validate_licenses(
-                &Some("MIT OR Apache-2.0".to_string()),
+                &Some(License::parse("MIT OR Apache-2.0")),
                 &[DirEntry {
                     name: OsString::from("LICENSE_MIT"),
                     path: Default::default(),
@@ -103,7 +103,7 @@ mod tests {
         assert_eq!(
             LicenseStatus::Mismatch,
             validate_licenses(
-                &Some("MIT/Apache-2.0".to_string()),
+                &Some(License::parse("MIT/Apache-2.0")),
                 &[DirEntry {
                     name: OsString::from("LICENSE_MIT"),
                     path: Default::default(),
@@ -114,7 +114,7 @@ mod tests {
         assert_eq!(
             LicenseStatus::Mismatch,
             validate_licenses(
-                &Some("(MIT OR Apache-2.0) AND Unicode-3.".to_string()),
+                &Some(License::parse("(MIT OR Apache-2.0) AND Unicode-3.")),
                 &[
                     DirEntry {
                         name: OsString::from("LICENSE_MIT"),

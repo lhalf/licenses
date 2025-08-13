@@ -1,5 +1,6 @@
 use itertools::Itertools;
 use serde::{Serialize, Serializer};
+use spdx::expression::ExpressionReq;
 use spdx::{Expression, ParseMode};
 use std::fmt::Display;
 use std::hash::{Hash, Hasher};
@@ -24,6 +25,13 @@ impl License {
             Ok(Some(expression)) => parse(&expression),
             Ok(None) => parse(license),
             Err(_) => License::Unknown(license.to_string()),
+        }
+    }
+
+    pub fn requirements(&self) -> Box<dyn Iterator<Item = &ExpressionReq> + '_> {
+        match self {
+            License::Known(expression) => Box::new(expression.requirements()),
+            License::Unknown(_) => Box::new(Vec::<&ExpressionReq>::new().into_iter()),
         }
     }
 }
