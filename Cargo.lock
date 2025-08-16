@@ -330,6 +330,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4a5f13b858c8d314ee3e8f639011f7ccefe71f97f96e50151fb991f267928e2c"
 
 [[package]]
+name = "levenshtein"
+version = "1.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db13adb97ab515a3691f56e4dbab09283d0b86cb45abd991d8634a9d6f501760"
+
+[[package]]
 name = "licenses"
 version = "0.1.1"
 dependencies = [
@@ -340,6 +346,7 @@ dependencies = [
  "clap",
  "colored",
  "itertools",
+ "levenshtein",
  "serde",
  "serde_json",
  "spdx",

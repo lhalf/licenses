@@ -22,6 +22,7 @@ colored = { version = "3.0.0", default-features = false }
 serde = { version = "1.0.219", default-features = false }
 serde_json = { version = "1.0.142", default-features = false }
 spdx = { version = "0.11.0", default-features = false}
+levenshtein = { version = "1.0.5", default-features = false }
 
 [dev-dependencies]
 autospy = { version = "0.0.8", default-features = false, features = ["test"]}

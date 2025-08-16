@@ -1,4 +1,5 @@
 use crate::file_io::DirEntry;
+use levenshtein::levenshtein;
 
 pub fn is_license(dir_entry: &DirEntry) -> bool {
     if !dir_entry.is_file {
@@ -7,9 +8,18 @@ pub fn is_license(dir_entry: &DirEntry) -> bool {
 
     let filename = dir_entry.name.to_string_lossy().to_lowercase();
 
-    ["license", "copying", "copyright"]
+    let candidates = ["license", "copying", "copyright"];
+
+    candidates
         .iter()
-        .any(|license_name| filename.contains(license_name))
+        .any(|candidate| filename.contains(candidate))
+        || filename
+            .split(|c: char| !c.is_alphabetic())
+            .any(|filename_part| {
+                candidates
+                    .iter()
+                    .any(|candidate| levenshtein(filename_part, candidate) <= 1)
+            })
 }
 
 #[cfg(test)]
@@ -48,8 +58,19 @@ mod tests {
     }
 
     #[test]
+    fn license_file_with_typo() {
+        for license in ["LICENS_APACHE", "LICENCE", "LICENS", "LICENSE-MT"] {
+            assert!(is_license(&DirEntry {
+                name: OsString::from(license),
+                path: Default::default(),
+                is_file: true
+            }));
+        }
+    }
+
+    #[test]
     fn license_file_with_invalid_name() {
-        for license in ["LICENS_APACHE", "PATENT", "README"] {
+        for license in ["PATENT", "README"] {
             assert!(!is_license(&DirEntry {
                 name: OsString::from(license),
                 path: Default::default(),
