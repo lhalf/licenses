@@ -1,5 +1,5 @@
 use crate::file_io::DirEntry;
-use levenshtein::levenshtein;
+use strsim::levenshtein;
 
 pub fn is_license(dir_entry: &DirEntry) -> bool {
     if !dir_entry.is_file {
