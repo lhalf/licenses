@@ -3,13 +3,15 @@ use crate::file_io::DirEntry;
 use crate::license::License;
 use crate::{note, warn};
 use colored::Colorize;
+use std::cmp::Ordering;
 
 #[derive(PartialEq, Debug)]
 pub enum LicenseStatus {
     Valid,
     Empty,
     NoneDeclared,
-    Mismatch,
+    TooFew,
+    TooMany,
 }
 
 impl LicenseStatus {
@@ -32,9 +34,15 @@ impl LicenseStatus {
                     package.normalised_name.bold()
                 );
             }
-            LicenseStatus::Mismatch => {
+            LicenseStatus::TooFew => {
+                warn!(
+                    "did not find as many licenses as declared for {}",
+                    package.normalised_name.bold()
+                );
+            }
+            LicenseStatus::TooMany => {
                 note!(
-                    "declared licenses did not match found licenses for {}",
+                    "found more licenses than declared for {}",
                     package.normalised_name.bold()
                 );
             }
@@ -50,12 +58,17 @@ pub fn validate_licenses(
         return LicenseStatus::Empty;
     }
 
-    match declared_licenses {
-        None => LicenseStatus::NoneDeclared,
-        Some(licenses) if licenses.requirements().count() != actual_licenses.len() => {
-            LicenseStatus::Mismatch
+    if let Some(declared_licenses) = declared_licenses {
+        match actual_licenses
+            .len()
+            .cmp(&declared_licenses.requirements().count())
+        {
+            Ordering::Equal => LicenseStatus::Valid,
+            Ordering::Less => LicenseStatus::TooFew,
+            Ordering::Greater => LicenseStatus::TooMany,
         }
-        _ => LicenseStatus::Valid,
+    } else {
+        LicenseStatus::NoneDeclared
     }
 }
 
@@ -88,9 +101,9 @@ mod tests {
     }
 
     #[test]
-    fn mismatch_too_few_licenses() {
+    fn too_few_licenses() {
         assert_eq!(
-            LicenseStatus::Mismatch,
+            LicenseStatus::TooFew,
             validate_licenses(
                 &Some(License::parse("MIT OR Apache-2.0")),
                 &[DirEntry {
@@ -101,7 +114,7 @@ mod tests {
             )
         );
         assert_eq!(
-            LicenseStatus::Mismatch,
+            LicenseStatus::TooFew,
             validate_licenses(
                 &Some(License::parse("MIT/Apache-2.0")),
                 &[DirEntry {
@@ -112,9 +125,9 @@ mod tests {
             )
         );
         assert_eq!(
-            LicenseStatus::Mismatch,
+            LicenseStatus::TooFew,
             validate_licenses(
-                &Some(License::parse("(MIT OR Apache-2.0) AND Unicode-3.")),
+                &Some(License::parse("(MIT OR Apache-2.0) AND Unicode-3.0")),
                 &[
                     DirEntry {
                         name: OsString::from("LICENSE_MIT"),
@@ -123,6 +136,28 @@ mod tests {
                     },
                     DirEntry {
                         name: OsString::from("LICENSE_UNICODE"),
+                        path: Default::default(),
+                        is_file: true,
+                    }
+                ]
+            )
+        );
+    }
+
+    #[test]
+    fn too_many_licenses() {
+        assert_eq!(
+            LicenseStatus::TooMany,
+            validate_licenses(
+                &Some(License::parse("MIT")),
+                &[
+                    DirEntry {
+                        name: OsString::from("LICENSE_MIT"),
+                        path: Default::default(),
+                        is_file: true,
+                    },
+                    DirEntry {
+                        name: OsString::from("COPYING"),
                         path: Default::default(),
                         is_file: true,
                     }
