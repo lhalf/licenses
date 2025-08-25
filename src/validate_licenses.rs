@@ -3,6 +3,7 @@ use crate::file_io::{DirEntry, FileIO};
 use crate::license::License;
 use crate::{note, warn};
 use colored::Colorize;
+use itertools::Itertools;
 use once_cell::sync::Lazy;
 use std::cmp::Ordering;
 use std::collections::HashMap;
@@ -18,6 +19,7 @@ pub enum LicenseStatus {
     NoneDeclared,
     TooFew,
     TooMany,
+    Mismatch(Vec<DirEntry>),
 }
 
 impl LicenseStatus {
@@ -52,6 +54,17 @@ impl LicenseStatus {
                     package.normalised_name.bold()
                 );
             }
+            LicenseStatus::Mismatch(license_texts_not_found) => {
+                warn!(
+                    "found license(s) in {} whose content was not similar to expected - {}",
+                    package.normalised_name.bold(),
+                    license_texts_not_found
+                        .iter()
+                        .filter_map(|license| license.name.to_str())
+                        .join(",")
+                        .dimmed()
+                );
+            }
         }
     }
 }
@@ -84,13 +97,7 @@ pub fn validate_licenses(
         }
 
         if !license_texts_not_found.is_empty() {
-            warn!(
-                "found license whose content was not similar to expected - {:?}",
-                license_texts_not_found
-                    .iter()
-                    .map(|entry| entry.name.clone())
-                    .collect::<Vec<_>>()
-            );
+            return LicenseStatus::Mismatch(license_texts_not_found);
         }
 
         match actual_licenses
@@ -141,7 +148,10 @@ mod tests {
     #[test]
     fn too_few_licenses() {
         let file_io_spy = FileIOSpy::default();
-        file_io_spy.read_file.returns.push_back(Ok(String::new()));
+        file_io_spy
+            .read_file
+            .returns
+            .push_back(Ok(LICENSE_TEXTS.get("MIT").unwrap().to_string()));
         file_io_spy.read_file.returns.push_back(Ok(String::new()));
         assert_eq!(
             LicenseStatus::TooFew,
@@ -156,7 +166,10 @@ mod tests {
             )
         );
 
-        file_io_spy.read_file.returns.push_back(Ok(String::new()));
+        file_io_spy
+            .read_file
+            .returns
+            .push_back(Ok(LICENSE_TEXTS.get("MIT").unwrap().to_string()));
         file_io_spy.read_file.returns.push_back(Ok(String::new()));
         assert_eq!(
             LicenseStatus::TooFew,
@@ -171,8 +184,14 @@ mod tests {
             )
         );
 
-        file_io_spy.read_file.returns.push_back(Ok(String::new()));
-        file_io_spy.read_file.returns.push_back(Ok(String::new()));
+        file_io_spy
+            .read_file
+            .returns
+            .push_back(Ok(LICENSE_TEXTS.get("MIT").unwrap().to_string()));
+        file_io_spy
+            .read_file
+            .returns
+            .push_back(Ok(LICENSE_TEXTS.get("Unicode-3.0").unwrap().to_string()));
         file_io_spy.read_file.returns.push_back(Ok(String::new()));
         file_io_spy.read_file.returns.push_back(Ok(String::new()));
         file_io_spy.read_file.returns.push_back(Ok(String::new()));
@@ -201,7 +220,10 @@ mod tests {
     #[test]
     fn too_many_licenses() {
         let file_io_spy = FileIOSpy::default();
-        file_io_spy.read_file.returns.push_back(Ok(String::new()));
+        file_io_spy
+            .read_file
+            .returns
+            .push_back(Ok(LICENSE_TEXTS.get("MIT").unwrap().to_string()));
         file_io_spy.read_file.returns.push_back(Ok(String::new()));
         assert_eq!(
             LicenseStatus::TooMany,

@@ -33,7 +33,7 @@ impl FileIO for FileSystem {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct DirEntry {
     pub name: OsString,
     pub path: PathBuf,
