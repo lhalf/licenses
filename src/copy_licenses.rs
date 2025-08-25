@@ -18,8 +18,12 @@ pub fn copy_licenses(
             .filter(is_license)
             .collect();
 
-        validate_licenses(&package.license.as_deref().map(License::parse), &licenses)
-            .warn(&package);
+        validate_licenses(
+            &file_io,
+            &package.license.as_deref().map(License::parse),
+            &licenses,
+        )
+        .warn(&package);
 
         for license in licenses {
             file_io.copy_file(

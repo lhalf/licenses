@@ -8,6 +8,7 @@ pub struct FileSystem {}
 pub trait FileIO {
     fn copy_file(&self, from: &Path, to: &Path) -> anyhow::Result<()>;
     fn read_dir(&self, path: &Path) -> anyhow::Result<Vec<DirEntry>>;
+    fn read_file(&self, path: &Path) -> anyhow::Result<String>;
 }
 
 impl FileIO for FileSystem {
@@ -26,8 +27,13 @@ impl FileIO for FileSystem {
             .map(DirEntry::try_from)
             .collect()
     }
+
+    fn read_file(&self, path: &Path) -> anyhow::Result<String> {
+        std::fs::read_to_string(path).context("failed to read file")
+    }
 }
 
+#[derive(Clone)]
 pub struct DirEntry {
     pub name: OsString,
     pub path: PathBuf,
