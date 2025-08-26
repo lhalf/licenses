@@ -165,7 +165,11 @@ mod tests {
                 }]
             )
         );
+    }
 
+    #[test]
+    fn too_few_licenses_non_standard_seperator() {
+        let file_io_spy = FileIOSpy::default();
         file_io_spy
             .read_file
             .returns
@@ -183,7 +187,11 @@ mod tests {
                 }]
             )
         );
+    }
 
+    #[test]
+    fn too_few_licenses_complex_requirements() {
+        let file_io_spy = FileIOSpy::default();
         file_io_spy
             .read_file
             .returns
