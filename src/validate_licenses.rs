@@ -253,4 +253,30 @@ mod tests {
             )
         );
     }
+
+    #[test]
+    fn license_content_mismatch() {
+        let file_io_spy = FileIOSpy::default();
+        file_io_spy
+            .read_file
+            .returns
+            .push_back(Ok(LICENSE_TEXTS.get("Apache-2.0").unwrap().to_string()));
+        file_io_spy.read_file.returns.push_back(Ok(String::new()));
+        assert_eq!(
+            LicenseStatus::Mismatch(vec![DirEntry {
+                name: OsString::from("LICENSE_MIT"),
+                path: Default::default(),
+                is_file: true,
+            }]),
+            validate_licenses(
+                &file_io_spy,
+                &Some(License::parse("MIT")),
+                &[DirEntry {
+                    name: OsString::from("LICENSE_MIT"),
+                    path: Default::default(),
+                    is_file: true,
+                }]
+            )
+        );
+    }
 }
