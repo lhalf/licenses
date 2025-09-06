@@ -47,6 +47,8 @@ licenses
 ├── colored-LICENSE
 ├── itertools-LICENSE-APACHE
 ├── itertools-LICENSE-MIT
+├── once_cell-LICENSE-APACHE
+├── once_cell-LICENSE-MIT
 ├── serde-LICENSE-APACHE
 ├── serde-LICENSE-MIT
 ├── serde_json-LICENSE-APACHE
@@ -59,7 +61,7 @@ licenses
 <pre>
 $ cargo licenses summary --depth 1
 <strong>MIT</strong>: <span style="opacity: 0.5;">cargo_metadata,strsim</span>
-<strong>MIT OR Apache-2.0</strong>: <span style="opacity: 0.5;">anyhow,clap,itertools,serde,serde_json,spdx</span>
+<strong>MIT OR Apache-2.0</strong>: <span style="opacity: 0.5;">anyhow,clap,itertools,once_cell,serde,serde_json,spdx</span>
 <strong>MPL-2.0</strong>: <span style="opacity: 0.5;">colored</span>
 </pre>
 ```
@@ -69,16 +71,17 @@ $ cargo licenses summary --depth 1 --json
     "anyhow",
     "clap",
     "itertools",
+    "once_cell",
     "serde",
     "serde_json",
     "spdx"
   ],
-  "MPL-2.0": [
-    "colored"
-  ],
   "MIT": [
     "cargo_metadata",
     "strsim"
+  ],
+  "MPL-2.0": [
+    "colored"
   ]
 }
 ```
