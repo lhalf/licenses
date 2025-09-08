@@ -4,7 +4,7 @@
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/lhalf/licenses/on_commit.yml)](https://github.com/lhalf/licenses/actions/workflows/on_commit.yml)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 
-Cargo subcommand for collecting, summarising and checking licenses.
+Cargo subcommand for collecting licenses.
 
 ## Install
 
@@ -34,7 +34,9 @@ Options:
 ## Commands
 ### Collect
 
-Collects all licenses for the specified dependencies. Will alert the following license discrepancies:
+Collects all licenses for the specified dependencies into a folder.
+
+Prints a warning for the following:
 - If the crate had no declared license on [crates.io](https://crates.io/)
 - If no licenses were found for a crate
 - If the found licenses did not match those declared by the author on crates.io
@@ -94,4 +96,5 @@ $ cargo licenses summary --depth 1 --json
     "colored"
   ]
 }
+
 ```
