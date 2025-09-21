@@ -1,5 +1,6 @@
 use crate::cargo_metadata::{Package, try_get_packages};
 use crate::cargo_tree::crate_names;
+use crate::check_licenses::check_licenses;
 use crate::copy_licenses::copy_licenses;
 use crate::file_io::FileSystem;
 use crate::summarise::{crates_per_license, summarise};
@@ -10,6 +11,8 @@ use std::path::{Path, PathBuf};
 
 mod cargo_metadata;
 mod cargo_tree;
+mod check_licenses;
+mod collect_licenses;
 mod copy_licenses;
 mod file_io;
 mod is_license;
@@ -68,11 +71,14 @@ enum LicensesSubcommand {
         #[arg(long)]
         json: bool,
     },
+    /// Checks all licenses for inconsistencies
+    Check,
 }
 
 fn main() -> anyhow::Result<()> {
     let CargoSubcommand::Licenses { args, command } = CargoSubcommand::parse();
 
+    let file_system = FileSystem {};
     let crates_we_want = crate_names(args.depth, args.dev, args.build, args.exclude, args.ignore)?;
     let all_packages = try_get_packages()?;
     let filtered_packages = filter_packages(crates_we_want, all_packages);
@@ -81,7 +87,7 @@ fn main() -> anyhow::Result<()> {
         LicensesSubcommand::Collect { path } => {
             let path = PathBuf::from(path);
             create_output_folder(&path)?;
-            copy_licenses(FileSystem {}, filtered_packages, path)?;
+            copy_licenses(file_system, filtered_packages, path)?;
         }
         LicensesSubcommand::Summary { json } => {
             let crates_per_license = crates_per_license(filtered_packages);
@@ -92,6 +98,11 @@ fn main() -> anyhow::Result<()> {
                     false => summarise(crates_per_license),
                 }
             )
+        }
+        LicensesSubcommand::Check => {
+            if check_licenses(file_system, filtered_packages).is_err() {
+                std::process::exit(1)
+            }
         }
     }
 

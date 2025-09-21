@@ -1,6 +1,6 @@
 use crate::cargo_metadata::Package;
-use crate::file_io::{DirEntry, FileIO};
-use crate::is_license::is_license;
+use crate::collect_licenses::collect_licenses;
+use crate::file_io::FileIO;
 use crate::license::License;
 use crate::validate_licenses::validate_licenses;
 use anyhow::Context;
@@ -12,11 +12,7 @@ pub fn copy_licenses(
     output_folder: PathBuf,
 ) -> anyhow::Result<()> {
     for package in filtered_packages {
-        let licenses: Vec<DirEntry> = file_io
-            .read_dir(package.path.as_ref())?
-            .into_iter()
-            .filter(is_license)
-            .collect();
+        let licenses = collect_licenses(&file_io, &package)?;
 
         validate_licenses(
             &file_io,

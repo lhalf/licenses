@@ -62,7 +62,7 @@ impl LicenseStatus {
                         .iter()
                         .filter_map(|license| license.name.to_str())
                         .join(",")
-                        .dimmed()
+                        .bold()
                 );
             }
         }

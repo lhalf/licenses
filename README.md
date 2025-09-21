@@ -21,6 +21,7 @@ Usage: cargo licenses [OPTIONS] <COMMAND>
 Commands:
   collect  Collects all licenses into a folder
   summary  Provides a summary of all licenses
+  check    Checks all licenses for inconsistencies
 
 Options:
   -d, --dev                  Include dev dependencies [default: excluded]
@@ -32,11 +33,13 @@ Options:
 ```
 
 ## Commands
+
 ### Collect
 
-Collects all licenses for the specified dependencies into a folder.
+Collects all licenses of the specified dependencies into a folder.
 
-Prints a warning for the following:
+Prints a warning:
+
 - If the crate had no declared license on [crates.io](https://crates.io/)
 - If no licenses were found for a crate
 - If the found licenses did not match those declared by the author on crates.io
@@ -66,9 +69,10 @@ licenses
 ├── spdx-LICENSE-MIT
 └── strsim-LICENSE
 ```
+
 ### Summary
 
-Summarises the declared licenses for the specified dependencies.
+Summarises the declared licenses of the specified dependencies.
 
 <pre>
 $ cargo licenses summary --depth 1
@@ -76,6 +80,7 @@ $ cargo licenses summary --depth 1
 <strong>MIT OR Apache-2.0</strong>: <span style="opacity: 0.5;">anyhow,clap,itertools,once_cell,serde,serde_json,spdx</span>
 <strong>MPL-2.0</strong>: <span style="opacity: 0.5;">colored</span>
 </pre>
+
 ```
 $ cargo licenses summary --depth 1 --json
 {
@@ -97,4 +102,22 @@ $ cargo licenses summary --depth 1 --json
   ]
 }
 
+```
+
+### Check
+
+Checks all licenses of the specified dependencies for inconsistencies.
+
+Returns a non-zero exit code:
+
+- If the crate had no declared license on [crates.io](https://crates.io/)
+- If no licenses were found for a crate
+- If the found licenses did not match those declared by the author on crates.io
+- If the content of the found licenses did not match the expected content for that license
+
+```
+$ cargo licenses check
+warning: found license(s) in memchr whose content was not similar to expected - COPYING
+warning: found license(s) in unicode_xid whose content was not similar to expected - COPYRIGHT
+warning: found license(s) in utf8_iter whose content was not similar to expected - COPYRIGHT
 ```
