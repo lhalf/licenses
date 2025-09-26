@@ -74,12 +74,12 @@ licenses
 
 Summarises the declared licenses of the specified dependencies.
 
-<pre>
+```
 $ cargo licenses summary --depth 1
-<strong>MIT</strong>: <span style="opacity: 0.5;">cargo_metadata,strsim</span>
-<strong>MIT OR Apache-2.0</strong>: <span style="opacity: 0.5;">anyhow,clap,itertools,once_cell,serde,serde_json,spdx</span>
-<strong>MPL-2.0</strong>: <span style="opacity: 0.5;">colored</span>
-</pre>
+MIT: cargo_metadata,strsim
+MIT OR Apache-2.0: anyhow,clap,itertools,once_cell,serde,serde_json,spdx
+MPL-2.0: colored
+```
 
 ```
 $ cargo licenses summary --depth 1 --json
