@@ -12,7 +12,7 @@ pub fn copy_licenses(
     output_folder: PathBuf,
 ) -> anyhow::Result<()> {
     for package in filtered_packages {
-        let licenses = collect_licenses(&file_io, &package)?;
+        let licenses = collect_licenses(&file_io, &package, Vec::new())?;
 
         validate_licenses(
             &file_io,

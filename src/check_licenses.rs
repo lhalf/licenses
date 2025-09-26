@@ -8,7 +8,7 @@ pub fn check_licenses(file_io: impl FileIO, filtered_packages: Vec<Package>) -> 
     let mut issues_found = false;
 
     for package in filtered_packages {
-        let licenses = collect_licenses(&file_io, &package)?;
+        let licenses = collect_licenses(&file_io, &package, Vec::new())?;
         match validate_licenses(
             &file_io,
             &package.license.as_deref().map(License::parse),
