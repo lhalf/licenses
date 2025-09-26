@@ -64,6 +64,9 @@ enum LicensesSubcommand {
         /// The output license folder path
         #[arg(short, long, default_value_t = String::from("licenses"))]
         path: String,
+        /// Skip specified licenses [default: all included]
+        #[arg(short, long, value_name = "CRATE-LICENSE")]
+        skip: Vec<String>,
     },
     /// Provides a summary of all licenses
     Summary {
@@ -72,7 +75,11 @@ enum LicensesSubcommand {
         json: bool,
     },
     /// Checks all licenses for inconsistencies
-    Check,
+    Check {
+        /// Skip specified licenses [default: all included]
+        #[arg(short, long, value_name = "CRATE-LICENSE")]
+        skip: Vec<String>,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -84,10 +91,10 @@ fn main() -> anyhow::Result<()> {
     let filtered_packages = filter_packages(crates_we_want, all_packages);
 
     match command {
-        LicensesSubcommand::Collect { path } => {
+        LicensesSubcommand::Collect { path, skip } => {
             let path = PathBuf::from(path);
             create_output_folder(&path)?;
-            copy_licenses(file_system, filtered_packages, path)?;
+            copy_licenses(file_system, filtered_packages, path, skip)?;
         }
         LicensesSubcommand::Summary { json } => {
             let crates_per_license = crates_per_license(filtered_packages);
@@ -99,8 +106,8 @@ fn main() -> anyhow::Result<()> {
                 }
             )
         }
-        LicensesSubcommand::Check => {
-            if check_licenses(file_system, filtered_packages).is_err() {
+        LicensesSubcommand::Check { skip } => {
+            if check_licenses(file_system, filtered_packages, skip).is_err() {
                 std::process::exit(1)
             }
         }

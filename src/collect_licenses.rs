@@ -6,7 +6,7 @@ use crate::is_license::is_license;
 pub fn collect_licenses(
     file_io: &impl FileIO,
     package: &Package,
-    skipped_files: Vec<String>,
+    skipped_files: &[String],
 ) -> anyhow::Result<Vec<DirEntry>> {
     let licenses: Vec<DirEntry> = file_io
         .read_dir(package.path.as_ref())?
@@ -48,7 +48,7 @@ mod tests {
                     url: None,
                     license: None,
                 },
-                Vec::new()
+                &[]
             )
             .is_err()
         );
@@ -68,7 +68,7 @@ mod tests {
                     url: None,
                     license: None,
                 },
-                Vec::new()
+                &[]
             )
             .unwrap()
         );
@@ -92,7 +92,7 @@ mod tests {
                     url: None,
                     license: None,
                 },
-                Vec::new()
+                &[]
             )
             .unwrap()
         );
@@ -120,7 +120,7 @@ mod tests {
                     url: None,
                     license: None,
                 },
-                Vec::new()
+                &[]
             )
             .unwrap()
         );
@@ -144,7 +144,7 @@ mod tests {
                     url: None,
                     license: None,
                 },
-                vec!["example-LICENSE".to_string()]
+                &["example-LICENSE".to_string()]
             )
             .unwrap()
         );
@@ -184,7 +184,7 @@ mod tests {
                     url: None,
                     license: None,
                 },
-                vec![
+                &[
                     "example-COPYRIGHT".to_string(),
                     "example-LICENSE-APACHE".to_string()
                 ]

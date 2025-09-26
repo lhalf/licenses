@@ -10,9 +10,10 @@ pub fn copy_licenses(
     file_io: impl FileIO,
     filtered_packages: Vec<Package>,
     output_folder: PathBuf,
+    skipped_files: Vec<String>,
 ) -> anyhow::Result<()> {
     for package in filtered_packages {
-        let licenses = collect_licenses(&file_io, &package, Vec::new())?;
+        let licenses = collect_licenses(&file_io, &package, &skipped_files)?;
 
         validate_licenses(
             &file_io,
@@ -53,7 +54,15 @@ mod tests {
     #[test]
     fn no_filtered_packages_causes_no_directory_read_or_files_copied() {
         let file_io_spy = FileIOSpy::default();
-        assert!(copy_licenses(file_io_spy.clone(), Vec::new(), PathBuf::default()).is_ok());
+        assert!(
+            copy_licenses(
+                file_io_spy.clone(),
+                Vec::new(),
+                PathBuf::default(),
+                Vec::new()
+            )
+            .is_ok()
+        );
         assert!(file_io_spy.read_dir.arguments.take_all().is_empty());
         assert!(file_io_spy.copy_file.arguments.take_all().is_empty());
     }
@@ -75,7 +84,8 @@ mod tests {
                     url: None,
                     license: None,
                 }],
-                PathBuf::default()
+                PathBuf::default(),
+                Vec::new()
             )
             .unwrap_err()
             .to_string()
@@ -99,7 +109,8 @@ mod tests {
                     url: None,
                     license: None,
                 }],
-                PathBuf::default()
+                PathBuf::default(),
+                Vec::new()
             )
             .is_ok()
         );

@@ -4,11 +4,15 @@ use crate::file_io::FileIO;
 use crate::license::License;
 use crate::validate_licenses::{LicenseStatus, validate_licenses};
 
-pub fn check_licenses(file_io: impl FileIO, filtered_packages: Vec<Package>) -> anyhow::Result<()> {
+pub fn check_licenses(
+    file_io: impl FileIO,
+    filtered_packages: Vec<Package>,
+    skipped_files: Vec<String>,
+) -> anyhow::Result<()> {
     let mut issues_found = false;
 
     for package in filtered_packages {
-        let licenses = collect_licenses(&file_io, &package, Vec::new())?;
+        let licenses = collect_licenses(&file_io, &package, &skipped_files)?;
         match validate_licenses(
             &file_io,
             &package.license.as_deref().map(License::parse),
@@ -49,7 +53,8 @@ mod tests {
                     path: Default::default(),
                     url: None,
                     license: None,
-                }]
+                }],
+                Vec::new()
             )
             .is_err()
         );
