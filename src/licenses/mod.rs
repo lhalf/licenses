@@ -1,3 +1,10 @@
+pub mod check;
+pub mod collect;
+pub mod copy;
+pub mod is_license;
+pub mod summarise;
+pub mod validate;
+
 use itertools::Itertools;
 use serde::{Serialize, Serializer};
 use spdx::expression::ExpressionReq;

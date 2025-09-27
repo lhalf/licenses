@@ -25,7 +25,7 @@ pub fn is_license(dir_entry: &DirEntry) -> bool {
 #[cfg(test)]
 mod tests {
     use crate::file_io::DirEntry;
-    use crate::is_license::is_license;
+    use crate::licenses::is_license::is_license;
     use std::ffi::OsString;
 
     #[test]

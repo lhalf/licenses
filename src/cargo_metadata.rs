@@ -1,13 +1,24 @@
 use anyhow::Context;
 use cargo_metadata::camino::Utf8PathBuf;
 
-#[cfg_attr(test, derive(Default))]
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Package {
     pub normalised_name: String,
     pub path: Utf8PathBuf,
     pub url: Option<String>,
     pub license: Option<String>,
+}
+
+#[cfg(test)]
+impl Package {
+    pub fn called(name: &str) -> Self {
+        Self {
+            path: Default::default(),
+            normalised_name: name.to_string(),
+            url: None,
+            license: None,
+        }
+    }
 }
 
 impl Package {

@@ -2,7 +2,7 @@
 
 debug
 target
-licenses
+/licenses/
 
 **/*.rs.bk
 *.pdb

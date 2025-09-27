@@ -1,5 +1,5 @@
 use crate::cargo_metadata::Package;
-use crate::license::License;
+use crate::licenses::License;
 use colored::Colorize;
 use itertools::Itertools;
 use std::collections::HashMap;
@@ -33,7 +33,7 @@ pub fn summarise(crates_per_license: HashMap<License, Vec<String>>) -> String {
 #[cfg(test)]
 mod tests {
     use crate::cargo_metadata::Package;
-    use crate::summarise::{crates_per_license, summarise};
+    use crate::licenses::summarise::{crates_per_license, summarise};
     use colored::Colorize;
 
     #[test]
