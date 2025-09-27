@@ -14,17 +14,17 @@ name = "cargo-licenses"
 path = "src/main.rs"
 
 [dependencies]
-anyhow = { version = "1.0.98", default-features = false }
+anyhow = { version = "1.0.100", default-features = false }
 itertools = { version = "0.14.0", default-features = false, features = ["use_std"] }
-clap = { version = "4.5.41", default-features = false, features = ["derive", "std", "help", "usage"] }
-cargo_metadata = { version = "0.21.0", default-features = false }
+clap = { version = "4.5.48", default-features = false, features = ["derive", "std", "help", "usage"] }
+cargo_metadata = { version = "0.22.0", default-features = false }
 colored = { version = "3.0.0", default-features = false }
-serde = { version = "1.0.219", default-features = false }
-serde_json = { version = "1.0.142", default-features = false }
-spdx = { version = "0.11.0", default-features = false, features = ["text"]}
+serde = { version = "1.0.227", default-features = false }
+serde_json = { version = "1.0.145", default-features = false }
+spdx = { version = "0.12.0", default-features = false, features = ["text"] }
 strsim = { version = "0.11.1", default-features = false }
 once_cell = { version = "1.21.3", default-features = false, features = ["std"] }
 
 [dev-dependencies]
-autospy = { version = "0.0.8", default-features = false, features = ["test"]}
-cargo-util-schemas = { version = "0.8.2", default-features = false}
+autospy = { version = "0.0.8", default-features = false, features = ["test"] }
+cargo-util-schemas = { version = "0.8.2", default-features = false }
