@@ -62,7 +62,7 @@ mod tests {
     fn no_licenses_causes_no_files_copied() {
         let file_io_spy = FileIOSpy::default();
         assert!(copy_licenses(&file_io_spy, HashMap::new(), PathBuf::default(),).is_ok());
-        assert!(file_io_spy.copy_file.arguments.take_all().is_empty());
+        assert!(file_io_spy.copy_file.arguments.take().is_empty());
     }
 
     #[test]
@@ -71,7 +71,7 @@ mod tests {
         file_io_spy
             .copy_file
             .returns
-            .push_back(Err(anyhow::anyhow!("deliberate test error")));
+            .set([Err(anyhow::anyhow!("deliberate test error"))]);
 
         let all_licenses = vec![(
             Package::called("example"),

@@ -148,11 +148,11 @@ mod tests {
     #[test]
     fn too_few_licenses() {
         let file_io_spy = FileIOSpy::default();
-        file_io_spy
-            .read_file
-            .returns
-            .push_back(Ok(LICENSE_TEXTS.get("MIT").unwrap().to_string()));
-        file_io_spy.read_file.returns.push_back(Ok(String::new()));
+        file_io_spy.read_file.returns.set([
+            Ok(LICENSE_TEXTS.get("MIT").unwrap().to_string()),
+            Ok(String::new()),
+        ]);
+
         assert_eq!(
             LicenseStatus::TooFew,
             validate_licenses(
@@ -170,11 +170,11 @@ mod tests {
     #[test]
     fn too_few_licenses_non_standard_seperator() {
         let file_io_spy = FileIOSpy::default();
-        file_io_spy
-            .read_file
-            .returns
-            .push_back(Ok(LICENSE_TEXTS.get("MIT").unwrap().to_string()));
-        file_io_spy.read_file.returns.push_back(Ok(String::new()));
+        file_io_spy.read_file.returns.set([
+            Ok(LICENSE_TEXTS.get("MIT").unwrap().to_string()),
+            Ok(String::new()),
+        ]);
+
         assert_eq!(
             LicenseStatus::TooFew,
             validate_licenses(
@@ -192,18 +192,14 @@ mod tests {
     #[test]
     fn too_few_licenses_complex_requirements() {
         let file_io_spy = FileIOSpy::default();
-        file_io_spy
-            .read_file
-            .returns
-            .push_back(Ok(LICENSE_TEXTS.get("MIT").unwrap().to_string()));
-        file_io_spy
-            .read_file
-            .returns
-            .push_back(Ok(LICENSE_TEXTS.get("Unicode-3.0").unwrap().to_string()));
-        file_io_spy.read_file.returns.push_back(Ok(String::new()));
-        file_io_spy.read_file.returns.push_back(Ok(String::new()));
-        file_io_spy.read_file.returns.push_back(Ok(String::new()));
-        file_io_spy.read_file.returns.push_back(Ok(String::new()));
+        file_io_spy.read_file.returns.set([
+            Ok(LICENSE_TEXTS.get("MIT").unwrap().to_string()),
+            Ok(LICENSE_TEXTS.get("Unicode-3.0").unwrap().to_string()),
+            Ok(String::new()),
+            Ok(String::new()),
+            Ok(String::new()),
+        ]);
+
         assert_eq!(
             LicenseStatus::TooFew,
             validate_licenses(
@@ -231,8 +227,8 @@ mod tests {
         file_io_spy
             .read_file
             .returns
-            .push_back(Ok(LICENSE_TEXTS.get("MIT").unwrap().to_string()));
-        file_io_spy.read_file.returns.push_back(Ok(String::new()));
+            .set([Ok(LICENSE_TEXTS.get("MIT").unwrap().to_string())]);
+
         assert_eq!(
             LicenseStatus::TooMany,
             validate_licenses(
@@ -260,8 +256,8 @@ mod tests {
         file_io_spy
             .read_file
             .returns
-            .push_back(Ok(LICENSE_TEXTS.get("Apache-2.0").unwrap().to_string()));
-        file_io_spy.read_file.returns.push_back(Ok(String::new()));
+            .set([Ok(LICENSE_TEXTS.get("Apache-2.0").unwrap().to_string())]);
+
         assert_eq!(
             LicenseStatus::Mismatch(vec![DirEntry {
                 name: OsString::from("LICENSE_MIT"),

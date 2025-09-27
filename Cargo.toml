@@ -26,5 +26,5 @@ strsim = { version = "0.11.1", default-features = false }
 once_cell = { version = "1.21.3", default-features = false, features = ["std"] }
 
 [dev-dependencies]
-autospy = { version = "0.0.8", default-features = false, features = ["test"] }
+autospy = { version = "1.2.0", default-features = false, features = ["test"] }
 cargo-util-schemas = { version = "0.8.2", default-features = false }

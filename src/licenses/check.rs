@@ -33,20 +33,34 @@ pub fn check_licenses(
 #[cfg(test)]
 mod tests {
     use crate::cargo_metadata::Package;
-    use crate::file_io::FileIOSpy;
+    use crate::file_io::{DirEntry, FileIOSpy};
     use crate::licenses::check::check_licenses;
+    use std::ffi::OsString;
+    use std::path::PathBuf;
 
     #[test]
-    fn failure_to_read_dir_causes_error() {
+    fn failure_to_read_file_causes_error() {
         let file_io_spy = FileIOSpy::default();
         file_io_spy
-            .read_dir
+            .read_file
             .returns
-            .push_back(Err(anyhow::anyhow!("deliberate test error")));
+            .set([Err(anyhow::anyhow!("deliberate test error"))]);
 
-        let all_licenses = [(Package::called("example"), Vec::new())]
-            .into_iter()
-            .collect();
+        let all_licenses = [(
+            Package {
+                normalised_name: "example".to_string(),
+                path: Default::default(),
+                url: None,
+                license: Some("MIT".to_string()),
+            },
+            vec![DirEntry {
+                name: OsString::from("LICENSE"),
+                path: PathBuf::from("example/LICENSE"),
+                is_file: false,
+            }],
+        )]
+        .into_iter()
+        .collect();
 
         assert!(check_licenses(&file_io_spy, all_licenses).is_err());
     }

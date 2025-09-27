@@ -55,7 +55,7 @@ mod tests {
         file_io_spy
             .read_dir
             .returns
-            .push_back(Err(anyhow::anyhow!("deliberate test error")));
+            .set([Err(anyhow::anyhow!("deliberate test error"))]);
 
         assert!(collect_licenses(&file_io_spy, &[Package::called("example")], &[]).is_err());
     }
@@ -63,7 +63,7 @@ mod tests {
     #[test]
     fn no_files_in_directory() {
         let file_io_spy = FileIOSpy::default();
-        file_io_spy.read_dir.returns.push_back(Ok(Vec::new()));
+        file_io_spy.read_dir.returns.set([Ok(Vec::new())]);
 
         let expected_licenses: HashMap<_, _> = [(Package::called("example"), Vec::new())]
             .into_iter()
@@ -78,11 +78,11 @@ mod tests {
     #[test]
     fn no_licenses_in_directory() {
         let file_io_spy = FileIOSpy::default();
-        file_io_spy.read_dir.returns.push_back(Ok(vec![DirEntry {
+        file_io_spy.read_dir.returns.set([Ok(vec![DirEntry {
             name: OsString::from("some_file"),
             path: Default::default(),
             is_file: true,
-        }]));
+        }])]);
 
         let expected_licenses: HashMap<_, _> = [(Package::called("example"), Vec::new())]
             .into_iter()
@@ -105,7 +105,7 @@ mod tests {
         file_io_spy
             .read_dir
             .returns
-            .push_back(Ok(vec![dir_entry.clone()]));
+            .set([Ok(vec![dir_entry.clone()])]);
 
         let expected_licenses: HashMap<_, _> = [(Package::called("example"), vec![dir_entry])]
             .into_iter()
@@ -120,11 +120,11 @@ mod tests {
     #[test]
     fn single_skipped_license_in_directory() {
         let file_io_spy = FileIOSpy::default();
-        file_io_spy.read_dir.returns.push_back(Ok(vec![DirEntry {
+        file_io_spy.read_dir.returns.set([Ok(vec![DirEntry {
             name: OsString::from("LICENSE"),
             path: Default::default(),
             is_file: true,
-        }]));
+        }])]);
 
         let skipped_files = ["example-LICENSE".to_string()];
 
@@ -141,7 +141,7 @@ mod tests {
     #[test]
     fn multiple_skipped_licenses_in_directory() {
         let file_io_spy = FileIOSpy::default();
-        file_io_spy.read_dir.returns.push_back(Ok(vec![
+        file_io_spy.read_dir.returns.set([Ok(vec![
             DirEntry {
                 name: OsString::from("LICENSE-MIT"),
                 path: Default::default(),
@@ -157,7 +157,7 @@ mod tests {
                 path: Default::default(),
                 is_file: true,
             },
-        ]));
+        ])]);
 
         let skipped_files = [
             "example-COPYRIGHT".to_string(),
