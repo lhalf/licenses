@@ -9,7 +9,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use strsim::normalized_levenshtein;
 
-static LICENSE_TEXTS: Lazy<HashMap<&'static str, &'static str>> =
+pub static LICENSE_TEXTS: Lazy<HashMap<&'static str, &'static str>> =
     Lazy::new(|| spdx::text::LICENSE_TEXTS.iter().cloned().collect());
 
 #[derive(PartialEq, Debug)]
