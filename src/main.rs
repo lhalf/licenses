@@ -64,17 +64,24 @@ enum LicensesSubcommand {
         skip: Vec<String>,
     },
     /// Provides a summary of all licenses
-    Summary {
-        /// Display the summary as JSON
-        #[arg(long)]
-        json: bool,
-    },
+    Summary(SummaryArgs),
     /// Checks all licenses for inconsistencies
     Check {
         /// Skip specified licenses [default: all included]
         #[arg(short, long, value_name = "CRATE-LICENSE")]
         skip: Vec<String>,
     },
+}
+
+#[derive(Args)]
+#[group(required = false, multiple = false)]
+struct SummaryArgs {
+    /// Display the summary as JSON
+    #[arg(long)]
+    json: bool,
+    /// Display the summary as TOML
+    #[arg(long)]
+    toml: bool,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -94,13 +101,17 @@ fn main() -> anyhow::Result<()> {
                 path,
             )?;
         }
-        LicensesSubcommand::Summary { json } => {
+        LicensesSubcommand::Summary(args) => {
             let crates_per_license = crates_per_license(filtered_packages);
             println!(
                 "{}",
-                match json {
-                    true => serde_json::to_string_pretty(&crates_per_license)?,
-                    false => summarise(crates_per_license),
+                // clap should make it impossible for both to be true
+                if args.json {
+                    serde_json::to_string_pretty(&crates_per_license)?
+                } else if args.toml {
+                    toml::to_string_pretty(&crates_per_license)?
+                } else {
+                    summarise(crates_per_license)
                 }
             )
         }

@@ -7,6 +7,7 @@ use std::collections::HashMap;
 pub fn crates_per_license(filtered_packages: Vec<Package>) -> HashMap<License, Vec<String>> {
     filtered_packages
         .into_iter()
+        .unique()
         .filter_map(|package| {
             package
                 .license
@@ -34,6 +35,7 @@ pub fn summarise(crates_per_license: HashMap<License, Vec<String>>) -> String {
 mod tests {
     use crate::cargo_metadata::Package;
     use crate::licenses::summarise::{crates_per_license, summarise};
+    use cargo_metadata::camino::Utf8PathBuf;
     use colored::Colorize;
 
     #[test]
@@ -114,6 +116,27 @@ mod tests {
                 Package {
                     normalised_name: "b".to_string(),
                     path: Default::default(),
+                    url: None,
+                    license: Some("MIT".to_string()),
+                }
+            ]))
+        )
+    }
+
+    #[test]
+    fn multiple_packages_of_different_version_same_license() {
+        assert_eq!(
+            format!("{}: {}", "MIT".bold(), "example".dimmed()),
+            summarise(crates_per_license(vec![
+                Package {
+                    normalised_name: "example".to_string(),
+                    path: Utf8PathBuf::from("/some/version/path/1"),
+                    url: None,
+                    license: Some("MIT".to_string()),
+                },
+                Package {
+                    normalised_name: "example".to_string(),
+                    path: Utf8PathBuf::from("/some/version/path/2"),
                     url: None,
                     license: Some("MIT".to_string()),
                 }

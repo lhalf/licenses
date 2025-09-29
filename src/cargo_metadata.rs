@@ -1,7 +1,8 @@
 use anyhow::Context;
 use cargo_metadata::camino::Utf8PathBuf;
+use std::hash::{Hash, Hasher};
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, Eq, Clone)]
 pub struct Package {
     pub normalised_name: String,
     pub path: Utf8PathBuf,
@@ -36,6 +37,19 @@ impl Package {
     }
 }
 
+impl PartialEq for Package {
+    fn eq(&self, other: &Self) -> bool {
+        self.normalised_name == other.normalised_name && self.license == other.license
+    }
+}
+
+impl Hash for Package {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.normalised_name.hash(state);
+        self.license.hash(state);
+    }
+}
+
 pub fn try_get_packages() -> anyhow::Result<Vec<Package>> {
     cargo_metadata::MetadataCommand::new()
         .exec()
@@ -51,6 +65,7 @@ mod tests {
     use super::Package;
     use cargo_metadata::camino::Utf8PathBuf;
     use cargo_util_schemas::manifest::PackageName;
+    use std::collections::HashSet;
     use std::str::FromStr;
 
     fn metadata_package() -> cargo_metadata::Package {
@@ -127,5 +142,72 @@ mod tests {
                 .license
                 .is_none()
         )
+    }
+
+    #[test]
+    fn packages_with_same_name_and_license_are_equal() {
+        assert_eq!(
+            Package {
+                normalised_name: "toml".to_string(),
+                path: Utf8PathBuf::from("/some/path/1"),
+                url: Some("https://github.com/toml-rs/toml".to_string()),
+                license: Some("MIT".to_string()),
+            },
+            Package {
+                normalised_name: "toml".to_string(),
+                path: Utf8PathBuf::from("/some/path/2"),
+                url: Some("https://github.com/toml-rs/toml".to_string()),
+                license: Some("MIT".to_string()),
+            }
+        );
+    }
+
+    #[test]
+    fn packages_with_same_name_different_license_are_not_equal() {
+        assert_ne!(
+            Package {
+                normalised_name: "toml".to_string(),
+                path: Utf8PathBuf::from("/some/path/1"),
+                url: Some("https://github.com/toml-rs/toml".to_string()),
+                license: Some("MIT".to_string()),
+            },
+            Package {
+                normalised_name: "toml".to_string(),
+                path: Utf8PathBuf::from("/some/path/2"),
+                url: Some("https://github.com/toml-rs/toml".to_string()),
+                license: Some("Apache-2.0".to_string()),
+            }
+        );
+    }
+
+    #[test]
+    fn packages_are_hashed_based_on_name_and_license() {
+        let package_1 = Package {
+            normalised_name: "toml".to_string(),
+            path: Utf8PathBuf::from("/some/path/1"),
+            url: None,
+            license: Some("MIT".to_string()),
+        };
+        let package_2 = Package {
+            normalised_name: "toml".to_string(),
+            path: Utf8PathBuf::from("/some/path/2"),
+            url: None,
+            license: Some("MIT".to_string()),
+        };
+        let package_3 = Package {
+            normalised_name: "toml".to_string(),
+            path: Utf8PathBuf::from("/some/path/3"),
+            url: None,
+            license: Some("Apache-2.0".to_string()),
+        };
+
+        let mut set = HashSet::new();
+        set.insert(package_1.clone());
+        set.insert(package_2.clone());
+        set.insert(package_3.clone());
+
+        assert_eq!(set.len(), 2);
+        assert!(set.contains(&package_1));
+        assert!(set.contains(&package_3));
     }
 }
