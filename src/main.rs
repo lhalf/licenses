@@ -58,7 +58,7 @@ pub struct GlobalArgs {
     /// Path to configuration file
     #[arg(short, long, value_name = "PATH", global = true)]
     #[serde(skip)]
-    config: Option<String>,
+    config: Option<PathBuf>,
 }
 
 #[derive(Subcommand)]

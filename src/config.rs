@@ -32,7 +32,7 @@ impl GlobalArgs {
 
 pub fn load_config(file_io: &impl FileIO, mut global_args: GlobalArgs) -> anyhow::Result<Config> {
     if let Some(path) = global_args.config.take() {
-        let mut config = parse_config(&file_io.read_file(path.as_ref())?)?;
+        let mut config = parse_config(&file_io.read_file(&path)?)?;
         config.crates = normalised_crate_names(config.crates);
         config.global.merge(global_args);
         Ok(config)
@@ -61,6 +61,7 @@ mod tests {
     use crate::config::{Config, CrateConfig, load_config, parse_config};
     use crate::file_io::FileIOSpy;
     use std::collections::HashMap;
+    use std::path::PathBuf;
 
     #[test]
     fn empty_config_is_valid() {
@@ -218,7 +219,7 @@ mod tests {
             depth: None,
             exclude: vec![],
             ignore: vec![],
-            config: Some("path".to_string()),
+            config: Some(PathBuf::from("path")),
         };
 
         assert_eq!(
@@ -260,7 +261,7 @@ mod tests {
                     depth: None,
                     exclude: vec![],
                     ignore: vec![],
-                    config: Some("path".to_string()),
+                    config: Some(PathBuf::from("path")),
                 }
             )
             .unwrap()
