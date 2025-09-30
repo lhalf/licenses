@@ -12,6 +12,7 @@ use std::path::{Path, PathBuf};
 
 mod cargo_metadata;
 mod cargo_tree;
+mod config;
 mod file_io;
 mod licenses;
 mod macros;
