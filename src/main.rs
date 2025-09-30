@@ -98,7 +98,7 @@ fn main() -> anyhow::Result<()> {
     let CargoSubcommand::Licenses { args, command } = CargoSubcommand::parse();
 
     let file_system = FileSystem {};
-    let config = load_config(args)?;
+    let config = load_config(&file_system, args)?;
     let crates_we_want = crate_names(
         config.global.depth,
         config.global.dev,

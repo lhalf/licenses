@@ -1,4 +1,5 @@
 use crate::GlobalArgs;
+use crate::file_io::FileIO;
 use anyhow::Context;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -31,11 +32,10 @@ impl GlobalArgs {
     }
 }
 
-pub fn load_config(global_args: GlobalArgs) -> anyhow::Result<Config> {
+pub fn load_config(file_io: &impl FileIO, global_args: GlobalArgs) -> anyhow::Result<Config> {
     match global_args.config.clone() {
         Some(path) => {
-            let mut config =
-                parse_config(std::fs::read_to_string(path).context("failed to read config file")?)?;
+            let mut config = parse_config(file_io.read_file(path.as_ref())?)?;
             config.global.merge(global_args);
             Ok(config)
         }
@@ -53,7 +53,8 @@ fn parse_config(contents: String) -> anyhow::Result<Config> {
 #[cfg(test)]
 mod tests {
     use crate::GlobalArgs;
-    use crate::config::{Config, CrateConfig, parse_config};
+    use crate::config::{Config, CrateConfig, load_config, parse_config};
+    use crate::file_io::FileIOSpy;
     use std::collections::HashMap;
 
     #[test]
@@ -251,5 +252,39 @@ mod tests {
             },
             global_args_1
         )
+    }
+
+    #[test]
+    fn errors_if_config_path_set_and_read_file_fails() {
+        let file_io_spy = FileIOSpy::default();
+        file_io_spy
+            .read_file
+            .returns
+            .set([Err(anyhow::anyhow!("deliberate test error"))]);
+
+        let global_args = GlobalArgs {
+            dev: false,
+            build: false,
+            depth: None,
+            exclude: vec![],
+            ignore: vec![],
+            config: Some("path".to_string()),
+        };
+
+        assert_eq!(
+            "deliberate test error",
+            load_config(&file_io_spy, global_args)
+                .unwrap_err()
+                .to_string()
+        )
+    }
+
+    #[test]
+    fn never_uses_file_io_if_config_path_not_set() {
+        let file_io_spy = FileIOSpy::default();
+
+        assert!(load_config(&file_io_spy, GlobalArgs::default()).is_ok());
+
+        assert!(file_io_spy.read_file.arguments.take().is_empty());
     }
 }
