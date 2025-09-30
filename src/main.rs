@@ -69,18 +69,11 @@ enum LicensesSubcommand {
         /// The output license folder path
         #[arg(short, long, default_value_t = String::from("licenses"))]
         path: String,
-        /// Skip specified licenses [default: all included]
-        #[arg(short, long, value_name = "CRATE-LICENSE")]
-        skip: Vec<String>,
     },
     /// Provides a summary of all licenses
     Summary(SummaryArgs),
     /// Checks all licenses for inconsistencies
-    Check {
-        /// Skip specified licenses [default: all included]
-        #[arg(short, long, value_name = "CRATE-LICENSE")]
-        skip: Vec<String>,
-    },
+    Check,
 }
 
 #[derive(Args)]
@@ -109,12 +102,12 @@ fn main() -> anyhow::Result<()> {
     let filtered_packages = filter_packages(try_get_packages()?, crates_we_want);
 
     match command {
-        LicensesSubcommand::Collect { path, skip } => {
+        LicensesSubcommand::Collect { path } => {
             let path = PathBuf::from(path);
             create_output_folder(&path)?;
             copy_licenses(
                 &file_system,
-                collect_licenses(&file_system, &filtered_packages, &skip)?,
+                collect_licenses(&file_system, &filtered_packages, &config.crates)?,
                 path,
             )?;
         }
@@ -132,10 +125,10 @@ fn main() -> anyhow::Result<()> {
                 }
             )
         }
-        LicensesSubcommand::Check { skip } => {
+        LicensesSubcommand::Check => {
             if check_licenses(
                 &file_system,
-                collect_licenses(&file_system, &filtered_packages, &skip)?,
+                collect_licenses(&file_system, &filtered_packages, &config.crates)?,
             )
             .is_err()
             {

@@ -1,4 +1,5 @@
 use crate::cargo_metadata::Package;
+use crate::config::CrateConfig;
 use crate::file_io::DirEntry;
 use crate::file_io::FileIO;
 use crate::licenses::is_license::is_license;
@@ -7,11 +8,17 @@ use std::collections::HashMap;
 pub fn collect_licenses(
     file_io: &impl FileIO,
     packages: &[Package],
-    skipped_files: &[String],
+    crates: &HashMap<String, CrateConfig>,
 ) -> anyhow::Result<HashMap<Package, Vec<DirEntry>>> {
     packages
         .iter()
-        .map(|package| collect_licenses_for_package(file_io, package, skipped_files))
+        .map(|package| {
+            let skipped_files: &[String] = crates
+                .get(&package.normalised_name)
+                .map(|config| config.skipped.as_slice())
+                .unwrap_or(&[]);
+            collect_licenses_for_package(file_io, package, skipped_files)
+        })
         .collect()
 }
 
@@ -26,24 +33,23 @@ fn collect_licenses_for_package(
             .read_dir(package.path.as_ref())?
             .into_iter()
             .filter(is_license)
-            .filter(|dir_entry| !is_skipped_file(dir_entry, skipped_files, package))
+            .filter(|dir_entry| !is_skipped_file(dir_entry, skipped_files))
             .collect(),
     ))
 }
 
-fn is_skipped_file(dir_entry: &DirEntry, skipped_files: &[String], package: &Package) -> bool {
+fn is_skipped_file(dir_entry: &DirEntry, skipped_files: &[String]) -> bool {
     dir_entry
         .name
         .to_str()
-        .map(|file_name| {
-            skipped_files.contains(&format!("{}-{}", package.normalised_name, file_name))
-        })
+        .map(|file_name| skipped_files.contains(&file_name.to_string()))
         .unwrap_or(true)
 }
 
 #[cfg(test)]
 mod tests {
     use crate::cargo_metadata::Package;
+    use crate::config::CrateConfig;
     use crate::file_io::{DirEntry, FileIOSpy};
     use crate::licenses::collect::collect_licenses;
     use std::collections::HashMap;
@@ -57,7 +63,9 @@ mod tests {
             .returns
             .set([Err(anyhow::anyhow!("deliberate test error"))]);
 
-        assert!(collect_licenses(&file_io_spy, &[Package::called("example")], &[]).is_err());
+        assert!(
+            collect_licenses(&file_io_spy, &[Package::called("example")], &HashMap::new()).is_err()
+        );
     }
 
     #[test]
@@ -71,7 +79,7 @@ mod tests {
 
         assert_eq!(
             expected_licenses,
-            collect_licenses(&file_io_spy, &[Package::called("example")], &[]).unwrap()
+            collect_licenses(&file_io_spy, &[Package::called("example")], &HashMap::new()).unwrap()
         );
     }
 
@@ -90,7 +98,7 @@ mod tests {
 
         assert_eq!(
             expected_licenses,
-            collect_licenses(&file_io_spy, &[Package::called("example")], &[]).unwrap()
+            collect_licenses(&file_io_spy, &[Package::called("example")], &HashMap::new()).unwrap()
         );
     }
 
@@ -113,7 +121,7 @@ mod tests {
 
         assert_eq!(
             expected_licenses,
-            collect_licenses(&file_io_spy, &[Package::called("example")], &[]).unwrap()
+            collect_licenses(&file_io_spy, &[Package::called("example")], &HashMap::new()).unwrap()
         );
     }
 
@@ -126,7 +134,14 @@ mod tests {
             is_file: true,
         }])]);
 
-        let skipped_files = ["example-LICENSE".to_string()];
+        let skipped_files: HashMap<_, _> = [(
+            "example".to_string(),
+            CrateConfig {
+                skipped: vec!["LICENSE".to_string()],
+            },
+        )]
+        .into_iter()
+        .collect();
 
         let expected_licenses: HashMap<_, _> = [(Package::called("example"), Vec::new())]
             .into_iter()
@@ -159,10 +174,14 @@ mod tests {
             },
         ])]);
 
-        let skipped_files = [
-            "example-COPYRIGHT".to_string(),
-            "example-LICENSE-APACHE".to_string(),
-        ];
+        let skipped_files: HashMap<_, _> = [(
+            "example".to_string(),
+            CrateConfig {
+                skipped: vec!["COPYRIGHT".to_string(), "LICENSE-APACHE".to_string()],
+            },
+        )]
+        .into_iter()
+        .collect();
 
         let expected_licenses: HashMap<_, _> = [(
             Package::called("example"),

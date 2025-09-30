@@ -10,13 +10,13 @@ use std::collections::HashMap;
 pub struct Config {
     pub global: GlobalArgs,
     #[serde(rename = "crate")]
-    _crate: HashMap<String, CrateConfig>,
+    pub crates: HashMap<String, CrateConfig>,
 }
 
 #[derive(Debug, PartialEq, Deserialize, Default)]
 #[serde(default)]
 #[serde(deny_unknown_fields)]
-struct CrateConfig {
+pub struct CrateConfig {
     pub skipped: Vec<String>,
 }
 
@@ -36,12 +36,17 @@ pub fn load_config(file_io: &impl FileIO, global_args: GlobalArgs) -> anyhow::Re
     match global_args.config.clone() {
         Some(path) => {
             let mut config = parse_config(file_io.read_file(path.as_ref())?)?;
+            config.crates = config
+                .crates
+                .into_iter()
+                .map(|(crate_name, value)| (crate_name.replace("-", "_"), value))
+                .collect();
             config.global.merge(global_args);
             Ok(config)
         }
         None => Ok(Config {
             global: global_args,
-            _crate: HashMap::new(),
+            crates: HashMap::new(),
         }),
     }
 }
@@ -62,7 +67,7 @@ mod tests {
         assert_eq!(
             Config {
                 global: Default::default(),
-                _crate: HashMap::new(),
+                crates: HashMap::new(),
             },
             parse_config(String::new()).unwrap()
         );
@@ -82,7 +87,7 @@ mod tests {
         assert_eq!(
             Config {
                 global: Default::default(),
-                _crate: [("anyhow".to_string(), CrateConfig { skipped: vec![] })]
+                crates: [("anyhow".to_string(), CrateConfig { skipped: vec![] })]
                     .into_iter()
                     .collect(),
             },
@@ -94,7 +99,7 @@ mod tests {
         assert_eq!(
             Config {
                 global: Default::default(),
-                _crate: [("anyhow".to_string(), CrateConfig { skipped: vec![] })]
+                crates: [("anyhow".to_string(), CrateConfig { skipped: vec![] })]
                     .into_iter()
                     .collect(),
             },
@@ -122,7 +127,7 @@ mod tests {
         assert_eq!(
             Config {
                 global: Default::default(),
-                _crate: [(
+                crates: [(
                     "anyhow".to_string(),
                     CrateConfig {
                         skipped: vec!["COPYING".to_string()]
@@ -145,7 +150,7 @@ mod tests {
         assert_eq!(
             Config {
                 global: Default::default(),
-                _crate: [
+                crates: [
                     (
                         "anyhow".to_string(),
                         CrateConfig {
@@ -174,7 +179,7 @@ mod tests {
         assert_eq!(
             Config {
                 global: Default::default(),
-                _crate: [(
+                crates: [(
                     "anyhow".to_string(),
                     CrateConfig {
                         skipped: vec!["COPYING".to_string()]
@@ -216,7 +221,7 @@ mod tests {
                     ignore: vec!["crate1".to_string(), "crate2".to_string()],
                     config: None,
                 },
-                _crate: HashMap::new(),
+                crates: HashMap::new(),
             },
             parse_config(contents.to_string()).unwrap()
         );
@@ -286,5 +291,39 @@ mod tests {
         assert!(load_config(&file_io_spy, GlobalArgs::default()).is_ok());
 
         assert!(file_io_spy.read_file.arguments.take().is_empty());
+    }
+
+    #[test]
+    fn crates_in_config_are_normalised() {
+        let file_io_spy = FileIOSpy::default();
+
+        let contents = r#"
+        [crate.normalise-me]"#;
+
+        file_io_spy
+            .read_file
+            .returns
+            .set([Ok(contents.to_string())]);
+
+        assert_eq!(
+            Config {
+                global: Default::default(),
+                crates: [("normalise_me".to_string(), CrateConfig { skipped: vec![] })]
+                    .into_iter()
+                    .collect(),
+            },
+            load_config(
+                &file_io_spy,
+                GlobalArgs {
+                    dev: false,
+                    build: false,
+                    depth: None,
+                    exclude: vec![],
+                    ignore: vec![],
+                    config: Some("path".to_string()),
+                }
+            )
+            .unwrap()
+        );
     }
 }
