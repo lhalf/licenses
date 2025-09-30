@@ -5,8 +5,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 
 #[derive(Debug, PartialEq, Deserialize, Default)]
-#[serde(default)]
-#[serde(deny_unknown_fields)]
+#[serde(default, deny_unknown_fields)]
 pub struct Config {
     pub global: GlobalArgs,
     #[serde(rename = "crate")]
@@ -14,45 +13,46 @@ pub struct Config {
 }
 
 #[derive(Debug, PartialEq, Deserialize, Default)]
-#[serde(default)]
-#[serde(deny_unknown_fields)]
+#[serde(default, deny_unknown_fields)]
 pub struct CrateConfig {
     pub skipped: Vec<String>,
 }
 
 impl GlobalArgs {
-    fn merge(&mut self, global_args: GlobalArgs) {
-        self.dev |= global_args.dev;
-        self.build |= global_args.build;
-        if global_args.depth.is_some() {
-            self.depth = global_args.depth;
+    fn merge(&mut self, other: GlobalArgs) {
+        self.dev |= other.dev;
+        self.build |= other.build;
+        if other.depth.is_some() {
+            self.depth = other.depth;
         }
-        self.exclude.extend(global_args.exclude);
-        self.ignore.extend(global_args.ignore);
+        self.exclude.extend(other.exclude);
+        self.ignore.extend(other.ignore);
     }
 }
 
-pub fn load_config(file_io: &impl FileIO, global_args: GlobalArgs) -> anyhow::Result<Config> {
-    match global_args.config.clone() {
-        Some(path) => {
-            let mut config = parse_config(file_io.read_file(path.as_ref())?)?;
-            config.crates = config
-                .crates
-                .into_iter()
-                .map(|(crate_name, value)| (crate_name.replace("-", "_"), value))
-                .collect();
-            config.global.merge(global_args);
-            Ok(config)
-        }
-        None => Ok(Config {
+pub fn load_config(file_io: &impl FileIO, mut global_args: GlobalArgs) -> anyhow::Result<Config> {
+    if let Some(path) = global_args.config.take() {
+        let mut config = parse_config(&file_io.read_file(path.as_ref())?)?;
+        config.crates = normalised_crate_names(config.crates);
+        config.global.merge(global_args);
+        Ok(config)
+    } else {
+        Ok(Config {
             global: global_args,
             crates: HashMap::new(),
-        }),
+        })
     }
 }
 
-fn parse_config(contents: String) -> anyhow::Result<Config> {
-    toml::from_str(&contents).context("failed to parse config")
+fn parse_config(contents: &str) -> anyhow::Result<Config> {
+    toml::from_str(contents).context("failed to parse config")
+}
+
+fn normalised_crate_names(crates: HashMap<String, CrateConfig>) -> HashMap<String, CrateConfig> {
+    crates
+        .into_iter()
+        .map(|(crate_name, config)| (crate_name.replace("-", "_"), config))
+        .collect()
 }
 
 #[cfg(test)]
@@ -69,7 +69,7 @@ mod tests {
                 global: Default::default(),
                 crates: HashMap::new(),
             },
-            parse_config(String::new()).unwrap()
+            parse_config("").unwrap()
         );
     }
 
@@ -77,7 +77,7 @@ mod tests {
     fn config_with_invalid_heading_is_invalid() {
         let contents = r#"
         [invalid]"#;
-        assert!(parse_config(contents.to_string()).is_err());
+        assert!(parse_config(contents).is_err());
     }
 
     #[test]
@@ -91,7 +91,7 @@ mod tests {
                     .into_iter()
                     .collect(),
             },
-            parse_config(contents.to_string()).unwrap()
+            parse_config(contents).unwrap()
         );
         let contents = r#"
         [global]
@@ -103,7 +103,7 @@ mod tests {
                     .into_iter()
                     .collect(),
             },
-            parse_config(contents.to_string()).unwrap()
+            parse_config(contents).unwrap()
         );
     }
 
@@ -112,11 +112,11 @@ mod tests {
         let contents = r#"
         [crate.anyhow]
         lemon = "cheese""#;
-        assert!(parse_config(contents.to_string()).is_err());
+        assert!(parse_config(contents).is_err());
         let contents = r#"
         [global]
         config = "not allowed""#;
-        assert!(parse_config(contents.to_string()).is_err());
+        assert!(parse_config(contents).is_err());
     }
 
     #[test]
@@ -136,7 +136,7 @@ mod tests {
                 .into_iter()
                 .collect(),
             },
-            parse_config(contents.to_string()).unwrap()
+            parse_config(contents).unwrap()
         );
     }
 
@@ -167,7 +167,7 @@ mod tests {
                 .into_iter()
                 .collect(),
             },
-            parse_config(contents.to_string()).unwrap()
+            parse_config(contents).unwrap()
         );
     }
 
@@ -188,7 +188,7 @@ mod tests {
                 .into_iter()
                 .collect(),
             },
-            parse_config(contents.to_string()).unwrap()
+            parse_config(contents).unwrap()
         );
     }
 
@@ -199,7 +199,7 @@ mod tests {
         skipped = ["COPYING"]
         [crate.anyhow]
         skipped = ["LICENSE-WRONG","COPYRIGHT"]"#;
-        assert!(parse_config(contents.to_string()).is_err());
+        assert!(parse_config(contents).is_err());
     }
 
     #[test]
@@ -223,7 +223,7 @@ mod tests {
                 },
                 crates: HashMap::new(),
             },
-            parse_config(contents.to_string()).unwrap()
+            parse_config(contents).unwrap()
         );
     }
 
