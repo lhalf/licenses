@@ -33,8 +33,7 @@ enum CargoSubcommand {
 }
 
 #[derive(Debug, Args, Deserialize, PartialEq, Default, Clone)]
-#[serde(default)]
-#[serde(deny_unknown_fields)]
+#[serde(default, deny_unknown_fields)]
 pub struct GlobalArgs {
     /// Include dev dependencies [default: excluded]
     #[arg(short, long, global = true)]
