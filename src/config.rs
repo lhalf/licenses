@@ -64,59 +64,39 @@ mod tests {
 
     #[test]
     fn empty_config_is_valid() {
-        assert_eq!(
-            Config {
-                global: Default::default(),
-                crates: HashMap::new(),
-            },
-            parse_config("").unwrap()
-        );
+        assert_eq!(config_with_crates([]), parse_config("").unwrap());
     }
 
     #[test]
     fn config_with_invalid_heading_is_invalid() {
-        let contents = r#"
-        [invalid]"#;
+        let contents = r#"[invalid]"#;
         assert!(parse_config(contents).is_err());
     }
 
     #[test]
     fn config_with_valid_heading_but_no_skipped_files_is_valid() {
-        let contents = r#"
-        [crate.anyhow]"#;
-        assert_eq!(
-            Config {
-                global: Default::default(),
-                crates: [("anyhow".to_string(), CrateConfig { skipped: vec![] })]
-                    .into_iter()
-                    .collect(),
-            },
-            parse_config(contents).unwrap()
-        );
-        let contents = r#"
-        [global]
-        [crate.anyhow]"#;
-        assert_eq!(
-            Config {
-                global: Default::default(),
-                crates: [("anyhow".to_string(), CrateConfig { skipped: vec![] })]
-                    .into_iter()
-                    .collect(),
-            },
-            parse_config(contents).unwrap()
-        );
+        for contents in [
+            r#"[crate.anyhow]"#,
+            r#"[global] 
+        [crate.anyhow]"#,
+        ] {
+            assert_eq!(
+                config_with_crates([("anyhow", crate_config(&[]))]),
+                parse_config(contents).unwrap()
+            );
+        }
     }
 
     #[test]
     fn config_with_invalid_key_pair_is_invalid() {
-        let contents = r#"
-        [crate.anyhow]
-        lemon = "cheese""#;
-        assert!(parse_config(contents).is_err());
-        let contents = r#"
-        [global]
-        config = "not allowed""#;
-        assert!(parse_config(contents).is_err());
+        for contents in [
+            r#"[crate.anyhow] 
+            lemon = "cheese""#,
+            r#"[global] 
+            config = "not allowed""#,
+        ] {
+            assert!(parse_config(contents).is_err());
+        }
     }
 
     #[test]
@@ -125,17 +105,7 @@ mod tests {
         [crate.anyhow]
         skipped = ["COPYING"]"#;
         assert_eq!(
-            Config {
-                global: Default::default(),
-                crates: [(
-                    "anyhow".to_string(),
-                    CrateConfig {
-                        skipped: vec!["COPYING".to_string()]
-                    }
-                )]
-                .into_iter()
-                .collect(),
-            },
+            config_with_crates([("anyhow", crate_config(&["COPYING"]))]),
             parse_config(contents).unwrap()
         );
     }
@@ -148,25 +118,10 @@ mod tests {
         [crate.another]
         skipped = ["LICENSE-WRONG","COPYRIGHT"]"#;
         assert_eq!(
-            Config {
-                global: Default::default(),
-                crates: [
-                    (
-                        "anyhow".to_string(),
-                        CrateConfig {
-                            skipped: vec!["COPYING".to_string()]
-                        }
-                    ),
-                    (
-                        "another".to_string(),
-                        CrateConfig {
-                            skipped: vec!["LICENSE-WRONG".to_string(), "COPYRIGHT".to_string()]
-                        }
-                    )
-                ]
-                .into_iter()
-                .collect(),
-            },
+            config_with_crates([
+                ("anyhow", crate_config(&["COPYING"])),
+                ("another", crate_config(&["LICENSE-WRONG", "COPYRIGHT"]))
+            ]),
             parse_config(contents).unwrap()
         );
     }
@@ -177,17 +132,7 @@ mod tests {
         [crate.anyhow]
         skipped = ["COPYING"] # a comment"#;
         assert_eq!(
-            Config {
-                global: Default::default(),
-                crates: [(
-                    "anyhow".to_string(),
-                    CrateConfig {
-                        skipped: vec!["COPYING".to_string()]
-                    }
-                )]
-                .into_iter()
-                .collect(),
-            },
+            config_with_crates([("anyhow", crate_config(&["COPYING"]))]),
             parse_config(contents).unwrap()
         );
     }
@@ -306,12 +251,7 @@ mod tests {
             .set([Ok(contents.to_string())]);
 
         assert_eq!(
-            Config {
-                global: Default::default(),
-                crates: [("normalise_me".to_string(), CrateConfig { skipped: vec![] })]
-                    .into_iter()
-                    .collect(),
-            },
+            config_with_crates([("normalise_me", crate_config(&[]))]),
             load_config(
                 &file_io_spy,
                 GlobalArgs {
@@ -325,5 +265,24 @@ mod tests {
             )
             .unwrap()
         );
+    }
+
+    fn crate_config(skipped: &[&str]) -> CrateConfig {
+        CrateConfig {
+            skipped: skipped.iter().map(|s| s.to_string()).collect(),
+        }
+    }
+
+    fn config_with_crates<I>(crates: I) -> Config
+    where
+        I: IntoIterator<Item = (&'static str, CrateConfig)>,
+    {
+        Config {
+            global: Default::default(),
+            crates: crates
+                .into_iter()
+                .map(|(k, v)| (k.to_string(), v))
+                .collect(),
+        }
     }
 }
