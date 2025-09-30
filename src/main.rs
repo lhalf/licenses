@@ -1,5 +1,6 @@
 use crate::cargo_metadata::{Package, try_get_packages};
 use crate::cargo_tree::crate_names;
+use crate::config::load_config;
 use crate::file_io::FileSystem;
 use crate::licenses::check::check_licenses;
 use crate::licenses::collect::collect_licenses;
@@ -51,6 +52,10 @@ struct GlobalArgs {
     /// Ignore specified crate [default: all included]
     #[arg(short, long, value_name = "CRATE", global = true)]
     ignore: Vec<String>,
+
+    /// Path to configuration file
+    #[arg(short, long, global = true)]
+    config: Option<String>,
 }
 
 #[derive(Subcommand)]
@@ -89,6 +94,7 @@ fn main() -> anyhow::Result<()> {
     let CargoSubcommand::Licenses { args, command } = CargoSubcommand::parse();
 
     let file_system = FileSystem {};
+    let _config = args.config.map(load_config);
     let crates_we_want = crate_names(args.depth, args.dev, args.build, args.exclude, args.ignore)?;
     let filtered_packages = filter_packages(try_get_packages()?, crates_we_want);
 

@@ -1,11 +1,13 @@
-#![allow(unused)]
 use anyhow::Context;
 use serde::Deserialize;
 use std::collections::HashMap;
+use std::path::Path;
 
 #[derive(Debug, PartialEq, Deserialize)]
-struct Config {
+#[serde(deny_unknown_fields)]
+pub struct Config {
     #[serde(rename = "crate")]
+    #[serde(default)]
     _crate: HashMap<String, CrateConfig>,
 }
 
@@ -16,6 +18,10 @@ struct CrateConfig {
     pub skipped: Vec<String>,
 }
 
+pub fn load_config<P: AsRef<Path>>(path: P) -> anyhow::Result<Config> {
+    parse_config(std::fs::read_to_string(path)?)
+}
+
 fn parse_config(contents: String) -> anyhow::Result<Config> {
     toml::from_str(&contents).context("failed to parse config")
 }
@@ -23,10 +29,16 @@ fn parse_config(contents: String) -> anyhow::Result<Config> {
 #[cfg(test)]
 mod tests {
     use crate::config::{Config, CrateConfig, parse_config};
+    use std::collections::HashMap;
 
     #[test]
-    fn empty_config_is_invalid() {
-        assert!(parse_config(String::new()).is_err());
+    fn empty_config_is_valid() {
+        assert_eq!(
+            Config {
+                _crate: HashMap::new(),
+            },
+            parse_config(String::new()).unwrap()
+        );
     }
 
     #[test]
