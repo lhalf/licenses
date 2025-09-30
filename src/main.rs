@@ -8,6 +8,7 @@ use crate::licenses::copy::copy_licenses;
 use crate::licenses::summarise::{crates_per_license, summarise};
 use anyhow::Context;
 use clap::{Args, Parser, Subcommand};
+use serde::Deserialize;
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
@@ -31,8 +32,10 @@ enum CargoSubcommand {
     },
 }
 
-#[derive(Args)]
-struct GlobalArgs {
+#[derive(Debug, Args, Deserialize, PartialEq, Default, Clone)]
+#[serde(default)]
+#[serde(deny_unknown_fields)]
+pub struct GlobalArgs {
     /// Include dev dependencies [default: excluded]
     #[arg(short, long, global = true)]
     dev: bool,
@@ -54,7 +57,8 @@ struct GlobalArgs {
     ignore: Vec<String>,
 
     /// Path to configuration file
-    #[arg(short, long, global = true)]
+    #[arg(short, long, value_name = "PATH", global = true)]
+    #[serde(skip)]
     config: Option<String>,
 }
 
@@ -94,8 +98,14 @@ fn main() -> anyhow::Result<()> {
     let CargoSubcommand::Licenses { args, command } = CargoSubcommand::parse();
 
     let file_system = FileSystem {};
-    let _config = args.config.map(load_config);
-    let crates_we_want = crate_names(args.depth, args.dev, args.build, args.exclude, args.ignore)?;
+    let config = load_config(args)?;
+    let crates_we_want = crate_names(
+        config.global.depth,
+        config.global.dev,
+        config.global.build,
+        config.global.exclude,
+        config.global.ignore,
+    )?;
     let filtered_packages = filter_packages(try_get_packages()?, crates_we_want);
 
     match command {
