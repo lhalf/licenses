@@ -22,7 +22,7 @@ Commands:
   collect  Collects all licenses into a folder
   summary  Provides a summary of all licenses
   check    Checks all licenses for inconsistencies
-  diff     Diff the current licenses folder against what would be collected
+  diff     Compare the current licenses folder against what would be collected
 
 Options:
   -d, --dev                  Include dev dependencies [default: excluded]
@@ -38,7 +38,7 @@ Options:
 
 ### Collect
 
-Collects all licenses of the specified dependencies into a folder.
+Collects all licenses of the specified dependencies into a folder. Folder path can be specified with `--path`, defaults to `licenses/`.
 
 Prints a warning:
 
@@ -143,6 +143,16 @@ $ cargo licenses check
 warning: found license(s) in memchr whose content was not similar to expected - COPYING
 warning: found license(s) in unicode_xid whose content was not similar to expected - COPYRIGHT
 warning: found license(s) in utf8_iter whose content was not similar to expected - COPYRIGHT
+```
+
+### Diff
+
+Compares the current collected licenses folder against the licenses that would be collected. Current licenses folder path can be specified with `--path`, defaults to `licenses/`.
+
+Returns a non-zero exit code if the current licenses folder doesn't contain licenses that would be collected.
+
+```
+$ cargo licenses diff
 ```
 
 ## Configuration
