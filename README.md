@@ -22,6 +22,7 @@ Commands:
   collect  Collects all licenses into a folder
   summary  Provides a summary of all licenses
   check    Checks all licenses for inconsistencies
+  diff     Diff the current licenses folder against what would be collected
 
 Options:
   -d, --dev                  Include dev dependencies [default: excluded]
@@ -29,6 +30,7 @@ Options:
   -D, --depth <DEPTH>        The depth of dependencies to include [default: all sub dependencies]
   -e, --exclude <WORKSPACE>  Exclude specified workspace [default: all included]
   -i, --ignore <CRATE>       Ignore specified crate [default: all included]
+  -c, --config <PATH>        Path to configuration file
   -h, --help                 Print help
 ```
 
@@ -67,7 +69,9 @@ licenses
 ├── serde_json-LICENSE-MIT
 ├── spdx-LICENSE-APACHE
 ├── spdx-LICENSE-MIT
-└── strsim-LICENSE
+├── strsim-LICENSE
+├── toml-LICENSE-APACHE
+└── toml-LICENSE-MIT
 ```
 
 ### Summary
@@ -77,7 +81,7 @@ Summarises the declared licenses of the specified dependencies.
 ```
 $ cargo licenses summary --depth 1
 MIT: cargo_metadata,strsim
-MIT OR Apache-2.0: anyhow,clap,itertools,once_cell,serde,serde_json,spdx
+MIT OR Apache-2.0: anyhow,clap,itertools,once_cell,serde,serde_json,spdx,toml
 MPL-2.0: colored
 ```
 
@@ -91,7 +95,8 @@ $ cargo licenses summary --depth 1 --json
     "once_cell",
     "serde",
     "serde_json",
-    "spdx"
+    "spdx",
+    "toml"
   ],
   "MIT": [
     "cargo_metadata",
@@ -101,7 +106,25 @@ $ cargo licenses summary --depth 1 --json
     "colored"
   ]
 }
+```
 
+```
+$ cargo licenses summary --depth 1 --toml
+"MIT OR Apache-2.0" = [
+    "anyhow",
+    "clap",
+    "itertools",
+    "once_cell",
+    "serde",
+    "serde_json",
+    "spdx",
+    "toml",
+]
+MIT = [
+    "cargo_metadata",
+    "strsim",
+]
+"MPL-2.0" = ["colored"
 ```
 
 ### Check
@@ -120,4 +143,37 @@ $ cargo licenses check
 warning: found license(s) in memchr whose content was not similar to expected - COPYING
 warning: found license(s) in unicode_xid whose content was not similar to expected - COPYRIGHT
 warning: found license(s) in utf8_iter whose content was not similar to expected - COPYRIGHT
+```
+
+## Configuration
+
+A [TOML](https://toml.io/en/) configuration file can be used to store all passed flags, as well as enabling some additional features.
+If both a config and a flag are passed, the flag will take precedence.
+
+### Skipping licenses
+
+The configuration file allows the selective skipping of licenses found by the various subcommands.
+It is recommended to provide a comment per skipped license to indicate why it is deemed safe to skip, for instance it might be
+erroneously detected as a license because of the filename.
+
+### Example
+
+The below is an example of a TOML configuration file that could be used via the `--config` flag.
+
+```toml
+[global]
+dev = true
+build = true
+depth = 1
+exclude = ["workspace"]
+ignore = ["crate"]
+
+[crate.memchr]
+skipped = ["COPYING"] # not a license, statement of which licenses the crate falls under
+
+[crate.unicode-xid]
+skipped = ["COPYRIGHT"] # not a license, statement of which licenses the crate falls under
+
+[crate.utf8_iter]
+skipped = ["COPYRIGHT"] # not a license, statement of which licenses should be used
 ```
