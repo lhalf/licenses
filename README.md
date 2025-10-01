@@ -177,3 +177,19 @@ skipped = ["COPYRIGHT"] # not a license, statement of which licenses the crate f
 [crate.utf8_iter]
 skipped = ["COPYRIGHT"] # not a license, statement of which licenses should be used
 ```
+
+## Usage patterns
+
+This tool is designed to help collect required licenses when shipping software with open-source dependencies. The intended pattern of use would look as follows:
+
+- `summary` provides a quick way to see if any dependencies are using stricter licenses that might not be suitable
+- `collect` to collect all licenses into an output folder, this would be done manually and the license folder commited as part of the repository
+- the previous command might have raised warnings about licenses found, or not found, these can be manually assessed and skipped in the configuration file if deemed safe
+- as part of a continuous integration system, or as a pre-commit hook, a `diff` should be run to check the licenses folder hasn't missed any licenses added by new dependencies
+- as part of a continuous integration system a `check` should be run to confirm all license inconsistencies have been accounted for
+
+## Legal disclaimer
+
+This is provided as a convenience to help with collecting and reviewing open-source licenses. **It does not guarantee compliance with all legal licensing requirements.** It is
+the user's responsibility to ensure that all applicable licenses are collected, reviewed and adhered to. The authors and contributors of this tool accept no liability for missing,
+incomplete or inaccurate licenses files, or for any consequences arising from its use.
