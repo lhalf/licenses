@@ -28,7 +28,7 @@ fn skipped_files_for_package<'a>(
 ) -> &'a [String] {
     crate_configs
         .get(&package.normalised_name)
-        .map(|config| config.skipped.as_slice())
+        .map(|config| config.skip.as_slice())
         .unwrap_or(&[])
 }
 
@@ -147,7 +147,8 @@ mod tests {
         let skipped_files: HashMap<_, _> = [(
             "example".to_string(),
             CrateConfig {
-                skipped: vec!["LICENSE".to_string()],
+                skip: vec!["LICENSE".to_string()],
+                mute: Vec::new(),
             },
         )]
         .into_iter()
@@ -187,7 +188,8 @@ mod tests {
         let skipped_files: HashMap<_, _> = [(
             "example".to_string(),
             CrateConfig {
-                skipped: vec!["COPYRIGHT".to_string(), "LICENSE-APACHE".to_string()],
+                skip: vec!["COPYRIGHT".to_string(), "LICENSE-APACHE".to_string()],
+                mute: Vec::new(),
             },
         )]
         .into_iter()

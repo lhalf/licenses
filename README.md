@@ -178,14 +178,10 @@ depth = 1
 exclude = ["workspace"]
 ignore = ["crate"]
 
-[crate.memchr]
-skipped = ["COPYING"] # not a license, statement of which licenses the crate falls under
-
-[crate.unicode-xid]
-skipped = ["COPYRIGHT"] # not a license, statement of which licenses the crate falls under
-
-[crate.utf8_iter]
-skipped = ["COPYRIGHT"] # not a license, statement of which licenses should be used
+[crates]
+memchr = { skip = ["COPYING"] } # not a license, statement of which licenses the crate falls under
+unicode-xid = { skip = ["COPYRIGHT"] } # not a license, statement of which licenses the crate falls under
+utf8_iter = { skip = ["COPYRIGHT"] } # not a license, statement of which licenses should be used
 ```
 
 ## Usage patterns

@@ -8,14 +8,15 @@ use std::collections::HashMap;
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
     pub global: GlobalArgs,
-    #[serde(rename = "crate")]
+    #[serde(rename = "crates")]
     pub crate_configs: HashMap<String, CrateConfig>,
 }
 
 #[derive(Debug, PartialEq, Deserialize, Default)]
 #[serde(default, deny_unknown_fields)]
 pub struct CrateConfig {
-    pub skipped: Vec<String>,
+    pub skip: Vec<String>,
+    pub mute: Vec<String>,
 }
 
 impl GlobalArgs {
@@ -77,12 +78,12 @@ mod tests {
     #[test]
     fn config_with_valid_heading_but_no_skipped_files_is_valid() {
         for contents in [
-            r#"[crate.anyhow]"#,
+            r#"[crates.anyhow]"#,
             r#"[global] 
-        [crate.anyhow]"#,
+        [crates.anyhow]"#,
         ] {
             assert_eq!(
-                config_with_crates([("anyhow", crate_config(&[]))]),
+                config_with_crates([("anyhow", crate_config(&[], &[]))]),
                 parse_config(contents).unwrap()
             );
         }
@@ -91,7 +92,7 @@ mod tests {
     #[test]
     fn config_with_invalid_key_pair_is_invalid() {
         for contents in [
-            r#"[crate.anyhow] 
+            r#"[crates.anyhow]
             lemon = "cheese""#,
             r#"[global] 
             config = "not allowed""#,
@@ -103,13 +104,13 @@ mod tests {
     #[test]
     fn config_with_valid_heading_and_single_skipped_file_is_valid() {
         for contents in [
-            r#"[crate.anyhow]
-            skipped = ["COPYING"]"#,
-            r#"[crate]
-            anyhow = { skipped = ["COPYING"]}"#,
+            r#"[crates.anyhow]
+            skip = ["COPYING"]"#,
+            r#"[crates]
+            anyhow = { skip = ["COPYING"]}"#,
         ] {
             assert_eq!(
-                config_with_crates([("anyhow", crate_config(&["COPYING"]))]),
+                config_with_crates([("anyhow", crate_config(&["COPYING"], &[]))]),
                 parse_config(contents).unwrap()
             );
         }
@@ -118,14 +119,38 @@ mod tests {
     #[test]
     fn config_with_multiple_valid_headings_and_multiple_skipped_files() {
         let contents = r#"
-        [crate.anyhow]
-        skipped = ["COPYING"]
-        [crate.another]
-        skipped = ["LICENSE-WRONG","COPYRIGHT"]"#;
+        [crates.anyhow]
+        skip = ["COPYING"]
+        [crates.another]
+        skip = ["LICENSE-WRONG","COPYRIGHT"]"#;
         assert_eq!(
             config_with_crates([
-                ("anyhow", crate_config(&["COPYING"])),
-                ("another", crate_config(&["LICENSE-WRONG", "COPYRIGHT"]))
+                ("anyhow", crate_config(&["COPYING"], &[])),
+                (
+                    "another",
+                    crate_config(&["LICENSE-WRONG", "COPYRIGHT"], &[])
+                )
+            ]),
+            parse_config(contents).unwrap()
+        );
+    }
+
+    #[test]
+    fn config_with_skipped_and_muted_files_is_valid() {
+        let contents = r#"
+        [crates.anyhow]
+        skip = ["COPYING"]
+        mute = ["LICENSE.txt"]
+        [crates.another]
+        skip = ["LICENSE-WRONG","COPYRIGHT"]
+        mute = ["COPYING"]"#;
+        assert_eq!(
+            config_with_crates([
+                ("anyhow", crate_config(&["COPYING"], &["LICENSE.txt"])),
+                (
+                    "another",
+                    crate_config(&["LICENSE-WRONG", "COPYRIGHT"], &["COPYING"])
+                )
             ]),
             parse_config(contents).unwrap()
         );
@@ -134,10 +159,10 @@ mod tests {
     #[test]
     fn config_with_comments_are_valid() {
         let contents = r#"
-        [crate.anyhow]
-        skipped = ["COPYING"] # a comment"#;
+        [crates.anyhow]
+        skip = ["COPYING"] # a comment"#;
         assert_eq!(
-            config_with_crates([("anyhow", crate_config(&["COPYING"]))]),
+            config_with_crates([("anyhow", crate_config(&["COPYING"], &[]))]),
             parse_config(contents).unwrap()
         );
     }
@@ -145,10 +170,10 @@ mod tests {
     #[test]
     fn config_with_duplicate_headings_are_invalid() {
         let contents = r#"
-        [crate.anyhow]
-        skipped = ["COPYING"]
-        [crate.anyhow]
-        skipped = ["LICENSE-WRONG","COPYRIGHT"]"#;
+        [crates.anyhow]
+        skip = ["COPYING"]
+        [crates.anyhow]
+        skip = ["LICENSE-WRONG","COPYRIGHT"]"#;
         assert!(parse_config(contents).is_err());
     }
 
@@ -248,7 +273,7 @@ mod tests {
         let file_io_spy = FileIOSpy::default();
 
         let contents = r#"
-        [crate.normalise-me]"#;
+        [crates.normalise-me]"#;
 
         file_io_spy
             .read_file
@@ -256,7 +281,7 @@ mod tests {
             .set([Ok(contents.to_string())]);
 
         assert_eq!(
-            config_with_crates([("normalise_me", crate_config(&[]))]),
+            config_with_crates([("normalise_me", crate_config(&[], &[]))]),
             load_config(
                 &file_io_spy,
                 GlobalArgs {
@@ -272,9 +297,10 @@ mod tests {
         );
     }
 
-    fn crate_config(skipped: &[&str]) -> CrateConfig {
+    fn crate_config(skipped: &[&str], muted: &[&str]) -> CrateConfig {
         CrateConfig {
-            skipped: skipped.iter().map(|s| s.to_string()).collect(),
+            skip: skipped.iter().map(|s| s.to_string()).collect(),
+            mute: muted.iter().map(|s| s.to_string()).collect(),
         }
     }
 
