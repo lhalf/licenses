@@ -9,7 +9,7 @@ use std::collections::HashMap;
 pub struct Config {
     pub global: GlobalArgs,
     #[serde(rename = "crate")]
-    pub crates: HashMap<String, CrateConfig>,
+    pub crate_configs: HashMap<String, CrateConfig>,
 }
 
 #[derive(Debug, PartialEq, Deserialize, Default)]
@@ -33,13 +33,13 @@ impl GlobalArgs {
 pub fn load_config(file_io: &impl FileIO, mut global_args: GlobalArgs) -> anyhow::Result<Config> {
     if let Some(path) = global_args.config.take() {
         let mut config = parse_config(&file_io.read_file(&path)?)?;
-        config.crates = normalised_crate_names(config.crates);
+        config.crate_configs = normalised_crate_names(config.crate_configs);
         config.global.merge(global_args);
         Ok(config)
     } else {
         Ok(Config {
             global: global_args,
-            crates: HashMap::new(),
+            crate_configs: HashMap::new(),
         })
     }
 }
@@ -167,7 +167,7 @@ mod tests {
                     ignore: vec!["crate1".to_string(), "crate2".to_string()],
                     config: None,
                 },
-                crates: HashMap::new(),
+                crate_configs: HashMap::new(),
             },
             parse_config(contents).unwrap()
         );
@@ -280,7 +280,7 @@ mod tests {
     {
         Config {
             global: Default::default(),
-            crates: crates
+            crate_configs: crates
                 .into_iter()
                 .map(|(k, v)| (k.to_string(), v))
                 .collect(),

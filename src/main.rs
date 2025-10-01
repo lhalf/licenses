@@ -106,7 +106,7 @@ fn main() -> anyhow::Result<()> {
             create_output_folder(&path)?;
             copy_licenses(
                 &file_system,
-                collect_licenses(&file_system, &filtered_packages, &config.crates)?,
+                collect_licenses(&file_system, &filtered_packages, &config.crate_configs)?,
                 path,
             )?;
         }
@@ -127,7 +127,7 @@ fn main() -> anyhow::Result<()> {
         LicensesSubcommand::Check => {
             if check_licenses(
                 &file_system,
-                collect_licenses(&file_system, &filtered_packages, &config.crates)?,
+                collect_licenses(&file_system, &filtered_packages, &config.crate_configs)?,
             )
             .is_err()
             {

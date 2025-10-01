@@ -8,18 +8,28 @@ use std::collections::HashMap;
 pub fn collect_licenses(
     file_io: &impl FileIO,
     packages: &[Package],
-    crates: &HashMap<String, CrateConfig>,
+    crate_configs: &HashMap<String, CrateConfig>,
 ) -> anyhow::Result<HashMap<Package, Vec<DirEntry>>> {
     packages
         .iter()
         .map(|package| {
-            let skipped_files: &[String] = crates
-                .get(&package.normalised_name)
-                .map(|config| config.skipped.as_slice())
-                .unwrap_or(&[]);
-            collect_licenses_for_package(file_io, package, skipped_files)
+            collect_licenses_for_package(
+                file_io,
+                package,
+                skipped_files_for_package(package, crate_configs),
+            )
         })
         .collect()
+}
+
+fn skipped_files_for_package<'a>(
+    package: &'a Package,
+    crate_configs: &'a HashMap<String, CrateConfig>,
+) -> &'a [String] {
+    crate_configs
+        .get(&package.normalised_name)
+        .map(|config| config.skipped.as_slice())
+        .unwrap_or(&[])
 }
 
 fn collect_licenses_for_package(
