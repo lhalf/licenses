@@ -102,13 +102,17 @@ mod tests {
 
     #[test]
     fn config_with_valid_heading_and_single_skipped_file_is_valid() {
-        let contents = r#"
-        [crate.anyhow]
-        skipped = ["COPYING"]"#;
-        assert_eq!(
-            config_with_crates([("anyhow", crate_config(&["COPYING"]))]),
-            parse_config(contents).unwrap()
-        );
+        for contents in [
+            r#"[crate.anyhow]
+            skipped = ["COPYING"]"#,
+            r#"[crate]
+            anyhow = { skipped = ["COPYING"]}"#,
+        ] {
+            assert_eq!(
+                config_with_crates([("anyhow", crate_config(&["COPYING"]))]),
+                parse_config(contents).unwrap()
+            );
+        }
     }
 
     #[test]
