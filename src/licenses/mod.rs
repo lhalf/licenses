@@ -1,6 +1,7 @@
 pub mod check;
 pub mod collect;
 pub mod copy;
+mod diff;
 pub mod is_license;
 pub mod summarise;
 pub mod validate;
