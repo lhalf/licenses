@@ -1,21 +1,25 @@
-#![allow(unused)]
-
 use crate::cargo_metadata::Package;
 use crate::file_io::{DirEntry, FileIO};
+use crate::warn;
+use colored::Colorize;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
-fn diff_licenses(
+pub fn diff_licenses(
     path: PathBuf,
     file_io: &impl FileIO,
     found_licenses: HashMap<Package, Vec<DirEntry>>,
 ) -> anyhow::Result<HashSet<String>> {
     let current_licenses = set_of_current_licenses(file_io.read_dir(&path)?);
     let found_licenses = flatten(found_licenses);
-    Ok(current_licenses
-        .difference(&found_licenses)
-        .cloned()
-        .collect())
+    let diff = found_licenses
+        .difference(&current_licenses)
+        .map(|license| {
+            warn!("found license not in output folder: {}", license.bold());
+            license.to_owned()
+        })
+        .collect();
+    Ok(diff)
 }
 
 fn set_of_current_licenses(dir_entries: Vec<DirEntry>) -> HashSet<String> {
@@ -129,19 +133,7 @@ mod tests {
     #[test]
     fn differences_in_licenses() {
         let file_io_spy = FileIOSpy::default();
-        let current_dir_entries = vec![
-            DirEntry {
-                name: OsString::from("example-LICENSE"),
-                path: Default::default(),
-                is_file: true,
-            },
-            DirEntry {
-                name: OsString::from("other-LICENSE-APACHE"),
-                path: Default::default(),
-                is_file: true,
-            },
-        ];
-        file_io_spy.read_dir.returns.set([Ok(current_dir_entries)]);
+        file_io_spy.read_dir.returns.set([Ok(Vec::new())]);
 
         let found_licenses = [(
             Package::called("example"),
@@ -154,7 +146,7 @@ mod tests {
         .into_iter()
         .collect();
 
-        let expected_diff = HashSet::from(["other-LICENSE-APACHE".to_string()]);
+        let expected_diff = HashSet::from(["example-LICENSE".to_string()]);
 
         assert_eq!(
             expected_diff,

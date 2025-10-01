@@ -5,6 +5,7 @@ use crate::file_io::FileSystem;
 use crate::licenses::check::check_licenses;
 use crate::licenses::collect::collect_licenses;
 use crate::licenses::copy::copy_licenses;
+use crate::licenses::diff::diff_licenses;
 use crate::licenses::summarise::{crates_per_license, summarise};
 use anyhow::Context;
 use clap::{Args, Parser, Subcommand};
@@ -73,6 +74,12 @@ enum LicensesSubcommand {
     Summary(SummaryArgs),
     /// Checks all licenses for inconsistencies
     Check,
+    /// Diff the current licenses folder against what would be collected
+    Diff {
+        /// The current licenses folder path
+        #[arg(short, long, default_value_t = String::from("licenses"))]
+        path: String,
+    },
 }
 
 #[derive(Args)]
@@ -130,6 +137,17 @@ fn main() -> anyhow::Result<()> {
                 collect_licenses(&file_system, &filtered_packages, &config.crate_configs)?,
             )
             .is_err()
+            {
+                std::process::exit(1)
+            }
+        }
+        LicensesSubcommand::Diff { path } => {
+            if !diff_licenses(
+                PathBuf::from(path),
+                &file_system,
+                collect_licenses(&file_system, &filtered_packages, &config.crate_configs)?,
+            )?
+            .is_empty()
             {
                 std::process::exit(1)
             }
