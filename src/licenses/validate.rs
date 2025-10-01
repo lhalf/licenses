@@ -56,7 +56,7 @@ impl LicenseStatus {
             }
             LicenseStatus::Mismatch(license_texts_not_found) => {
                 warn!(
-                    "found license(s) in {} whose content was not similar to expected - {}",
+                    "found license(s) in {} whose content was not similar to declared licenses - {}",
                     package.normalised_name.bold(),
                     license_texts_not_found
                         .iter()
