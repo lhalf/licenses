@@ -1,9 +1,6 @@
-use crate::cargo_metadata::Package;
 use crate::file_io::{DirEntry, FileIO};
 use crate::licenses::License;
-use crate::{note, warn};
-use colored::Colorize;
-use itertools::Itertools;
+use crate::licenses::status::LicenseStatus;
 use once_cell::sync::Lazy;
 use std::cmp::Ordering;
 use std::collections::HashMap;
@@ -11,63 +8,6 @@ use strsim::normalized_levenshtein;
 
 pub static LICENSE_TEXTS: Lazy<HashMap<&'static str, &'static str>> =
     Lazy::new(|| spdx::text::LICENSE_TEXTS.iter().cloned().collect());
-
-#[derive(PartialEq, Debug)]
-pub enum LicenseStatus {
-    Valid,
-    Empty,
-    NoneDeclared,
-    TooFew,
-    TooMany,
-    Mismatch(Vec<DirEntry>),
-}
-
-impl LicenseStatus {
-    pub fn warn(&self, package: &Package) {
-        match self {
-            LicenseStatus::Valid => {}
-            LicenseStatus::Empty => {
-                warn!(
-                    "did not find any licenses for {} - {}",
-                    package.normalised_name.bold(),
-                    match &package.url {
-                        Some(url) => format!("try looking here: {url}"),
-                        None => "no url".to_string(),
-                    }
-                );
-            }
-            LicenseStatus::NoneDeclared => {
-                note!(
-                    "no declared licenses for {}",
-                    package.normalised_name.bold()
-                );
-            }
-            LicenseStatus::TooFew => {
-                warn!(
-                    "did not find as many licenses as declared for {}",
-                    package.normalised_name.bold()
-                );
-            }
-            LicenseStatus::TooMany => {
-                note!(
-                    "found more licenses than declared for {}",
-                    package.normalised_name.bold()
-                );
-            }
-            LicenseStatus::Mismatch(license_texts_not_found) => {
-                warn!(
-                    "found license(s) in {} whose content was not similar to declared licenses - {}",
-                    package.normalised_name.bold(),
-                    license_texts_not_found
-                        .iter()
-                        .filter_map(|license| license.name.to_str())
-                        .join(",")
-                        .bold()
-                );
-            }
-        }
-    }
-}
 
 pub fn validate_licenses(
     file_io: &impl FileIO,

@@ -148,7 +148,7 @@ mod tests {
             "example".to_string(),
             CrateConfig {
                 skip: vec!["LICENSE".to_string()],
-                mute: Vec::new(),
+                allow: None,
             },
         )]
         .into_iter()
@@ -189,7 +189,7 @@ mod tests {
             "example".to_string(),
             CrateConfig {
                 skip: vec!["COPYRIGHT".to_string(), "LICENSE-APACHE".to_string()],
-                mute: Vec::new(),
+                allow: None,
             },
         )]
         .into_iter()

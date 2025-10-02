@@ -1,5 +1,6 @@
 use crate::GlobalArgs;
 use crate::file_io::FileIO;
+use crate::licenses::status::LicenseStatus;
 use anyhow::Context;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -16,7 +17,7 @@ pub struct Config {
 #[serde(default, deny_unknown_fields)]
 pub struct CrateConfig {
     pub skip: Vec<String>,
-    pub mute: Vec<String>,
+    pub allow: Option<LicenseStatus>,
 }
 
 impl GlobalArgs {
@@ -83,7 +84,7 @@ mod tests {
         [crates.anyhow]"#,
         ] {
             assert_eq!(
-                config_with_crates([("anyhow", crate_config(&[], &[]))]),
+                config_with_crates([("anyhow", crate_config(&[]))]),
                 parse_config(contents).unwrap()
             );
         }
@@ -110,7 +111,7 @@ mod tests {
             anyhow = { skip = ["COPYING"]}"#,
         ] {
             assert_eq!(
-                config_with_crates([("anyhow", crate_config(&["COPYING"], &[]))]),
+                config_with_crates([("anyhow", crate_config(&["COPYING"]))]),
                 parse_config(contents).unwrap()
             );
         }
@@ -125,32 +126,8 @@ mod tests {
         skip = ["LICENSE-WRONG","COPYRIGHT"]"#;
         assert_eq!(
             config_with_crates([
-                ("anyhow", crate_config(&["COPYING"], &[])),
-                (
-                    "another",
-                    crate_config(&["LICENSE-WRONG", "COPYRIGHT"], &[])
-                )
-            ]),
-            parse_config(contents).unwrap()
-        );
-    }
-
-    #[test]
-    fn config_with_skipped_and_muted_files_is_valid() {
-        let contents = r#"
-        [crates.anyhow]
-        skip = ["COPYING"]
-        mute = ["LICENSE.txt"]
-        [crates.another]
-        skip = ["LICENSE-WRONG","COPYRIGHT"]
-        mute = ["COPYING"]"#;
-        assert_eq!(
-            config_with_crates([
-                ("anyhow", crate_config(&["COPYING"], &["LICENSE.txt"])),
-                (
-                    "another",
-                    crate_config(&["LICENSE-WRONG", "COPYRIGHT"], &["COPYING"])
-                )
+                ("anyhow", crate_config(&["COPYING"])),
+                ("another", crate_config(&["LICENSE-WRONG", "COPYRIGHT"]))
             ]),
             parse_config(contents).unwrap()
         );
@@ -162,7 +139,7 @@ mod tests {
         [crates.anyhow]
         skip = ["COPYING"] # a comment"#;
         assert_eq!(
-            config_with_crates([("anyhow", crate_config(&["COPYING"], &[]))]),
+            config_with_crates([("anyhow", crate_config(&["COPYING"]))]),
             parse_config(contents).unwrap()
         );
     }
@@ -281,7 +258,7 @@ mod tests {
             .set([Ok(contents.to_string())]);
 
         assert_eq!(
-            config_with_crates([("normalise_me", crate_config(&[], &[]))]),
+            config_with_crates([("normalise_me", crate_config(&[]))]),
             load_config(
                 &file_io_spy,
                 GlobalArgs {
@@ -297,10 +274,10 @@ mod tests {
         );
     }
 
-    fn crate_config(skipped: &[&str], muted: &[&str]) -> CrateConfig {
+    fn crate_config(skipped: &[&str]) -> CrateConfig {
         CrateConfig {
             skip: skipped.iter().map(|s| s.to_string()).collect(),
-            mute: muted.iter().map(|s| s.to_string()).collect(),
+            allow: None,
         }
     }
 

@@ -1,7 +1,8 @@
 use crate::cargo_metadata::Package;
 use crate::file_io::{DirEntry, FileIO};
 use crate::licenses::License;
-use crate::licenses::validate::{LicenseStatus, validate_licenses};
+use crate::licenses::status::LicenseStatus;
+use crate::licenses::validate::validate_licenses;
 use std::collections::HashMap;
 
 pub fn check_licenses(

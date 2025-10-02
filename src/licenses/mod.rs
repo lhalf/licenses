@@ -3,6 +3,7 @@ pub mod collect;
 pub mod copy;
 pub mod diff;
 pub mod is_license;
+pub mod status;
 pub mod summarise;
 pub mod validate;
 
