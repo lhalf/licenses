@@ -1,5 +1,4 @@
 use crate::cargo_metadata::Package;
-use crate::file_io::DirEntry;
 use crate::{note, warn};
 use colored::Colorize;
 use itertools::Itertools;
@@ -13,7 +12,7 @@ pub enum LicenseStatus {
     NoneDeclared,
     TooFew,
     TooMany,
-    Mismatch(Vec<DirEntry>),
+    Mismatch(Vec<String>),
 }
 
 impl LicenseStatus {
@@ -52,11 +51,7 @@ impl LicenseStatus {
                 warn!(
                     "found license(s) in {} whose content was not similar to declared licenses - {}",
                     package.normalised_name.bold(),
-                    license_texts_not_found
-                        .iter()
-                        .filter_map(|license| license.name.to_str())
-                        .join(",")
-                        .bold()
+                    license_texts_not_found.iter().join(",").bold()
                 );
             }
         }

@@ -26,7 +26,7 @@ pub fn validate_licenses(
     let unmatched = unmatched_licenses(file_io, &expected_texts, actual_licenses);
 
     if !unmatched.is_empty() {
-        return LicenseStatus::Mismatch(unmatched);
+        return LicenseStatus::Mismatch(to_file_names(unmatched));
     }
 
     match actual_licenses.len().cmp(&declared.requirements().count()) {
@@ -77,6 +77,13 @@ fn find_matching_entry(
                 .is_some_and(|contents| normalized_levenshtein(expected_text, &contents) >= 0.8)
         })
         .cloned()
+}
+
+fn to_file_names(entries: Vec<DirEntry>) -> Vec<String> {
+    entries
+        .into_iter()
+        .map(|entry| entry.name.to_string_lossy().to_string())
+        .collect()
 }
 
 #[cfg(test)]
@@ -223,11 +230,7 @@ mod tests {
             .set([Ok(LICENSE_TEXTS.get("Apache-2.0").unwrap().to_string())]);
 
         assert_eq!(
-            LicenseStatus::Mismatch(vec![DirEntry {
-                name: OsString::from("LICENSE_MIT"),
-                path: Default::default(),
-                is_file: true,
-            }]),
+            LicenseStatus::Mismatch(vec!["LICENSE_MIT".to_string()]),
             validate_licenses(
                 &file_io_spy,
                 &Some(License::parse("MIT")),
