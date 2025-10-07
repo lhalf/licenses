@@ -158,7 +158,7 @@ $ cargo licenses diff
 ## Configuration
 
 A [TOML](https://toml.io/en/) configuration file can be used to store all passed flags, as well as enabling some additional features.
-If both a config and a flag are passed, the flag will take precedence.
+If both a config and a flag set the same option, the flag will take precedence.
 
 ### Skipping licenses
 
