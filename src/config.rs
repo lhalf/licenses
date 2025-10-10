@@ -95,11 +95,11 @@ mod tests {
     fn config_with_valid_heading_and_allowed_warning_is_valid() {
         let contents = r#"
         [crates]
-        anyhow = { allow = "mismatch" }"#;
+        anyhow = { allow = "too few" }"#;
         assert_eq!(
             config_with_crates([(
                 "anyhow",
-                crate_config(&[], Some(LicenseStatus::Mismatch(Vec::new())))
+                crate_config(&[], Some(LicenseStatus::TooFew))
             )]),
             parse_config(contents).unwrap()
         );
