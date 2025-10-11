@@ -16,6 +16,7 @@ pub enum LicenseStatus {
     TooFew,
     #[serde(rename = "too many")]
     TooMany,
+    #[serde(untagged)]
     Mismatch(Vec<String>),
 }
 
@@ -85,11 +86,10 @@ mod tests {
             LicenseStatus::TooMany,
             serde_json::from_str(r#""too many""#).unwrap()
         );
-        // TODO
-        // assert_eq!(
-        //     LicenseStatus::Mismatch(Vec::new()),
-        //     serde_json::from_str(r#""mismatch""#).unwrap()
-        // );
+        assert_eq!(
+            LicenseStatus::Mismatch(vec!["file".to_string()]),
+            serde_json::from_str(r#"["file"]"#).unwrap()
+        );
     }
 
     #[test]

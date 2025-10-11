@@ -97,10 +97,7 @@ mod tests {
         [crates]
         anyhow = { allow = "too few" }"#;
         assert_eq!(
-            config_with_crates([(
-                "anyhow",
-                crate_config(&[], Some(LicenseStatus::TooFew))
-            )]),
+            config_with_crates([("anyhow", crate_config(&[], Some(LicenseStatus::TooFew)))]),
             parse_config(contents).unwrap()
         );
     }
