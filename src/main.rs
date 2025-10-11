@@ -115,6 +115,7 @@ fn main() -> anyhow::Result<()> {
                 &file_system,
                 collect_licenses(&file_system, &filtered_packages, &config.crate_configs)?,
                 path,
+                &config.crate_configs,
             )?;
         }
         LicensesSubcommand::Summary(args) => {

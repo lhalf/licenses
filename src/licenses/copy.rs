@@ -1,6 +1,8 @@
 use crate::cargo_metadata::Package;
+use crate::config::CrateConfig;
 use crate::file_io::{DirEntry, FileIO};
 use crate::licenses::License;
+use crate::licenses::status::LicenseStatus;
 use crate::licenses::validate::validate_licenses;
 use anyhow::Context;
 use std::collections::HashMap;
@@ -10,20 +12,35 @@ pub fn copy_licenses(
     file_io: &impl FileIO,
     all_licenses: HashMap<Package, Vec<DirEntry>>,
     output_folder: PathBuf,
+    crate_configs: &HashMap<String, CrateConfig>,
 ) -> anyhow::Result<()> {
-    for (package, licenses) in all_licenses {
-        validate_licenses(
+    for (package, license_entries) in all_licenses {
+        let license_status = validate_licenses(
             file_io,
             &package.license.as_deref().map(License::parse),
-            &licenses,
-        )
-        .warn(&package);
+            &license_entries,
+        );
 
-        copy_licenses_to_output_folder(file_io, &licenses, &output_folder, &package)?;
+        handle_license_warnings(crate_configs, &package, license_status);
+        copy_licenses_to_output_folder(file_io, &license_entries, &output_folder, &package)?;
     }
 
     println!("{}", output_folder.to_string_lossy());
     Ok(())
+}
+
+fn handle_license_warnings(
+    crate_configs: &HashMap<String, CrateConfig>,
+    package: &Package,
+    license_status: LicenseStatus,
+) {
+    match crate_configs.get(&package.normalised_name) {
+        Some(config) => match &config.allow {
+            Some(allowed_status) if *allowed_status == license_status => {}
+            _ => license_status.warn(package),
+        },
+        None => license_status.warn(package),
+    }
 }
 
 fn copy_licenses_to_output_folder(
@@ -61,7 +78,15 @@ mod tests {
     #[test]
     fn no_licenses_causes_no_files_copied() {
         let file_io_spy = FileIOSpy::default();
-        assert!(copy_licenses(&file_io_spy, HashMap::new(), PathBuf::default(),).is_ok());
+        assert!(
+            copy_licenses(
+                &file_io_spy,
+                HashMap::new(),
+                PathBuf::default(),
+                &HashMap::new()
+            )
+            .is_ok()
+        );
         assert!(file_io_spy.copy_file.arguments.take().is_empty());
     }
 
@@ -86,9 +111,14 @@ mod tests {
 
         assert_eq!(
             "deliberate test error",
-            copy_licenses(&file_io_spy, all_licenses, PathBuf::default())
-                .unwrap_err()
-                .to_string()
+            copy_licenses(
+                &file_io_spy,
+                all_licenses,
+                PathBuf::default(),
+                &HashMap::new()
+            )
+            .unwrap_err()
+            .to_string()
         );
     }
 }
