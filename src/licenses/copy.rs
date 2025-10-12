@@ -14,22 +14,22 @@ pub fn copy_licenses(
     output_folder: PathBuf,
     crate_configs: &HashMap<String, CrateConfig>,
 ) -> anyhow::Result<()> {
-    for (package, license_entries) in all_licenses {
+    for (package, licenses) in all_licenses {
         let license_status = validate_licenses(
             file_io,
             &package.license.as_deref().map(License::parse),
-            &license_entries,
+            &licenses,
         );
 
-        handle_license_warnings(crate_configs, &package, license_status);
-        copy_licenses_to_output_folder(file_io, &license_entries, &output_folder, &package)?;
+        license_warnings(crate_configs, &package, license_status);
+        copy_licenses_to_output_folder(file_io, &licenses, &output_folder, &package)?;
     }
 
     println!("{}", output_folder.to_string_lossy());
     Ok(())
 }
 
-fn handle_license_warnings(
+fn license_warnings(
     crate_configs: &HashMap<String, CrateConfig>,
     package: &Package,
     license_status: LicenseStatus,

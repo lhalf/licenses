@@ -136,6 +136,7 @@ fn main() -> anyhow::Result<()> {
             if check_licenses(
                 &file_system,
                 collect_licenses(&file_system, &filtered_packages, &config.crate_configs)?,
+                &config.crate_configs,
             )
             .is_err()
             {
