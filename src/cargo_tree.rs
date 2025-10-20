@@ -11,18 +11,36 @@ pub fn crate_names(
     ignored_crates: Vec<String>,
 ) -> anyhow::Result<BTreeSet<String>> {
     to_crate_names(
-        Command::new("cargo")
-            .args(args(
-                depth,
-                include_dev_dependencies,
-                include_build_dependencies,
-                excluded_workspaces,
-            ))
-            .output()
-            .context("failed to call cargo tree")?
-            .stdout,
+        cargo_output_with_args(args(
+            depth,
+            include_dev_dependencies,
+            include_build_dependencies,
+            excluded_workspaces,
+        ))?,
         ignored_crates,
     )
+}
+
+fn to_crate_names(
+    output: Vec<u8>,
+    ignored_crates: Vec<String>,
+) -> anyhow::Result<BTreeSet<String>> {
+    Ok(String::from_utf8(output)
+        .context("cargo tree output contained invalid UTF-8")?
+        .replace(" ", "")
+        .split('\n')
+        .map(|crate_name| crate_name.to_string().replace("-", "_"))
+        .filter(|crate_name| !crate_name.is_empty() && !ignored_crates.contains(crate_name))
+        .unique()
+        .collect())
+}
+
+fn cargo_output_with_args(args: Vec<String>) -> anyhow::Result<Vec<u8>> {
+    Ok(Command::new("cargo")
+        .args(args)
+        .output()
+        .context("failed to call cargo tree")?
+        .stdout)
 }
 
 fn args(
@@ -66,20 +84,6 @@ fn args(
     };
 
     args
-}
-
-fn to_crate_names(
-    output: Vec<u8>,
-    ignored_crates: Vec<String>,
-) -> anyhow::Result<BTreeSet<String>> {
-    Ok(String::from_utf8(output)
-        .context("cargo tree output contained invalid UTF-8")?
-        .replace(" ", "")
-        .split('\n')
-        .map(|crate_name| crate_name.to_string().replace("-", "_"))
-        .filter(|crate_name| !crate_name.is_empty() && !ignored_crates.contains(crate_name))
-        .unique()
-        .collect())
 }
 
 #[cfg(test)]
