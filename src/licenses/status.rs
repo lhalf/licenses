@@ -26,7 +26,8 @@ impl LicenseStatus {
             LicenseStatus::Valid => {}
             LicenseStatus::Empty => {
                 warn!(
-                    "did not find any licenses for {} - {}",
+                    "{} - did not find any licenses for {} - {}",
+                    "empty".bold(),
                     package.normalised_name.bold(),
                     match &package.url {
                         Some(url) => format!("try looking here: {url}"),
@@ -36,25 +37,29 @@ impl LicenseStatus {
             }
             LicenseStatus::NoneDeclared => {
                 note!(
-                    "no declared licenses for {}",
+                    "{} - no declared licenses for {}",
+                    "none declared".bold(),
                     package.normalised_name.bold()
                 );
             }
             LicenseStatus::TooFew => {
                 warn!(
-                    "did not find as many licenses as declared for {}",
+                    "{} - did not find as many licenses as declared for {}",
+                    "too few".bold(),
                     package.normalised_name.bold()
                 );
             }
             LicenseStatus::TooMany => {
                 note!(
-                    "found more licenses than declared for {}",
+                    "{} - found more licenses than declared for {}",
+                    "too many".bold(),
                     package.normalised_name.bold()
                 );
             }
             LicenseStatus::Mismatch(license_texts_not_found) => {
                 warn!(
-                    "found license(s) in {} whose content was not similar to declared licenses - {}",
+                    "{} - found license(s) in {} whose content was not similar to declared licenses - {}",
+                    "mismatch".bold(),
                     package.normalised_name.bold(),
                     license_texts_not_found.iter().join(",").bold()
                 );
