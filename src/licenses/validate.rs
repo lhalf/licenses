@@ -102,7 +102,7 @@ mod tests {
     }
 
     #[test]
-    fn no_listed_license() {
+    fn no_declared_license() {
         let file_io_spy = FileIOSpy::default();
         assert_eq!(
             LicenseStatus::NoneDeclared,
