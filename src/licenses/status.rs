@@ -14,8 +14,8 @@ pub enum LicenseStatus {
     NoneDeclared,
     #[serde(rename = "too few")]
     TooFew,
-    #[serde(rename = "too many")]
-    TooMany,
+    #[serde(rename = "additional")]
+    Additional(Vec<String>),
     #[serde(rename = "mismatch")]
     Mismatch(Vec<String>),
 }
@@ -49,19 +49,20 @@ impl LicenseStatus {
                     package.normalised_name.bold()
                 );
             }
-            LicenseStatus::TooMany => {
+            LicenseStatus::Additional(extra_licenses_found) => {
                 note!(
-                    "{} - found more licenses than declared for {}",
-                    "too many".bold(),
-                    package.normalised_name.bold()
+                    "{} - found all declared licenses for {}, but found additional licenses - {}",
+                    "additional".bold(),
+                    package.normalised_name.bold(),
+                    extra_licenses_found.iter().join(",").bold()
                 );
             }
-            LicenseStatus::Mismatch(license_texts_not_found) => {
+            LicenseStatus::Mismatch(unmatched_licenses) => {
                 warn!(
                     "{} - found license(s) in {} whose content was not similar to declared licenses - {}",
                     "mismatch".bold(),
                     package.normalised_name.bold(),
-                    license_texts_not_found.iter().join(",").bold()
+                    unmatched_licenses.iter().join(",").bold()
                 );
             }
         }
@@ -87,8 +88,8 @@ mod tests {
             serde_json::from_str(r#""too few""#).unwrap()
         );
         assert_eq!(
-            LicenseStatus::TooMany,
-            serde_json::from_str(r#""too many""#).unwrap()
+            LicenseStatus::Additional(vec!["file".to_string()]),
+            toml::from_str(r#"additional = ["file"]"#).unwrap()
         );
         assert_eq!(
             LicenseStatus::Mismatch(vec!["file".to_string()]),

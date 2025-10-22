@@ -35,7 +35,7 @@ pub fn validate_licenses(
     match actual_licenses.len().cmp(&declared.requirements().count()) {
         Ordering::Equal => LicenseStatus::Valid,
         Ordering::Less => LicenseStatus::TooFew,
-        Ordering::Greater => LicenseStatus::TooMany,
+        Ordering::Greater => LicenseStatus::Additional(to_file_names(unmatched_license_files)),
     }
 }
 
@@ -204,7 +204,7 @@ mod tests {
     }
 
     #[test]
-    fn too_many_licenses() {
+    fn additional_licenses() {
         let file_io_spy = FileIOSpy::default();
         file_io_spy
             .read_file
@@ -212,7 +212,7 @@ mod tests {
             .set([Ok(LICENSE_TEXTS.get("MIT").unwrap().to_string())]);
 
         assert_eq!(
-            LicenseStatus::TooMany,
+            LicenseStatus::Additional(vec!["COPYING".to_string()]),
             validate_licenses(
                 &file_io_spy,
                 &Some(License::parse("MIT")),

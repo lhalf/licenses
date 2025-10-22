@@ -150,6 +150,19 @@ mod tests {
             "some_crate".to_string(),
             CrateConfig {
                 skip: vec![],
+                allow: Some(LicenseStatus::TooFew),
+            },
+        )]
+        .into_iter()
+        .collect();
+
+        // errors when allowed status is incorrect
+        assert!(check_licenses(&file_io_spy, all_licenses.clone(), &config).is_err());
+
+        let config = [(
+            "some_crate".to_string(),
+            CrateConfig {
+                skip: vec![],
                 allow: Some(LicenseStatus::Empty),
             },
         )]
