@@ -26,7 +26,9 @@ pub fn validate_licenses(
     let unmatched_license_files =
         unmatched_license_files(file_io, &expected_texts, actual_licenses);
 
-    if !unmatched_license_files.is_empty() {
+    if !unmatched_license_files.is_empty()
+        && !found_all_declared_licenses(declared, actual_licenses, &unmatched_license_files)
+    {
         return LicenseStatus::Mismatch(to_file_names(unmatched_license_files));
     }
 
@@ -62,6 +64,14 @@ fn unmatched_license_files(
     }
 
     remaining
+}
+
+fn found_all_declared_licenses(
+    declared: &License,
+    actual_licenses: &[DirEntry],
+    unmatched_license_files: &[DirEntry],
+) -> bool {
+    declared.requirements().count() == actual_licenses.len() - unmatched_license_files.len()
 }
 
 fn find_matching_entry(
@@ -193,34 +203,34 @@ mod tests {
         );
     }
 
-    // #[test]
-    // fn too_many_licenses() {
-    //     let file_io_spy = FileIOSpy::default();
-    //     file_io_spy
-    //         .read_file
-    //         .returns
-    //         .set([Ok(LICENSE_TEXTS.get("MIT").unwrap().to_string())]);
-    //
-    //     assert_eq!(
-    //         LicenseStatus::TooMany,
-    //         validate_licenses(
-    //             &file_io_spy,
-    //             &Some(License::parse("MIT")),
-    //             &[
-    //                 DirEntry {
-    //                     name: OsString::from("LICENSE_MIT"),
-    //                     path: Default::default(),
-    //                     is_file: true,
-    //                 },
-    //                 DirEntry {
-    //                     name: OsString::from("COPYING"),
-    //                     path: Default::default(),
-    //                     is_file: true,
-    //                 }
-    //             ]
-    //         )
-    //     );
-    // }
+    #[test]
+    fn too_many_licenses() {
+        let file_io_spy = FileIOSpy::default();
+        file_io_spy
+            .read_file
+            .returns
+            .set([Ok(LICENSE_TEXTS.get("MIT").unwrap().to_string())]);
+
+        assert_eq!(
+            LicenseStatus::TooMany,
+            validate_licenses(
+                &file_io_spy,
+                &Some(License::parse("MIT")),
+                &[
+                    DirEntry {
+                        name: OsString::from("LICENSE_MIT"),
+                        path: Default::default(),
+                        is_file: true,
+                    },
+                    DirEntry {
+                        name: OsString::from("COPYING"),
+                        path: Default::default(),
+                        is_file: true,
+                    }
+                ]
+            )
+        );
+    }
 
     #[test]
     fn license_content_mismatch() {
