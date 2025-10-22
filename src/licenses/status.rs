@@ -16,7 +16,7 @@ pub enum LicenseStatus {
     TooFew,
     #[serde(rename = "too many")]
     TooMany,
-    #[serde(untagged)]
+    #[serde(rename = "mismatch")]
     Mismatch(Vec<String>),
 }
 
@@ -71,7 +71,6 @@ impl LicenseStatus {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json;
 
     #[test]
     fn valid_deserialize() {
@@ -93,13 +92,13 @@ mod tests {
         );
         assert_eq!(
             LicenseStatus::Mismatch(vec!["file".to_string()]),
-            serde_json::from_str(r#"["file"]"#).unwrap()
+            toml::from_str(r#"mismatch = ["file"]"#).unwrap()
         );
     }
 
     #[test]
     fn invalid_deserialize() {
-        assert!(serde_json::from_str::<LicenseStatus>(r#""invalid""#).is_err());
-        assert!(serde_json::from_str::<LicenseStatus>(r#""valid""#).is_err());
+        assert!(toml::from_str::<LicenseStatus>("invalid").is_err());
+        assert!(toml::from_str::<LicenseStatus>("valid").is_err());
     }
 }

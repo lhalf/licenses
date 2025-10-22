@@ -146,7 +146,7 @@ that can be allowed are included in the warning message, these are:
 - `too many`
 - `empty`
 - `none declared`
-- or for a mismatch: `["file1", "file2"]`
+- `{ mismatch = ["file1", "file2"] }`
 
 ```toml
 [crates]
@@ -167,7 +167,7 @@ ignore = ["crate"]
 
 [crates]
 crate_one = { skip = ["COPYING"] } # not a license, statement of which licenses the crate falls under
-crate_two = { allow = ["LICENSE"] } # erroneous license content mismatch
+crate_two = { allow = { mismatch = ["LICENSE"] } } # erroneous license content mismatch
 crate_three = { allow = "too few" } # only one license provided
 ```
 
