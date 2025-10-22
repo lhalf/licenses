@@ -23,10 +23,11 @@ pub fn validate_licenses(
     };
 
     let expected_texts = expected_texts_from_declared(declared);
-    let unmatched = unmatched_licenses(file_io, &expected_texts, actual_licenses);
+    let unmatched_license_files =
+        unmatched_license_files(file_io, &expected_texts, actual_licenses);
 
-    if !unmatched.is_empty() {
-        return LicenseStatus::Mismatch(to_file_names(unmatched));
+    if !unmatched_license_files.is_empty() {
+        return LicenseStatus::Mismatch(to_file_names(unmatched_license_files));
     }
 
     match actual_licenses.len().cmp(&declared.requirements().count()) {
@@ -47,7 +48,7 @@ fn expected_texts_from_declared(declared: &License) -> Vec<&'static str> {
         .collect()
 }
 
-fn unmatched_licenses(
+fn unmatched_license_files(
     file_io: &impl FileIO,
     expected_texts: &[&str],
     actual_licenses: &[DirEntry],
