@@ -4,12 +4,14 @@ use crate::file_io::{DirEntry, FileIO};
 use crate::licenses::License;
 use crate::licenses::status::LicenseStatus;
 use crate::licenses::validate::validate_licenses;
+use crate::log::Log;
 use anyhow::Context;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 pub fn copy_licenses(
     file_io: &impl FileIO,
+    logger: &impl Log,
     all_licenses: HashMap<Package, Vec<DirEntry>>,
     output_folder: PathBuf,
     crate_configs: &HashMap<String, CrateConfig>,
@@ -21,7 +23,7 @@ pub fn copy_licenses(
             &licenses,
         );
 
-        license_warnings(crate_configs, &package, license_status);
+        log_warnings(logger, crate_configs, &package, license_status);
         copy_licenses_to_output_folder(file_io, &licenses, &output_folder, &package)?;
     }
 
@@ -29,17 +31,25 @@ pub fn copy_licenses(
     Ok(())
 }
 
-fn license_warnings(
+fn log_warnings(
+    logger: &impl Log,
     crate_configs: &HashMap<String, CrateConfig>,
     package: &Package,
     license_status: LicenseStatus,
 ) {
-    match crate_configs.get(&package.normalised_name) {
-        Some(config) => match &config.allow {
-            Some(allowed_status) if *allowed_status == license_status => {}
-            _ => license_status.warn(package),
-        },
-        None => license_status.warn(package),
+    if let Some(config) = crate_configs.get(&package.normalised_name) {
+        if config.allow.as_ref() == Some(&license_status) {
+            return;
+        }
+        logger.log(
+            license_status.log_level(),
+            &license_status.log_message(package),
+        );
+    } else if license_status != LicenseStatus::Valid {
+        logger.log(
+            license_status.log_level(),
+            &license_status.log_message(package),
+        );
     }
 }
 
@@ -71,23 +81,29 @@ mod tests {
     use crate::cargo_metadata::Package;
     use crate::file_io::{DirEntry, FileIOSpy};
     use crate::licenses::copy::copy_licenses;
+    use crate::log::LogSpy;
     use std::collections::HashMap;
     use std::ffi::OsString;
     use std::path::PathBuf;
 
     #[test]
-    fn no_licenses_causes_no_files_copied() {
+    fn no_licenses_causes_no_files_copied_and_no_logs() {
         let file_io_spy = FileIOSpy::default();
+        let log_spy = LogSpy::default();
+
         assert!(
             copy_licenses(
                 &file_io_spy,
+                &log_spy,
                 HashMap::new(),
                 PathBuf::default(),
                 &HashMap::new()
             )
             .is_ok()
         );
+
         assert!(file_io_spy.copy_file.arguments.take().is_empty());
+        assert!(log_spy.log.arguments.take().is_empty());
     }
 
     #[test]
@@ -97,6 +113,9 @@ mod tests {
             .copy_file
             .returns
             .set([Err(anyhow::anyhow!("deliberate test error"))]);
+
+        let log_spy = LogSpy::default();
+        log_spy.log.returns.set([()]);
 
         let all_licenses = vec![(
             Package::called("example"),
@@ -113,6 +132,7 @@ mod tests {
             "deliberate test error",
             copy_licenses(
                 &file_io_spy,
+                &log_spy,
                 all_licenses,
                 PathBuf::default(),
                 &HashMap::new()
@@ -121,4 +141,9 @@ mod tests {
             .to_string()
         );
     }
+
+    // TODO
+    // add test for multiple logs
+    // add test for allow status not logging
+    // add test for valid not logging
 }

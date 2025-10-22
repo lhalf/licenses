@@ -4,10 +4,12 @@ use crate::file_io::{DirEntry, FileIO};
 use crate::licenses::License;
 use crate::licenses::status::LicenseStatus;
 use crate::licenses::validate::validate_licenses;
+use crate::log::Log;
 use std::collections::HashMap;
 
 pub fn check_licenses(
     file_io: &impl FileIO,
+    logger: &impl Log,
     all_licenses: HashMap<Package, Vec<DirEntry>>,
     crate_configs: &HashMap<String, CrateConfig>,
 ) -> anyhow::Result<()> {
@@ -23,7 +25,7 @@ pub fn check_licenses(
         match license_status_after_allowed(license_status, &package, crate_configs) {
             LicenseStatus::Valid => continue,
             status => {
-                status.warn(&package);
+                logger.log(status.log_level(), &status.log_message(&package));
                 issues_found = true;
             }
         }
@@ -58,6 +60,7 @@ mod tests {
     use crate::licenses::check::check_licenses;
     use crate::licenses::status::LicenseStatus;
     use crate::licenses::validate::LICENSE_TEXTS;
+    use crate::log::LogSpy;
     use std::collections::HashMap;
     use std::ffi::OsString;
     use std::path::PathBuf;
@@ -69,6 +72,9 @@ mod tests {
             .read_file
             .returns
             .set([Err(anyhow::anyhow!("deliberate test error"))]);
+
+        let log_spy = LogSpy::default();
+        log_spy.log.returns.set([()]);
 
         let all_licenses = [(
             Package {
@@ -86,7 +92,7 @@ mod tests {
         .into_iter()
         .collect();
 
-        assert!(check_licenses(&file_io_spy, all_licenses, &HashMap::new()).is_err());
+        assert!(check_licenses(&file_io_spy, &log_spy, all_licenses, &HashMap::new()).is_err());
     }
 
     #[test]
@@ -96,6 +102,9 @@ mod tests {
             .read_file
             .returns
             .set([Ok(LICENSE_TEXTS.get("MIT").unwrap().to_string())]);
+
+        let log_spy = LogSpy::default();
+        log_spy.log.returns.set([()]);
 
         let all_licenses = [
             (
@@ -124,12 +133,15 @@ mod tests {
         .into_iter()
         .collect();
 
-        assert!(check_licenses(&file_io_spy, all_licenses, &HashMap::new()).is_err());
+        assert!(check_licenses(&file_io_spy, &log_spy, all_licenses, &HashMap::new()).is_err());
     }
 
     #[test]
     fn license_status_that_has_been_allowed_does_not_cause_error() {
         let file_io_spy = FileIOSpy::default();
+
+        let log_spy = LogSpy::default();
+        log_spy.log.returns.set_fn(|_| ());
 
         let all_licenses: HashMap<_, _> = [(
             Package {
@@ -144,7 +156,15 @@ mod tests {
         .collect();
 
         // errors with no allowed status
-        assert!(check_licenses(&file_io_spy, all_licenses.clone(), &HashMap::new()).is_err());
+        assert!(
+            check_licenses(
+                &file_io_spy,
+                &log_spy,
+                all_licenses.clone(),
+                &HashMap::new()
+            )
+            .is_err()
+        );
 
         let config = [(
             "some_crate".to_string(),
@@ -157,7 +177,7 @@ mod tests {
         .collect();
 
         // errors when allowed status is incorrect
-        assert!(check_licenses(&file_io_spy, all_licenses.clone(), &config).is_err());
+        assert!(check_licenses(&file_io_spy, &log_spy, all_licenses.clone(), &config).is_err());
 
         let config = [(
             "some_crate".to_string(),
@@ -170,6 +190,6 @@ mod tests {
         .collect();
 
         // fine when status is allowed
-        assert!(check_licenses(&file_io_spy, all_licenses, &config).is_ok());
+        assert!(check_licenses(&file_io_spy, &log_spy, all_licenses, &config).is_ok());
     }
 }

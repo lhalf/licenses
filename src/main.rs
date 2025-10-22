@@ -7,6 +7,7 @@ use crate::licenses::collect::collect_licenses;
 use crate::licenses::copy::copy_licenses;
 use crate::licenses::diff::diff_licenses;
 use crate::licenses::summarise::{crates_per_license, summarise};
+use crate::log::Logger;
 use anyhow::Context;
 use clap::{Args, Parser, Subcommand};
 use serde::Deserialize;
@@ -18,7 +19,7 @@ mod cargo_tree;
 mod config;
 mod file_io;
 mod licenses;
-mod macros;
+mod log;
 
 #[derive(Parser)]
 #[command(bin_name = "cargo", disable_help_subcommand = true)]
@@ -97,6 +98,7 @@ fn main() -> anyhow::Result<()> {
     let CargoSubcommand::Licenses { args, command } = CargoSubcommand::parse();
 
     let file_system = FileSystem {};
+    let logger = Logger {};
     let config = load_config(&file_system, args)?;
     let crates_we_want = crate_names(
         config.global.depth,
@@ -113,6 +115,7 @@ fn main() -> anyhow::Result<()> {
             create_output_folder(&path)?;
             copy_licenses(
                 &file_system,
+                &logger,
                 collect_licenses(&file_system, &filtered_packages, &config.crate_configs)?,
                 path,
                 &config.crate_configs,
@@ -135,6 +138,7 @@ fn main() -> anyhow::Result<()> {
         LicensesSubcommand::Check => {
             if check_licenses(
                 &file_system,
+                &logger,
                 collect_licenses(&file_system, &filtered_packages, &config.crate_configs)?,
                 &config.crate_configs,
             )
@@ -145,8 +149,9 @@ fn main() -> anyhow::Result<()> {
         }
         LicensesSubcommand::Diff { path } => {
             if !diff_licenses(
-                PathBuf::from(path),
                 &file_system,
+                &logger,
+                PathBuf::from(path),
                 collect_licenses(&file_system, &filtered_packages, &config.crate_configs)?,
             )?
             .is_empty()

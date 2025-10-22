@@ -1,13 +1,14 @@
 use crate::cargo_metadata::Package;
 use crate::file_io::{DirEntry, FileIO};
-use crate::warn;
+use crate::log::{Log, LogLevel};
 use colored::Colorize;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
 pub fn diff_licenses(
-    path: PathBuf,
     file_io: &impl FileIO,
+    logger: &impl Log,
+    path: PathBuf,
     found_licenses: HashMap<Package, Vec<DirEntry>>,
 ) -> anyhow::Result<HashSet<String>> {
     let current_licenses = set_of_current_licenses(file_io.read_dir(&path)?);
@@ -15,7 +16,10 @@ pub fn diff_licenses(
     let diff = found_licenses
         .difference(&current_licenses)
         .map(|license| {
-            warn!("found license not in output folder: {}", license.bold());
+            logger.log(
+                LogLevel::Warning,
+                &format!("found license not in output folder: {}", license.bold()),
+            );
             license.to_owned()
         })
         .collect();
@@ -50,23 +54,32 @@ mod tests {
     use super::diff_licenses;
     use crate::cargo_metadata::Package;
     use crate::file_io::{DirEntry, FileIOSpy};
+    use crate::log::LogSpy;
     use std::collections::{HashMap, HashSet};
     use std::ffi::OsString;
     use std::path::PathBuf;
 
     #[test]
-    fn failure_to_read_licenses_directory_causes_error() {
+    fn failure_to_read_licenses_directory_causes_error_and_no_logs() {
         let file_io_spy = FileIOSpy::default();
         file_io_spy
             .read_dir
             .returns
             .set([Err(anyhow::anyhow!("deliberate test error"))]);
 
-        assert!(diff_licenses(PathBuf::new(), &file_io_spy, HashMap::new()).is_err());
+        assert!(
+            diff_licenses(
+                &file_io_spy,
+                &LogSpy::default(),
+                PathBuf::new(),
+                HashMap::new()
+            )
+            .is_err()
+        );
     }
 
     #[test]
-    fn no_differences_in_licenses() {
+    fn no_differences_in_licenses_causes_no_error_or_logs() {
         let file_io_spy = FileIOSpy::default();
 
         let current_dir_entries = vec![DirEntry {
@@ -89,9 +102,14 @@ mod tests {
         .collect();
 
         assert!(
-            diff_licenses(PathBuf::new(), &file_io_spy, found_licenses)
-                .unwrap()
-                .is_empty()
+            diff_licenses(
+                &file_io_spy,
+                &LogSpy::default(),
+                PathBuf::new(),
+                found_licenses
+            )
+            .unwrap()
+            .is_empty()
         );
     }
 
@@ -124,16 +142,24 @@ mod tests {
         .collect();
 
         assert!(
-            diff_licenses(PathBuf::new(), &file_io_spy, found_licenses)
-                .unwrap()
-                .is_empty()
+            diff_licenses(
+                &file_io_spy,
+                &LogSpy::default(),
+                PathBuf::new(),
+                found_licenses
+            )
+            .unwrap()
+            .is_empty()
         );
     }
 
     #[test]
-    fn differences_in_licenses() {
+    fn differences_in_licenses_causes_error_and_logs() {
         let file_io_spy = FileIOSpy::default();
         file_io_spy.read_dir.returns.set([Ok(Vec::new())]);
+
+        let log_spy = LogSpy::default();
+        log_spy.log.returns.set([()]);
 
         let found_licenses = [(
             Package::called("example"),
@@ -150,7 +176,7 @@ mod tests {
 
         assert_eq!(
             expected_diff,
-            diff_licenses(PathBuf::new(), &file_io_spy, found_licenses).unwrap()
+            diff_licenses(&file_io_spy, &log_spy, PathBuf::new(), found_licenses).unwrap()
         );
     }
 }
