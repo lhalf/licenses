@@ -12,20 +12,14 @@ pub fn collect_licenses(
 ) -> anyhow::Result<HashMap<Package, Vec<DirEntry>>> {
     packages
         .iter()
-        .map(|package| {
-            collect_licenses_for_package(
-                file_io,
-                package,
-                skipped_files_for_package(package, crate_configs),
-            )
-        })
+        .map(|package| collect_licenses_for_package(file_io, package, crate_configs))
         .collect()
 }
 
 fn collect_licenses_for_package(
     file_io: &impl FileIO,
     package: &Package,
-    skipped_files: &[String],
+    crate_configs: &HashMap<String, CrateConfig>,
 ) -> anyhow::Result<(Package, Vec<DirEntry>)> {
     Ok((
         package.clone(),
@@ -33,7 +27,9 @@ fn collect_licenses_for_package(
             .read_dir(package.path.as_ref())?
             .into_iter()
             .filter(is_license)
-            .filter(|dir_entry| !is_skipped_file(dir_entry, skipped_files))
+            .filter(|dir_entry| {
+                !is_skipped_file(dir_entry, skipped_files_for_package(package, crate_configs))
+            })
             .collect(),
     ))
 }
