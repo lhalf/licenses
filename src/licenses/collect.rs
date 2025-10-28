@@ -22,16 +22,6 @@ pub fn collect_licenses(
         .collect()
 }
 
-fn skipped_files_for_package<'a>(
-    package: &'a Package,
-    crate_configs: &'a HashMap<String, CrateConfig>,
-) -> &'a [String] {
-    crate_configs
-        .get(&package.normalised_name)
-        .map(|config| config.skip.as_slice())
-        .unwrap_or(&[])
-}
-
 fn collect_licenses_for_package(
     file_io: &impl FileIO,
     package: &Package,
@@ -46,6 +36,16 @@ fn collect_licenses_for_package(
             .filter(|dir_entry| !is_skipped_file(dir_entry, skipped_files))
             .collect(),
     ))
+}
+
+fn skipped_files_for_package<'a>(
+    package: &'a Package,
+    crate_configs: &'a HashMap<String, CrateConfig>,
+) -> &'a [String] {
+    crate_configs
+        .get(&package.normalised_name)
+        .map(|config| config.skip.as_slice())
+        .unwrap_or(&[])
 }
 
 fn is_skipped_file(dir_entry: &DirEntry, skipped_files: &[String]) -> bool {
