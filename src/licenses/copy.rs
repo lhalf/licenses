@@ -38,21 +38,21 @@ fn log_warnings(
     package: &Package,
     license_status: LicenseStatus,
 ) {
-    if let Some(config) = crate_configs.get(&package.normalised_name) {
-        if license_status == LicenseStatus::Valid || config.allow.as_ref() == Some(&license_status)
-        {
-            return;
-        }
-        logger.log(
-            license_status.log_level(),
-            &license_status.log_message(package),
-        );
-    } else if license_status != LicenseStatus::Valid {
-        logger.log(
-            license_status.log_level(),
-            &license_status.log_message(package),
-        );
+    let config = crate_configs.get(&package.normalised_name);
+
+    let allowed = config
+        .and_then(|crate_config| crate_config.allow.as_ref())
+        .map(|allowed_status| allowed_status == &license_status)
+        .unwrap_or(false);
+
+    if license_status == LicenseStatus::Valid || allowed {
+        return;
     }
+
+    logger.log(
+        license_status.log_level(),
+        &license_status.log_message(package),
+    );
 }
 
 fn copy_licenses_to_output_folder(
