@@ -102,7 +102,7 @@ mod tests {
     use crate::cargo_metadata::Package;
     use crate::file_io::{DirEntry, FileIOSpy};
     use crate::licenses::copy::copy_licenses;
-    use crate::log::LogSpy;
+    use crate::log::{LogLevel, LogSpy};
     use std::collections::HashMap;
     use std::ffi::OsString;
     use std::path::PathBuf;
@@ -163,8 +163,55 @@ mod tests {
         );
     }
 
+    #[test]
+    fn multiple_license_issues_causes_multiple_logs() {
+        let file_io_spy = FileIOSpy::default();
+        file_io_spy.copy_file.returns.set([Ok(())]);
+
+        let log_spy = LogSpy::default();
+        log_spy.log.returns.set([(), ()]);
+
+        let all_licenses = vec![
+            (
+                Package::called("crate1"),
+                vec![DirEntry {
+                    name: OsString::from("LICENSE"),
+                    path: PathBuf::from("example/LICENSE"),
+                    is_file: true,
+                }],
+            ),
+            (Package::called("crate2"), vec![]),
+        ]
+        .into_iter()
+        .collect();
+
+        assert!(
+            copy_licenses(
+                &file_io_spy,
+                &log_spy,
+                all_licenses,
+                PathBuf::default(),
+                &HashMap::new()
+            )
+            .is_ok()
+        );
+
+        assert_eq!(
+            [
+                (
+                    LogLevel::Warning,
+                    "empty - did not find any licenses for crate2 - no url".to_string()
+                ),
+                (
+                    LogLevel::Note,
+                    "none declared - no declared licenses for crate1".to_string()
+                )
+            ],
+            log_spy.log.arguments
+        );
+    }
+
     // TODO
-    // add test for multiple logs
     // add test for allow status not logging
     // add test for valid not logging
     // add test for included file calling write_file
