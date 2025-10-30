@@ -93,6 +93,7 @@ mod tests {
         .collect();
 
         assert!(check_licenses(&file_io_spy, &log_spy, all_licenses, &HashMap::new()).is_err());
+        assert_eq!(["mismatch - found license(s) in example whose content was not similar to declared licenses - LICENSE".to_string()], log_spy.log.arguments);
     }
 
     #[test]
@@ -134,6 +135,10 @@ mod tests {
         .collect();
 
         assert!(check_licenses(&file_io_spy, &log_spy, all_licenses, &HashMap::new()).is_err());
+        assert_eq!(
+            ["empty - did not find any licenses for bad - no url".to_string()],
+            log_spy.log.arguments
+        );
     }
 
     #[test]

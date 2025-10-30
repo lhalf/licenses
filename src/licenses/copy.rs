@@ -102,7 +102,7 @@ mod tests {
     use crate::cargo_metadata::Package;
     use crate::file_io::{DirEntry, FileIOSpy};
     use crate::licenses::copy::copy_licenses;
-    use crate::log::{LogLevel, LogSpy};
+    use crate::log::LogSpy;
     use std::collections::HashMap;
     use std::ffi::OsString;
     use std::path::PathBuf;
@@ -128,7 +128,7 @@ mod tests {
     }
 
     #[test]
-    fn failure_to_copy_file_causes_error() {
+    fn failure_to_copy_file_causes_error_and_single_log() {
         let file_io_spy = FileIOSpy::default();
         file_io_spy
             .copy_file
@@ -160,6 +160,11 @@ mod tests {
             )
             .unwrap_err()
             .to_string()
+        );
+
+        assert_eq!(
+            ["none declared - no declared licenses for example".to_string()],
+            log_spy.log.arguments
         );
     }
 
@@ -196,18 +201,15 @@ mod tests {
             .is_ok()
         );
 
+        let mut log_arguments = log_spy.log.arguments.take();
+        log_arguments.sort();
+
         assert_eq!(
-            [
-                (
-                    LogLevel::Warning,
-                    "empty - did not find any licenses for crate2 - no url".to_string()
-                ),
-                (
-                    LogLevel::Note,
-                    "none declared - no declared licenses for crate1".to_string()
-                )
+            vec![
+                "empty - did not find any licenses for crate2 - no url".to_string(),
+                "none declared - no declared licenses for crate1".to_string()
             ],
-            log_spy.log.arguments
+            log_arguments
         );
     }
 

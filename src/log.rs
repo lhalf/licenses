@@ -12,7 +12,7 @@ pub enum LogLevel {
 pub trait Log {
     fn log(
         &self,
-        level: LogLevel,
+        #[cfg_attr(test, autospy(ignore))] level: LogLevel,
         #[cfg_attr(test, autospy(into = "String", with = "strip_ansi_escapes::strip_str"))] message: &str,
     );
 }
