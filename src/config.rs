@@ -18,6 +18,13 @@ pub struct Config {
 pub struct CrateConfig {
     pub skip: Vec<String>,
     pub allow: Option<LicenseStatus>,
+    pub include: Vec<IncludedLicense>,
+}
+
+#[derive(Debug, PartialEq, Deserialize, Clone)]
+#[serde(untagged)]
+pub enum IncludedLicense {
+    Text { name: String, text: String },
 }
 
 impl GlobalArgs {
@@ -60,7 +67,7 @@ fn normalised_crate_names(crates: HashMap<String, CrateConfig>) -> HashMap<Strin
 #[cfg(test)]
 mod tests {
     use crate::GlobalArgs;
-    use crate::config::{Config, CrateConfig, load_config, parse_config};
+    use crate::config::{Config, CrateConfig, IncludedLicense, load_config, parse_config};
     use crate::file_io::FileIOSpy;
     use crate::licenses::status::LicenseStatus;
     use std::collections::HashMap;
@@ -85,7 +92,7 @@ mod tests {
         [crates.anyhow]"#,
         ] {
             assert_eq!(
-                config_with_crates([("anyhow", crate_config(&[], None))]),
+                config_with_crates([("anyhow", crate_config(&[], &[], None))]),
                 parse_config(contents).unwrap()
             );
         }
@@ -97,7 +104,10 @@ mod tests {
         [crates]
         anyhow = { allow = "too few" }"#;
         assert_eq!(
-            config_with_crates([("anyhow", crate_config(&[], Some(LicenseStatus::TooFew)))]),
+            config_with_crates([(
+                "anyhow",
+                crate_config(&[], &[], Some(LicenseStatus::TooFew))
+            )]),
             parse_config(contents).unwrap()
         );
     }
@@ -123,7 +133,32 @@ mod tests {
             anyhow = { skip = ["COPYING"]}"#,
         ] {
             assert_eq!(
-                config_with_crates([("anyhow", crate_config(&["COPYING"], None))]),
+                config_with_crates([("anyhow", crate_config(&["COPYING"], &[], None))]),
+                parse_config(contents).unwrap()
+            );
+        }
+    }
+
+    #[test]
+    fn config_with_valid_heading_and_included_text_license_is_valid() {
+        for contents in [
+            r#"[crates.anyhow]
+            include = [{ name = "LICENSE", text = "some license text" }]"#,
+            r#"[crates]
+            anyhow = { include = [{ name = "LICENSE", text = "some license text" }]}"#,
+        ] {
+            assert_eq!(
+                config_with_crates([(
+                    "anyhow",
+                    crate_config(
+                        &[],
+                        &[IncludedLicense::Text {
+                            name: "LICENSE".to_string(),
+                            text: "some license text".to_string()
+                        }],
+                        None
+                    )
+                )]),
                 parse_config(contents).unwrap()
             );
         }
@@ -138,10 +173,10 @@ mod tests {
         skip = ["LICENSE-WRONG","COPYRIGHT"]"#;
         assert_eq!(
             config_with_crates([
-                ("anyhow", crate_config(&["COPYING"], None)),
+                ("anyhow", crate_config(&["COPYING"], &[], None)),
                 (
                     "another",
-                    crate_config(&["LICENSE-WRONG", "COPYRIGHT"], None)
+                    crate_config(&["LICENSE-WRONG", "COPYRIGHT"], &[], None)
                 )
             ]),
             parse_config(contents).unwrap()
@@ -154,7 +189,7 @@ mod tests {
         [crates.anyhow]
         skip = ["COPYING"] # a comment"#;
         assert_eq!(
-            config_with_crates([("anyhow", crate_config(&["COPYING"], None))]),
+            config_with_crates([("anyhow", crate_config(&["COPYING"], &[], None))]),
             parse_config(contents).unwrap()
         );
     }
@@ -273,7 +308,7 @@ mod tests {
             .set([Ok(contents.to_string())]);
 
         assert_eq!(
-            config_with_crates([("normalise_me", crate_config(&[], None))]),
+            config_with_crates([("normalise_me", crate_config(&[], &[], None))]),
             load_config(
                 &file_io_spy,
                 GlobalArgs {
@@ -289,10 +324,15 @@ mod tests {
         );
     }
 
-    fn crate_config(skipped: &[&str], allow: Option<LicenseStatus>) -> CrateConfig {
+    fn crate_config(
+        skipped: &[&str],
+        included: &[IncludedLicense],
+        allow: Option<LicenseStatus>,
+    ) -> CrateConfig {
         CrateConfig {
             skip: skipped.iter().map(|s| s.to_string()).collect(),
             allow,
+            include: included.to_vec(),
         }
     }
 

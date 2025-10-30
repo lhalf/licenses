@@ -171,6 +171,7 @@ mod tests {
             CrateConfig {
                 skip: vec![],
                 allow: Some(LicenseStatus::TooFew),
+                include: vec![],
             },
         )]
         .into_iter()
@@ -184,6 +185,7 @@ mod tests {
             CrateConfig {
                 skip: vec![],
                 allow: Some(LicenseStatus::Empty),
+                include: vec![],
             },
         )]
         .into_iter()

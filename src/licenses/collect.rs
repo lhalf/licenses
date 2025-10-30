@@ -145,6 +145,7 @@ mod tests {
             CrateConfig {
                 skip: vec!["LICENSE".to_string()],
                 allow: None,
+                include: vec![],
             },
         )]
         .into_iter()
@@ -186,6 +187,7 @@ mod tests {
             CrateConfig {
                 skip: vec!["COPYRIGHT".to_string(), "LICENSE-APACHE".to_string()],
                 allow: None,
+                include: vec![],
             },
         )]
         .into_iter()
