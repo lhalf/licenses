@@ -100,8 +100,10 @@ fn add_included_licenses_to_output_folder(
 #[cfg(test)]
 mod tests {
     use crate::cargo_metadata::Package;
+    use crate::config::CrateConfig;
     use crate::file_io::{DirEntry, FileIOSpy};
     use crate::licenses::copy::copy_licenses;
+    use crate::licenses::status::LicenseStatus;
     use crate::log::LogSpy;
     use std::collections::HashMap;
     use std::ffi::OsString;
@@ -178,14 +180,14 @@ mod tests {
 
         let all_licenses = vec![
             (
-                Package::called("crate1"),
+                Package::called("none_declared_crate"),
                 vec![DirEntry {
                     name: OsString::from("LICENSE"),
                     path: PathBuf::from("example/LICENSE"),
                     is_file: true,
                 }],
             ),
-            (Package::called("crate2"), vec![]),
+            (Package::called("empty_crate"), vec![]),
         ]
         .into_iter()
         .collect();
@@ -206,15 +208,53 @@ mod tests {
 
         assert_eq!(
             vec![
-                "empty - did not find any licenses for crate2 - no url".to_string(),
-                "none declared - no declared licenses for crate1".to_string()
+                "empty - did not find any licenses for empty_crate - no url".to_string(),
+                "none declared - no declared licenses for none_declared_crate".to_string()
             ],
             log_arguments
         );
     }
 
+    #[test]
+    fn license_status_is_not_logged_if_status_allowed_but_still_copied() {
+        let file_io_spy = FileIOSpy::default();
+        file_io_spy.copy_file.returns.set([Ok(())]);
+
+        let all_licenses = vec![(
+            Package::called("example"),
+            vec![DirEntry {
+                name: OsString::from("LICENSE"),
+                path: PathBuf::from("example/LICENSE"),
+                is_file: true,
+            }],
+        )]
+        .into_iter()
+        .collect();
+
+        let config = [(
+            "example".to_string(),
+            CrateConfig {
+                skip: vec![],
+                allow: Some(LicenseStatus::NoneDeclared),
+                include: vec![],
+            },
+        )]
+        .into_iter()
+        .collect();
+
+        assert!(
+            copy_licenses(
+                &file_io_spy,
+                &LogSpy::default(),
+                all_licenses,
+                PathBuf::default(),
+                &config
+            )
+            .is_ok()
+        );
+    }
+
     // TODO
-    // add test for allow status not logging
     // add test for valid not logging
     // add test for included file calling write_file
 }
