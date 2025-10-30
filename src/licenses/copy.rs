@@ -1,5 +1,5 @@
 use crate::cargo_metadata::Package;
-use crate::config::CrateConfig;
+use crate::config::{CrateConfig, IncludedLicense};
 use crate::file_io::{DirEntry, FileIO};
 use crate::licenses::License;
 use crate::licenses::status::LicenseStatus;
@@ -25,6 +25,7 @@ pub fn copy_licenses(
 
         log_warnings(logger, crate_configs, &package, license_status);
         copy_licenses_to_output_folder(file_io, &licenses, &output_folder, &package)?;
+        add_included_licenses_to_output_folder(file_io, &output_folder, &package, crate_configs)?;
     }
 
     println!("{}", output_folder.to_string_lossy());
@@ -38,7 +39,8 @@ fn log_warnings(
     license_status: LicenseStatus,
 ) {
     if let Some(config) = crate_configs.get(&package.normalised_name) {
-        if config.allow.as_ref() == Some(&license_status) {
+        if license_status == LicenseStatus::Valid || config.allow.as_ref() == Some(&license_status)
+        {
             return;
         }
         logger.log(
@@ -72,6 +74,25 @@ fn copy_licenses_to_output_folder(
                     .to_string_lossy()
             )),
         )?
+    }
+    Ok(())
+}
+
+fn add_included_licenses_to_output_folder(
+    file_io: &impl FileIO,
+    output_folder: &Path,
+    package: &Package,
+    crate_configs: &HashMap<String, CrateConfig>,
+) -> anyhow::Result<()> {
+    if let Some(config) = crate_configs.get(&package.normalised_name) {
+        for included_license in &config.include {
+            match included_license {
+                IncludedLicense::Text { name, text } => file_io.write_file(
+                    &output_folder.join(format!("{}-{name}", package.normalised_name)),
+                    text,
+                )?,
+            }
+        }
     }
     Ok(())
 }
@@ -146,4 +167,5 @@ mod tests {
     // add test for multiple logs
     // add test for allow status not logging
     // add test for valid not logging
+    // add test for included file calling write_file
 }

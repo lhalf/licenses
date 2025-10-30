@@ -9,6 +9,7 @@ pub trait FileIO {
     fn copy_file(&self, from: &Path, to: &Path) -> anyhow::Result<()>;
     fn read_dir(&self, path: &Path) -> anyhow::Result<Vec<DirEntry>>;
     fn read_file(&self, path: &Path) -> anyhow::Result<String>;
+    fn write_file(&self, path: &Path, content: &str) -> anyhow::Result<()>;
 }
 
 impl FileIO for FileSystem {
@@ -30,6 +31,10 @@ impl FileIO for FileSystem {
 
     fn read_file(&self, path: &Path) -> anyhow::Result<String> {
         std::fs::read_to_string(path).context("failed to read file")
+    }
+
+    fn write_file(&self, path: &Path, content: &str) -> anyhow::Result<()> {
+        std::fs::write(path, content).context("failed to write file")
     }
 }
 
