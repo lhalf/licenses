@@ -27,6 +27,6 @@ once_cell = { version = "1.21.3", default-features = false, features = ["std"] }
 toml = { version = "0.9.8", default-features = false, features = ["serde", "display", "parse"] }
 
 [dev-dependencies]
-autospy = { version = "1.3.0", default-features = false, features = ["test"] }
+autospy = { version = "1.4.0", default-features = false, features = ["test"] }
 cargo-util-schemas = { version = "0.8.2", default-features = false }
 strip-ansi-escapes = { version = "0.2.1", default-features = false }

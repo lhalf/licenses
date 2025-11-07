@@ -104,6 +104,7 @@ mod tests {
     use crate::file_io::{DirEntry, FileIOSpy};
     use crate::licenses::copy::copy_licenses;
     use crate::licenses::status::LicenseStatus;
+    use crate::licenses::validate::LICENSE_TEXTS;
     use crate::log::LogSpy;
     use std::collections::HashMap;
     use std::ffi::OsString;
@@ -256,5 +257,42 @@ mod tests {
 
     // TODO
     // add test for valid not logging
+    #[test]
+    fn logger_does_not_log_if_license_status_valid() {
+        let file_io_spy = FileIOSpy::default();
+        file_io_spy
+            .read_file
+            .returns
+            .set([Ok(LICENSE_TEXTS.get("MIT").unwrap().to_string())]);
+        file_io_spy.copy_file.returns.set([Ok(())]);
+
+        let all_licenses = vec![(
+            Package {
+            path: Default::default(),
+            normalised_name: "example".to_string(),
+            url: None,
+            license: Some("MIT".to_string()),
+            },
+            vec![DirEntry {
+                name: OsString::from("LICENSE"),
+                path: PathBuf::from("example/LICENSE"),
+                is_file: true,
+            }],
+        )]
+        .into_iter()
+        .collect();
+
+        assert!(
+            copy_licenses(
+                &file_io_spy,
+                &LogSpy::default(),
+                all_licenses,
+                PathBuf::default(),
+                &HashMap::new()
+            )
+            .is_ok()
+        );
+    }
+
     // add test for included file calling write_file
 }
