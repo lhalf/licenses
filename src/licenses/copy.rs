@@ -268,10 +268,10 @@ mod tests {
 
         let all_licenses = vec![(
             Package {
-            path: Default::default(),
-            normalised_name: "example".to_string(),
-            url: None,
-            license: Some("MIT".to_string()),
+                path: Default::default(),
+                normalised_name: "example".to_string(),
+                url: None,
+                license: Some("MIT".to_string()),
             },
             vec![DirEntry {
                 name: OsString::from("LICENSE"),
