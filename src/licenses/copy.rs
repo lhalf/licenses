@@ -255,10 +255,8 @@ mod tests {
         );
     }
 
-    // TODO
-    // add test for valid not logging
     #[test]
-    fn logger_does_not_log_if_license_status_valid() {
+    fn nothing_is_logged_if_license_status_is_valid() {
         let file_io_spy = FileIOSpy::default();
         file_io_spy
             .read_file
@@ -294,5 +292,6 @@ mod tests {
         );
     }
 
+    // TODO
     // add test for included file calling write_file
 }
