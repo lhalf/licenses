@@ -22,7 +22,7 @@ Commands:
   collect  Collects all licenses into a folder
   summary  Provides a summary of all licenses
   check    Checks all licenses for inconsistencies
-  diff     Compare the current licenses folder against what would be collected
+  diff     Diff between the current licenses folder and the licenses that would be collected
 
 Options:
   -d, --dev                  Include dev dependencies [default: excluded]
@@ -187,7 +187,7 @@ This tool is designed to help collect required licenses when shipping software w
 - `summary` provides a quick way to see if any dependencies are using stricter licenses that might not be suitable, copy-left for instance
 - `collect` to collect all licenses into an output folder, this would be done manually and the license folder commited as part of the repository
 - the previous command might have raised warnings about licenses found, or not found, these can be manually assessed then skipped or allowed in the configuration file
-- as part of a continuous integration system, or as a pre-commit hook, a `diff` should be run to check the licenses folder hasn't missed any licenses added by new dependencies
+- as part of a continuous integration system, or as a pre-commit hook, a `diff` should be run to check the licenses folder hasn't missed any licenses added by new dependencies or removed by removing dependencies
 - as part of a continuous integration system a `check` should be run to confirm all license inconsistencies have been handled in the configuration
 
 ## Legal disclaimer

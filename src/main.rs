@@ -75,7 +75,7 @@ enum LicensesSubcommand {
     Summary(SummaryArgs),
     /// Checks all licenses for inconsistencies
     Check,
-    /// Compare the current licenses folder against what would be collected
+    /// Diff between the current licenses folder and the licenses that would be collected
     Diff {
         /// The current licenses folder path
         #[arg(short, long, default_value_t = String::from("licenses"))]
