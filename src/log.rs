@@ -19,9 +19,13 @@ pub trait Log {
 
 impl Log for Logger {
     fn log(&self, level: LogLevel, message: &str) {
-        match level {
-            LogLevel::Warning => println!("{}: {}", "warning".yellow().bold(), message),
-            LogLevel::Note => println!("{}: {}", "note".green().bold(), message),
-        }
+        println!("{}", log_message(level, message));
+    }
+}
+
+pub fn log_message(level: LogLevel, message: &str) -> String {
+    match level {
+        LogLevel::Warning => format!("{}: {}", "warning".yellow().bold(), message),
+        LogLevel::Note => format!("{}: {}", "note".green().bold(), message),
     }
 }

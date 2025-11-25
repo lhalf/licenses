@@ -115,7 +115,7 @@ Compares the current collected licenses folder against the licenses that would b
 
 Current licenses folder path can be specified with `--path`, defaults to `licenses`.
 
-Returns a non-zero exit code if the current licenses folder doesn't contain licenses that would be collected.
+Returns a non-zero exit code if there is a difference between the licenses that would be collected and the current collected licenses folder.
 
 ```
 $ cargo licenses diff

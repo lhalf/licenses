@@ -148,14 +148,14 @@ fn main() -> anyhow::Result<()> {
             }
         }
         LicensesSubcommand::Diff { path } => {
-            if !diff_licenses(
+            if let Ok(diff) = diff_licenses(
                 &file_system,
-                &logger,
                 PathBuf::from(path),
+                &config.crate_configs,
                 collect_licenses(&file_system, &filtered_packages, &config.crate_configs)?,
-            )?
-            .is_empty()
+            ) && !diff.is_empty()
             {
+                print!("{diff}");
                 std::process::exit(1)
             }
         }
