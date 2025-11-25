@@ -153,6 +153,15 @@ that can be allowed are included in the warning message, these are:
 example_crate = { allow = "too few" }
 ```
 
+### Include licenses
+
+Additional licenses can be included for a specific crate via the configuration file.
+
+```toml
+[crates]
+example_crate = { include = [{ name = "LICENSE", text = "custom license text" }] }
+```
+
 ### Example
 
 The below is an example of a TOML configuration file that could be used via the `--config` flag.
