@@ -22,7 +22,7 @@ pub fn summarise(crates_per_license: HashMap<License, Vec<String>>) -> String {
         .map(|(license, mut normalised_names)| {
             normalised_names.sort();
             format!(
-                "{}: {}",
+                "{} - {}",
                 license.to_string().bold(),
                 normalised_names.join(",").dimmed()
             )
@@ -36,7 +36,6 @@ mod tests {
     use crate::cargo_metadata::Package;
     use crate::licenses::summarise::{crates_per_license, summarise};
     use cargo_metadata::camino::Utf8PathBuf;
-    use colored::Colorize;
 
     #[test]
     fn no_packages() {
@@ -59,27 +58,21 @@ mod tests {
     #[test]
     fn single_package() {
         assert_eq!(
-            format!("{}: {}", "MIT".bold(), "example".dimmed()),
-            summarise(crates_per_license(vec![Package {
+            "MIT - example",
+            strip_ansi_escapes::strip_str(summarise(crates_per_license(vec![Package {
                 normalised_name: "example".to_string(),
                 path: Default::default(),
                 url: None,
                 license: Some("MIT".to_string()),
-            }]))
+            }])))
         )
     }
 
     #[test]
     fn multiple_different_license_packages() {
         assert_eq!(
-            format!(
-                "{}: {}\n{}: {}",
-                "Apache-2.0".bold(),
-                "another".dimmed(),
-                "MIT".bold(),
-                "example".dimmed()
-            ),
-            summarise(crates_per_license(vec![
+            "Apache-2.0 - another\nMIT - example",
+            strip_ansi_escapes::strip_str(summarise(crates_per_license(vec![
                 Package {
                     normalised_name: "example".to_string(),
                     path: Default::default(),
@@ -92,15 +85,15 @@ mod tests {
                     url: None,
                     license: Some("Apache-2.0".to_string()),
                 }
-            ]))
+            ])))
         )
     }
 
     #[test]
     fn multiple_same_license_packages() {
         assert_eq!(
-            format!("{}: {}", "MIT".bold(), "a,b,c".dimmed()),
-            summarise(crates_per_license(vec![
+            "MIT - a,b,c",
+            strip_ansi_escapes::strip_str(summarise(crates_per_license(vec![
                 Package {
                     normalised_name: "c".to_string(),
                     path: Default::default(),
@@ -119,15 +112,15 @@ mod tests {
                     url: None,
                     license: Some("MIT".to_string()),
                 }
-            ]))
+            ])))
         )
     }
 
     #[test]
     fn multiple_packages_of_different_version_same_license() {
         assert_eq!(
-            format!("{}: {}", "MIT".bold(), "example".dimmed()),
-            summarise(crates_per_license(vec![
+            "MIT - example",
+            strip_ansi_escapes::strip_str(summarise(crates_per_license(vec![
                 Package {
                     normalised_name: "example".to_string(),
                     path: Utf8PathBuf::from("/some/version/path/1"),
@@ -140,7 +133,7 @@ mod tests {
                     url: None,
                     license: Some("MIT".to_string()),
                 }
-            ]))
+            ])))
         )
     }
 }
