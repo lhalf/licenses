@@ -23,7 +23,7 @@ impl Display for LicenseDiff {
                     LogLevel::Warning,
                     &format!(
                         "found additional licenses in the output folder\n   {}",
-                        self.additional.iter().join("\n ")
+                        self.additional.iter().sorted().join("\n ")
                     )
                 )
             )?;
@@ -36,7 +36,7 @@ impl Display for LicenseDiff {
                     LogLevel::Warning,
                     &format!(
                         "found licenses missing from the output folder\n    {}",
-                        self.missing.iter().join("\n    ")
+                        self.missing.iter().sorted().join("\n    ")
                     )
                 )
             )?;
@@ -329,14 +329,31 @@ mod tests {
     }
 
     #[test]
-    fn empty_diff_produces_no_output() {
-        assert_eq!(
-            "",
+    fn display_empty_diff() {
+        assert!(
             LicenseDiff {
                 additional: HashSet::new(),
                 missing: HashSet::new(),
             }
             .to_string()
+            .is_empty()
+        );
+    }
+
+    #[test]
+    fn display_groups_additional_under_one_heading() {
+        assert_eq!(
+            "warning: found additional licenses in the output folder\n   example-COPYRIGHT\n example2-COPYRIGHT\n",
+            strip_ansi_escapes::strip_str(
+                LicenseDiff {
+                    additional: HashSet::from([
+                        "example-COPYRIGHT".to_string(),
+                        "example2-COPYRIGHT".to_string()
+                    ]),
+                    missing: HashSet::new(),
+                }
+                .to_string()
+            )
         );
     }
 }
