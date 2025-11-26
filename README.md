@@ -104,9 +104,10 @@ Returns a non-zero exit code:
 
 ```
 $ cargo licenses check
-note: additional - found all declared licenses for unicode_xid, but found additional licenses - COPYRIGHT
-note: additional - found all declared licenses for utf8_iter, but found additional licenses - COPYRIGHT
-note: additional - found all declared licenses for memchr, but found additional licenses - COPYING
+note: additional - found all declared licenses, but found additional licenses for
+   memchr - COPYING
+   utf8_iter - COPYRIGHT
+   unicode_xid - COPYRIGHT
 ```
 
 ### Diff
