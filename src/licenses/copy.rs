@@ -72,7 +72,7 @@ mod tests {
     use std::path::PathBuf;
 
     #[test]
-    fn no_licenses_causes_no_files_copied_and_no_logs() {
+    fn no_licenses_causes_no_files_copied() {
         let file_io_spy = FileIOSpy::default();
 
         assert!(
