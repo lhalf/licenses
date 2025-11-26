@@ -108,6 +108,15 @@ impl Display for LicenseStatuses {
                             licenses.join(",")
                         )
                     }
+                    LicenseStatus::Empty => writeln!(
+                        f,
+                        "   {} - {}",
+                        package.normalised_name.bold(),
+                        match &package.url {
+                            None => "no url".to_string(),
+                            Some(url) => format!("try looking here: {url}"),
+                        }
+                    ),
                     _ => writeln!(f, "   {}", package.normalised_name.bold()),
                 }?;
             }

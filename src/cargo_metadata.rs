@@ -6,7 +6,6 @@ use std::hash::{Hash, Hasher};
 pub struct Package {
     pub normalised_name: String,
     pub path: Utf8PathBuf,
-    #[allow(dead_code)] // TODO: put back in log message
     pub url: Option<String>,
     pub license: Option<String>,
 }
