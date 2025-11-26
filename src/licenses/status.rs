@@ -61,6 +61,7 @@ impl LicenseStatus {
     }
 }
 
+#[cfg_attr(test, derive(Debug, PartialEq))]
 pub struct LicenseStatuses(pub HashMap<Package, LicenseStatus>);
 
 impl LicenseStatuses {

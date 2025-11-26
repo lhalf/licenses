@@ -103,6 +103,8 @@ mod tests {
     use crate::file_io::FileIOSpy;
     use std::ffi::OsString;
 
+    // TODO: add test for failure to read licenses
+
     #[test]
     fn no_licenses_found() {
         let file_io_spy = FileIOSpy::default();
