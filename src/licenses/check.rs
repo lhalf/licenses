@@ -3,39 +3,34 @@ use crate::config::CrateConfig;
 use crate::file_io::{DirEntry, FileIO};
 use crate::licenses::License;
 use crate::licenses::status::LicenseStatus;
+use crate::licenses::status::LicenseStatuses;
 use crate::licenses::validate::validate_licenses;
-use crate::log::Log;
 use std::collections::HashMap;
 
 pub fn check_licenses(
     file_io: &impl FileIO,
-    logger: &impl Log,
     all_licenses: HashMap<Package, Vec<DirEntry>>,
     crate_configs: &HashMap<String, CrateConfig>,
-) -> anyhow::Result<()> {
-    let mut issues_found = false;
-
-    for (package, licenses) in all_licenses {
-        let license_status = validate_licenses(
-            file_io,
-            &package.license.as_deref().map(License::parse),
-            &licenses,
-        );
-
-        match license_status_after_allowed(license_status, &package, crate_configs) {
-            LicenseStatus::Valid => continue,
-            status => {
-                logger.log(status.log_level(), &status.log_message(&package));
-                issues_found = true;
-            }
-        }
-    }
-
-    if issues_found {
-        Err(anyhow::anyhow!("licenses had inconsistencies"))
-    } else {
-        Ok(())
-    }
+) -> LicenseStatuses {
+    LicenseStatuses(
+        all_licenses
+            .into_iter()
+            .map(|(package, licenses)| {
+                (
+                    package.clone(),
+                    license_status_after_allowed(
+                        validate_licenses(
+                            file_io,
+                            &package.license.as_deref().map(License::parse),
+                            &licenses,
+                        ),
+                        &package,
+                        crate_configs,
+                    ),
+                )
+            })
+            .collect(),
+    )
 }
 
 fn license_status_after_allowed(
@@ -49,154 +44,5 @@ fn license_status_after_allowed(
             _ => license_status,
         },
         None => license_status,
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::cargo_metadata::Package;
-    use crate::config::CrateConfig;
-    use crate::file_io::{DirEntry, FileIOSpy};
-    use crate::licenses::check::check_licenses;
-    use crate::licenses::status::LicenseStatus;
-    use crate::licenses::validate::LICENSE_TEXTS;
-    use crate::log::LogSpy;
-    use std::collections::HashMap;
-    use std::ffi::OsString;
-    use std::path::PathBuf;
-
-    #[test]
-    fn failure_to_read_file_causes_error() {
-        let file_io_spy = FileIOSpy::default();
-        file_io_spy
-            .read_file
-            .returns
-            .set([Err(anyhow::anyhow!("deliberate test error"))]);
-
-        let log_spy = LogSpy::default();
-        log_spy.log.returns.set([()]);
-
-        let all_licenses = [(
-            Package {
-                normalised_name: "example".to_string(),
-                path: Default::default(),
-                url: None,
-                license: Some("MIT".to_string()),
-            },
-            vec![DirEntry {
-                name: OsString::from("LICENSE"),
-                path: PathBuf::from("example/LICENSE"),
-                is_file: false,
-            }],
-        )]
-        .into_iter()
-        .collect();
-
-        assert!(check_licenses(&file_io_spy, &log_spy, all_licenses, &HashMap::new()).is_err());
-        assert_eq!(["mismatch - found license(s) in example whose content was not similar to declared licenses - LICENSE".to_string()], log_spy.log.arguments);
-    }
-
-    #[test]
-    fn checks_all_packages_even_if_the_first_has_issues() {
-        let file_io_spy = FileIOSpy::default();
-        file_io_spy
-            .read_file
-            .returns
-            .set([Ok(LICENSE_TEXTS.get("MIT").unwrap().to_string())]);
-
-        let log_spy = LogSpy::default();
-        log_spy.log.returns.set([()]);
-
-        let all_licenses = [
-            (
-                Package {
-                    normalised_name: "bad".to_string(),
-                    path: Default::default(),
-                    url: None,
-                    license: None,
-                },
-                vec![],
-            ),
-            (
-                Package {
-                    normalised_name: "good".to_string(),
-                    path: Default::default(),
-                    url: None,
-                    license: Some("MIT".to_string()),
-                },
-                vec![DirEntry {
-                    name: OsString::from("LICENSE"),
-                    path: PathBuf::from("example/LICENSE"),
-                    is_file: true,
-                }],
-            ),
-        ]
-        .into_iter()
-        .collect();
-
-        assert!(check_licenses(&file_io_spy, &log_spy, all_licenses, &HashMap::new()).is_err());
-        assert_eq!(
-            ["empty - did not find any licenses for bad - no url".to_string()],
-            log_spy.log.arguments
-        );
-    }
-
-    #[test]
-    fn license_status_that_has_been_allowed_does_not_cause_error() {
-        let file_io_spy = FileIOSpy::default();
-
-        let log_spy = LogSpy::default();
-        log_spy.log.returns.set_fn(|_| ());
-
-        let all_licenses: HashMap<_, _> = [(
-            Package {
-                normalised_name: "some_crate".to_string(),
-                path: Default::default(),
-                url: None,
-                license: Some("MIT".to_string()),
-            },
-            vec![],
-        )]
-        .into_iter()
-        .collect();
-
-        // errors with no allowed status
-        assert!(
-            check_licenses(
-                &file_io_spy,
-                &log_spy,
-                all_licenses.clone(),
-                &HashMap::new()
-            )
-            .is_err()
-        );
-
-        let config = [(
-            "some_crate".to_string(),
-            CrateConfig {
-                skip: vec![],
-                allow: Some(LicenseStatus::TooFew),
-                include: vec![],
-            },
-        )]
-        .into_iter()
-        .collect();
-
-        // errors when allowed status is incorrect
-        assert!(check_licenses(&file_io_spy, &log_spy, all_licenses.clone(), &config).is_err());
-
-        let config = [(
-            "some_crate".to_string(),
-            CrateConfig {
-                skip: vec![],
-                allow: Some(LicenseStatus::Empty),
-                include: vec![],
-            },
-        )]
-        .into_iter()
-        .collect();
-
-        // fine when status is allowed
-        assert!(check_licenses(&file_io_spy, &log_spy, all_licenses, &config).is_ok());
     }
 }

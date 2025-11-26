@@ -136,14 +136,13 @@ fn main() -> anyhow::Result<()> {
             )
         }
         LicensesSubcommand::Check => {
-            if check_licenses(
+            let statuses = check_licenses(
                 &file_system,
-                &logger,
                 collect_licenses(&file_system, &filtered_packages, &config.crate_configs)?,
                 &config.crate_configs,
-            )
-            .is_err()
-            {
+            );
+            if statuses.any_invalid() {
+                print!("{statuses}");
                 std::process::exit(1)
             }
         }
