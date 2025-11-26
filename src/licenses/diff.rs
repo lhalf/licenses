@@ -327,4 +327,16 @@ mod tests {
                 .is_empty()
         );
     }
+
+    #[test]
+    fn empty_diff_produces_no_output() {
+        assert_eq!(
+            "",
+            LicenseDiff {
+                additional: HashSet::new(),
+                missing: HashSet::new(),
+            }
+            .to_string()
+        );
+    }
 }
