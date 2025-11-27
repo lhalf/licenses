@@ -22,8 +22,8 @@ impl Display for LicenseDiff {
                 log_message(
                     LogLevel::Warning,
                     &format!(
-                        "found additional licenses in the output folder\n   {}",
-                        self.additional.iter().sorted().join("\n ")
+                        "found additional licenses in the output folder\n    {}",
+                        self.additional.iter().sorted().join("\n    ")
                     )
                 )
             )?;
