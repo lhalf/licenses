@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::mem::Discriminant;
 
-#[derive(PartialEq, Eq, Hash, Debug, Deserialize)]
+#[derive(PartialEq, Eq, Hash, Debug, Deserialize, PartialOrd, Ord)]
 pub enum LicenseStatus {
     #[serde(skip)]
     Valid,
@@ -90,7 +90,9 @@ impl LicenseStatuses {
         write!(f, "   {}", package.normalised_name.bold())?;
 
         match status {
-            Additional(licenses) | Mismatch(licenses) => writeln!(f, " - {}", licenses.join(", ")),
+            Additional(licenses) | Mismatch(licenses) => {
+                writeln!(f, " - {}", licenses.iter().sorted().join(", "))
+            }
             Empty => writeln!(
                 f,
                 " - {}",
@@ -121,7 +123,7 @@ impl Display for LicenseStatuses {
                 log_message(heading_status.log_level(), &format!("{heading_status}"))
             )?;
 
-            for (package, status) in items {
+            for (package, status) in items.iter().sorted() {
                 Self::display_group_item(f, package, status)?;
             }
         }
@@ -197,6 +199,25 @@ mod tests {
                         },
                         LicenseStatus::Empty
                     )]
+                    .into_iter()
+                    .collect()
+                )
+                .to_string()
+            )
+        );
+    }
+
+    #[test]
+    fn display_groups_multiple_packages_under_the_same_status_and_in_order() {
+        assert_eq!(
+            "note: none declared - no declared licenses for\n   a\n   b\n   c\n",
+            strip_ansi_escapes::strip_str(
+                LicenseStatuses(
+                    vec![
+                        (Package::called("b"), LicenseStatus::NoneDeclared),
+                        (Package::called("a"), LicenseStatus::NoneDeclared),
+                        (Package::called("c"), LicenseStatus::NoneDeclared)
+                    ]
                     .into_iter()
                     .collect()
                 )

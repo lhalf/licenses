@@ -2,7 +2,7 @@ use anyhow::Context;
 use cargo_metadata::camino::Utf8PathBuf;
 use std::hash::{Hash, Hasher};
 
-#[derive(Debug, Eq, Clone)]
+#[derive(Debug, Eq, Clone, PartialOrd, Ord)]
 pub struct Package {
     pub normalised_name: String,
     pub path: Utf8PathBuf,
