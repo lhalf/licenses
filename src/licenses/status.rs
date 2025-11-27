@@ -5,6 +5,7 @@ use itertools::Itertools;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
+use std::mem::Discriminant;
 
 #[derive(PartialEq, Eq, Hash, Debug, Deserialize)]
 pub enum LicenseStatus {
@@ -69,55 +70,63 @@ impl LicenseStatuses {
             .values()
             .any(|status| *status != LicenseStatus::Valid)
     }
-}
 
-impl Display for LicenseStatuses {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn to_group_map(
+        &self,
+    ) -> HashMap<Discriminant<LicenseStatus>, Vec<(&Package, &LicenseStatus)>> {
         self.0
             .iter()
             .map(|(package, status)| (std::mem::discriminant(status), (package, status)))
             .into_group_map()
-            .into_iter()
-            .try_for_each(|(_, items)| {
-                let Some((_, heading_status)) = items.first() else {
-                    return Ok(());
-                };
+    }
 
-                if matches!(heading_status, LicenseStatus::Valid) {
-                    return Ok(());
+    fn display_group_item(
+        f: &mut Formatter<'_>,
+        package: &Package,
+        status: &LicenseStatus,
+    ) -> std::fmt::Result {
+        use LicenseStatus::*;
+
+        write!(f, "   {}", package.normalised_name.bold())?;
+
+        match status {
+            Additional(licenses) | Mismatch(licenses) => writeln!(f, " - {}", licenses.join(", ")),
+            Empty => writeln!(
+                f,
+                " - {}",
+                match &package.url {
+                    None => "no url".to_string(),
+                    Some(url) => format!("try looking here: {url}"),
                 }
+            ),
+            _ => writeln!(f),
+        }
+    }
+}
 
-                write!(
-                    f,
-                    "{}",
-                    log_message(heading_status.log_level(), &format!("{heading_status}"))
-                )?;
+impl Display for LicenseStatuses {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        for (_, items) in self.to_group_map() {
+            let Some((_, heading_status)) = items.first() else {
+                continue;
+            };
 
-                for (package, status) in items {
-                    match status {
-                        LicenseStatus::Additional(licenses) | LicenseStatus::Mismatch(licenses) => {
-                            writeln!(
-                                f,
-                                "   {} - {}",
-                                package.normalised_name.bold(),
-                                licenses.join(",")
-                            )
-                        }
-                        LicenseStatus::Empty => writeln!(
-                            f,
-                            "   {} - {}",
-                            package.normalised_name.bold(),
-                            match &package.url {
-                                None => "no url".to_string(),
-                                Some(url) => format!("try looking here: {url}"),
-                            }
-                        ),
-                        _ => writeln!(f, "   {}", package.normalised_name.bold()),
-                    }?;
-                }
+            if matches!(heading_status, LicenseStatus::Valid) {
+                continue;
+            }
 
-                Ok(())
-            })
+            write!(
+                f,
+                "{}",
+                log_message(heading_status.log_level(), &format!("{heading_status}"))
+            )?;
+
+            for (package, status) in items {
+                Self::display_group_item(f, package, status)?;
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -158,5 +167,28 @@ mod tests {
     #[test]
     fn display_empty_license_statuses() {
         assert!(LicenseStatuses(HashMap::new()).to_string().is_empty());
+    }
+
+    #[test]
+    fn display_package_with_empty_status_and_url() {
+        assert_eq!(
+            "warning: empty - did not find any licenses for\n   example - try looking here: example.url\n",
+            strip_ansi_escapes::strip_str(
+                LicenseStatuses(
+                    vec![(
+                        Package {
+                            normalised_name: "example".to_string(),
+                            path: Default::default(),
+                            url: Some("example.url".to_string()),
+                            license: None,
+                        },
+                        LicenseStatus::Empty
+                    )]
+                    .into_iter()
+                    .collect()
+                )
+                .to_string()
+            )
+        );
     }
 }
