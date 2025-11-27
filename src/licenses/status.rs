@@ -225,4 +225,26 @@ mod tests {
             )
         );
     }
+
+    #[test]
+    fn display_additional_licenses_list_in_order() {
+        assert_eq!(
+            "note: additional - found all declared licenses, but found additional licenses for\n   example - a, b, c\n",
+            strip_ansi_escapes::strip_str(
+                LicenseStatuses(
+                    vec![(
+                        Package::called("example"),
+                        LicenseStatus::Additional(vec![
+                            "a".to_string(),
+                            "b".to_string(),
+                            "c".to_string()
+                        ])
+                    ),]
+                    .into_iter()
+                    .collect()
+                )
+                .to_string()
+            )
+        );
+    }
 }
