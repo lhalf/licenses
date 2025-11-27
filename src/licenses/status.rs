@@ -185,20 +185,31 @@ mod tests {
     }
 
     #[test]
-    fn display_package_with_empty_status_and_url() {
+    fn display_package_with_empty_status_and_with_without_url() {
         assert_eq!(
-            "warning: empty - did not find any licenses for\n   example - try looking here: example.url\n",
+            "warning: empty - did not find any licenses for\n   example - try looking here: example.url\n   example2 - no url\n",
             strip_ansi_escapes::strip_str(
                 LicenseStatuses(
-                    vec![(
-                        Package {
-                            normalised_name: "example".to_string(),
-                            path: Default::default(),
-                            url: Some("example.url".to_string()),
-                            license: None,
-                        },
-                        LicenseStatus::Empty
-                    )]
+                    vec![
+                        (
+                            Package {
+                                normalised_name: "example".to_string(),
+                                path: Default::default(),
+                                url: Some("example.url".to_string()),
+                                license: None,
+                            },
+                            LicenseStatus::Empty
+                        ),
+                        (
+                            Package {
+                                normalised_name: "example2".to_string(),
+                                path: Default::default(),
+                                url: None,
+                                license: None,
+                            },
+                            LicenseStatus::Empty
+                        )
+                    ]
                     .into_iter()
                     .collect()
                 )
