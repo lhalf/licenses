@@ -106,8 +106,8 @@ Returns a non-zero exit code:
 $ cargo licenses check
 note: additional - found all declared licenses, but found additional licenses for
    memchr - COPYING
-   utf8_iter - COPYRIGHT
    unicode_xid - COPYRIGHT
+   utf8_iter - COPYRIGHT
 ```
 
 ### Diff
