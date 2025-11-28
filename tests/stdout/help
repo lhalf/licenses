@@ -1,0 +1,16 @@
+Usage: cargo licenses [OPTIONS] <COMMAND>
+
+Commands:
+  collect  Collects all licenses into a folder
+  summary  Provides a summary of all licenses
+  check    Checks all licenses for inconsistencies
+  diff     Diff between the current licenses folder and the licenses that would be collected
+
+Options:
+  -d, --dev                  Include dev dependencies [default: excluded]
+  -b, --build                Include build dependencies [default: excluded]
+  -D, --depth <DEPTH>        The depth of dependencies to include [default: all sub dependencies]
+  -e, --exclude <WORKSPACE>  Exclude specified workspace [default: all included]
+  -i, --ignore <CRATE>       Ignore specified crate [default: all included]
+  -c, --config <PATH>        Path to configuration file
+  -h, --help                 Print help

@@ -7,5 +7,5 @@ check:
     cargo fmt --check --all
     cargo clippy --all-targets -- -Dwarnings
 
-test:
+test: build
     cargo test
