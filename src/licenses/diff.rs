@@ -1,7 +1,7 @@
 use crate::cargo_metadata::Package;
 use crate::config::{CrateConfig, IncludedLicense};
 use crate::file_io::{DirEntry, FileIO};
-use crate::log::{LogLevel, log_message};
+use crate::log::warning;
 use itertools::Itertools;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
@@ -19,26 +19,20 @@ impl Display for LicenseDiff {
             writeln!(
                 f,
                 "{}",
-                log_message(
-                    LogLevel::Warning,
-                    &format!(
-                        "found additional licenses in the output folder\n    {}",
-                        self.additional.iter().sorted().join("\n    ")
-                    )
-                )
+                warning(&format!(
+                    "found additional licenses in the output folder:\n\t{}",
+                    self.additional.iter().sorted().join("\n\t")
+                ))
             )?;
         }
         if !self.missing.is_empty() {
             writeln!(
                 f,
                 "{}",
-                log_message(
-                    LogLevel::Warning,
-                    &format!(
-                        "found licenses missing from the output folder\n    {}",
-                        self.missing.iter().sorted().join("\n    ")
-                    )
-                )
+                warning(&format!(
+                    "found licenses missing from the output folder:\n\t{}",
+                    self.missing.iter().sorted().join("\n\t")
+                ))
             )?;
         }
         Ok(())
@@ -343,7 +337,7 @@ mod tests {
     #[test]
     fn display_groups_additional_under_one_heading() {
         assert_eq!(
-            "warning: found additional licenses in the output folder\n   example-COPYRIGHT\n example2-COPYRIGHT\n",
+            "warning: found additional licenses in the output folder:\nexample-COPYRIGHT\nexample2-COPYRIGHT\n",
             strip_ansi_escapes::strip_str(
                 LicenseDiff {
                     additional: HashSet::from([

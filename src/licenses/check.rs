@@ -5,17 +5,21 @@ use crate::licenses::License;
 use crate::licenses::status::LicenseStatus;
 use crate::licenses::status::LicenseStatuses;
 use crate::licenses::validate::validate_licenses;
+use crate::log::ProgressBar;
 use std::collections::HashMap;
 
 pub fn check_licenses(
     file_io: &impl FileIO,
+    progress_bar: impl ProgressBar,
     all_licenses: HashMap<Package, Vec<DirEntry>>,
     crate_configs: &HashMap<String, CrateConfig>,
 ) -> LicenseStatuses {
+    progress_bar.set_len(all_licenses.len() as u64);
     LicenseStatuses(
         all_licenses
             .into_iter()
             .map(|(package, licenses)| {
+                progress_bar.increment();
                 (
                     package.clone(),
                     license_status_after_allowed(
@@ -55,6 +59,7 @@ mod tests {
     use crate::licenses::check::check_licenses;
     use crate::licenses::status::{LicenseStatus, LicenseStatuses};
     use crate::licenses::validate::LICENSE_TEXTS;
+    use crate::log::ProgressBarSpy;
     use std::collections::HashMap;
     use std::ffi::OsString;
     use std::path::PathBuf;
@@ -66,6 +71,9 @@ mod tests {
             .read_file
             .returns
             .set([Ok(LICENSE_TEXTS.get("MIT").unwrap().to_string())]);
+        let progress_bar_spy = ProgressBarSpy::default();
+        progress_bar_spy.set_len.returns.set_fn(|_| ());
+        progress_bar_spy.increment.returns.set_fn(|_| ());
 
         let all_licenses = [
             (
@@ -113,13 +121,24 @@ mod tests {
 
         assert_eq!(
             expected_statuses,
-            check_licenses(&file_io_spy, all_licenses, &HashMap::new())
+            check_licenses(
+                &file_io_spy,
+                progress_bar_spy.clone(),
+                all_licenses,
+                &HashMap::new()
+            )
         );
+
+        assert_eq!(1, progress_bar_spy.set_len.arguments.take().len());
+        assert_eq!(2, progress_bar_spy.increment.arguments.take().len());
     }
 
     #[test]
     fn license_status_that_has_been_allowed_has_license_status_valid() {
         let file_io_spy = FileIOSpy::default();
+        let progress_bar_spy = ProgressBarSpy::default();
+        progress_bar_spy.set_len.returns.set_fn(|_| ());
+        progress_bar_spy.increment.returns.set_fn(|_| ());
 
         let all_licenses: HashMap<_, _> = [(
             Package {
@@ -134,7 +153,15 @@ mod tests {
         .collect();
 
         // errors with no allowed status
-        assert!(check_licenses(&file_io_spy, all_licenses.clone(), &HashMap::new()).any_invalid());
+        assert!(
+            check_licenses(
+                &file_io_spy,
+                progress_bar_spy.clone(),
+                all_licenses.clone(),
+                &HashMap::new()
+            )
+            .any_invalid()
+        );
 
         let config = [(
             "some_crate".to_string(),
@@ -148,7 +175,15 @@ mod tests {
         .collect();
 
         // errors when allowed status is incorrect
-        assert!(check_licenses(&file_io_spy, all_licenses.clone(), &config).any_invalid());
+        assert!(
+            check_licenses(
+                &file_io_spy,
+                progress_bar_spy.clone(),
+                all_licenses.clone(),
+                &config
+            )
+            .any_invalid()
+        );
 
         let config = [(
             "some_crate".to_string(),
@@ -162,6 +197,8 @@ mod tests {
         .collect();
 
         // fine when status is allowed
-        assert!(!check_licenses(&file_io_spy, all_licenses, &config).any_invalid());
+        assert!(
+            !check_licenses(&file_io_spy, progress_bar_spy, all_licenses, &config).any_invalid()
+        );
     }
 }

@@ -1,11 +1,11 @@
 use crate::cargo_metadata::Package;
-use crate::log::{LogLevel, log_message};
+use crate::log::warning;
 use colored::Colorize;
 use itertools::Itertools;
 use serde::Deserialize;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
-use std::mem::Discriminant;
+use std::mem::discriminant;
 
 #[derive(PartialEq, Eq, Hash, Debug, Deserialize, PartialOrd, Ord)]
 pub enum LicenseStatus {
@@ -28,35 +28,26 @@ impl Display for LicenseStatus {
         match self {
             LicenseStatus::Valid => Ok(()),
             LicenseStatus::Empty => {
-                writeln!(f, "{} - did not find any licenses for", "empty".bold())
+                writeln!(f, "{} - did not find any licenses for:", "empty".bold())
             }
             LicenseStatus::NoneDeclared => {
-                writeln!(f, "{} - no declared licenses for", "none declared".bold())
+                writeln!(f, "{} - no declared licenses for:", "none declared".bold())
             }
             LicenseStatus::TooFew => writeln!(
                 f,
-                "{} - did not find as many licenses as declared for",
+                "{} - did not find as many licenses as declared for:",
                 "too few".bold()
             ),
             LicenseStatus::Additional(_) => writeln!(
                 f,
-                "{} - found all declared licenses, but found additional licenses for",
+                "{} - found all declared licenses, but found additional licenses for:",
                 "additional".bold()
             ),
             LicenseStatus::Mismatch(_) => writeln!(
                 f,
-                "{} - found license(s) whose content was not similar to declared licenses for",
+                "{} - found license(s) whose content was not similar to declared licenses for:",
                 "mismatch".bold()
             ),
-        }
-    }
-}
-
-impl LicenseStatus {
-    pub fn log_level(&self) -> LogLevel {
-        match self {
-            LicenseStatus::Additional(_) | LicenseStatus::NoneDeclared => LogLevel::Note,
-            _ => LogLevel::Warning,
         }
     }
 }
@@ -71,23 +62,44 @@ impl LicenseStatuses {
             .any(|status| *status != LicenseStatus::Valid)
     }
 
-    fn to_group_map(
-        &self,
-    ) -> HashMap<Discriminant<LicenseStatus>, Vec<(&Package, &LicenseStatus)>> {
+    fn invalid_statuses(&self) -> impl Iterator<Item = &LicenseStatus> {
+        let mut seen = HashSet::new();
         self.0
-            .iter()
-            .map(|(package, status)| (std::mem::discriminant(status), (package, status)))
-            .into_group_map()
+            .values()
+            .filter(|status| !matches!(status, LicenseStatus::Valid))
+            .filter(move |status| seen.insert(discriminant(*status)))
     }
 
-    fn display_group_item(
+    fn packages_with_status(
+        &self,
+        license_status: &LicenseStatus,
+    ) -> impl Iterator<Item = (&Package, &LicenseStatus)> {
+        self.0
+            .iter()
+            .filter(move |(_, status)| discriminant(*status) == discriminant(license_status))
+            .sorted()
+    }
+
+    fn display_status_section(
+        &self,
+        f: &mut Formatter<'_>,
+        license_status: &LicenseStatus,
+    ) -> std::fmt::Result {
+        write!(f, "{}", warning(&format!("{license_status}")))?;
+        for (package, status) in self.packages_with_status(license_status) {
+            Self::display_status_item(f, package, status)?;
+        }
+        Ok(())
+    }
+
+    fn display_status_item(
         f: &mut Formatter<'_>,
         package: &Package,
         status: &LicenseStatus,
     ) -> std::fmt::Result {
         use LicenseStatus::*;
 
-        write!(f, "   {}", package.normalised_name.bold())?;
+        write!(f, "\t{}", package.normalised_name.bold())?;
 
         match status {
             Additional(licenses) | Mismatch(licenses) => {
@@ -108,24 +120,8 @@ impl LicenseStatuses {
 
 impl Display for LicenseStatuses {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        for (_, items) in self.to_group_map() {
-            let Some((_, heading_status)) = items.first() else {
-                continue;
-            };
-
-            if matches!(heading_status, LicenseStatus::Valid) {
-                continue;
-            }
-
-            write!(
-                f,
-                "{}",
-                log_message(heading_status.log_level(), &format!("{heading_status}"))
-            )?;
-
-            for (package, status) in items.iter().sorted() {
-                Self::display_group_item(f, package, status)?;
-            }
+        for status in self.invalid_statuses() {
+            self.display_status_section(f, status)?;
         }
 
         Ok(())
@@ -187,7 +183,7 @@ mod tests {
     #[test]
     fn display_package_with_empty_status_and_with_without_url() {
         assert_eq!(
-            "warning: empty - did not find any licenses for\n   example - try looking here: example.url\n   example2 - no url\n",
+            "warning: empty - did not find any licenses for:\nexample - try looking here: example.url\nexample2 - no url\n",
             strip_ansi_escapes::strip_str(
                 LicenseStatuses(
                     vec![
@@ -221,7 +217,7 @@ mod tests {
     #[test]
     fn display_groups_multiple_packages_under_the_same_status_and_in_order() {
         assert_eq!(
-            "note: none declared - no declared licenses for\n   a\n   b\n   c\n",
+            "warning: none declared - no declared licenses for:\na\nb\nc\n",
             strip_ansi_escapes::strip_str(
                 LicenseStatuses(
                     vec![
@@ -240,7 +236,7 @@ mod tests {
     #[test]
     fn display_additional_licenses_list_in_order() {
         assert_eq!(
-            "note: additional - found all declared licenses, but found additional licenses for\n   example - a, b, c\n",
+            "warning: additional - found all declared licenses, but found additional licenses for:\nexample - a, b, c\n",
             strip_ansi_escapes::strip_str(
                 LicenseStatuses(
                     vec![(

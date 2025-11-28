@@ -7,6 +7,7 @@ use crate::licenses::collect::collect_licenses;
 use crate::licenses::copy::copy_licenses;
 use crate::licenses::diff::diff_licenses;
 use crate::licenses::summarise::{crates_per_license, summarise};
+use crate::log::progress_bar;
 use anyhow::Context;
 use clap::{Args, Parser, Subcommand};
 use serde::Deserialize;
@@ -97,6 +98,7 @@ fn main() -> anyhow::Result<()> {
     let CargoSubcommand::Licenses { args, command } = CargoSubcommand::parse();
 
     let file_system = FileSystem {};
+    let progress_bar = progress_bar();
     let config = load_config(&file_system, args)?;
     let crates_we_want = crate_names(
         config.global.depth,
@@ -113,6 +115,7 @@ fn main() -> anyhow::Result<()> {
             create_output_folder(&path)?;
             let statuses = check_licenses(
                 &file_system,
+                progress_bar,
                 collect_licenses(&file_system, &filtered_packages, &config.crate_configs)?,
                 &config.crate_configs,
             );
@@ -143,6 +146,7 @@ fn main() -> anyhow::Result<()> {
         LicensesSubcommand::Check => {
             let statuses = check_licenses(
                 &file_system,
+                progress_bar,
                 collect_licenses(&file_system, &filtered_packages, &config.crate_configs)?,
                 &config.crate_configs,
             );

@@ -60,6 +60,7 @@ licenses
 ├── clap-LICENSE-APACHE
 ├── clap-LICENSE-MIT
 ├── colored-LICENSE
+├── indicatif-LICENSE
 ├── itertools-LICENSE-APACHE
 ├── itertools-LICENSE-MIT
 ├── once_cell-LICENSE-APACHE
@@ -87,7 +88,7 @@ The summary can be formatted as JSON or TOML with `--json` or `--toml` respectiv
 
 ```
 $ cargo licenses summary --depth 1
-MIT - cargo_metadata,strsim
+MIT - cargo_metadata,indicatif,strsim
 MIT OR Apache-2.0 - anyhow,clap,itertools,once_cell,serde,serde_json,spdx,toml
 MPL-2.0 - colored
 ```
@@ -104,10 +105,12 @@ Returns a non-zero exit code:
 
 ```
 $ cargo licenses check
-note: additional - found all declared licenses, but found additional licenses for
-   memchr - COPYING
-   unicode_xid - COPYRIGHT
-   utf8_iter - COPYRIGHT
+warning: mismatch - found license(s) whose content was not similar to declared licenses for:
+        portable_atomic - LICENSE-APACHE
+warning: additional - found all declared licenses, but found additional licenses for:
+        memchr - COPYING
+        unicode_xid - COPYRIGHT
+        utf8_iter - COPYRIGHT
 ```
 
 ### Diff
