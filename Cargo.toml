@@ -32,3 +32,4 @@ autospy = { version = "1.4.0", default-features = false, features = ["test"] }
 cargo-util-schemas = { version = "0.8.2", default-features = false }
 strip-ansi-escapes = { version = "0.2.1", default-features = false }
 tempfile = { version = "3.23.0", default-features = false }
+cargo_toml = { version = "0.22.3", default-features = false }

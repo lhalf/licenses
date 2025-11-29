@@ -1,24 +1,32 @@
-fn call_licenses_command(args: &[&str]) -> std::process::Output {
+use std::collections::HashSet;
+use std::path::Path;
+use std::process::{Command, Output};
+
+fn call_licenses_command(args: &[&str]) -> Output {
     if !std::fs::exists("target/release/cargo-licenses").unwrap() {
         panic!("cargo-licenses has not been built")
     }
-    std::process::Command::new("target/release/cargo-licenses")
+    Command::new("target/release/cargo-licenses")
         .arg("licenses")
         .args(args)
         .output()
         .unwrap()
 }
 
-fn list_files(dir: &std::path::Path) -> Vec<String> {
+fn collected_dependencies(dir: &Path) -> HashSet<String> {
     std::fs::read_dir(dir)
+        .into_iter()
+        .flat_map(|entries| entries.filter_map(Result::ok))
+        .filter_map(|entry| entry.file_name().into_string().ok())
+        .filter_map(|name| name.split('-').next().map(ToOwned::to_owned))
+        .collect()
+}
+
+fn actual_dependencies() -> HashSet<String> {
+    cargo_toml::Manifest::from_path("./Cargo.toml")
         .unwrap()
-        .filter_map(|entry| entry.ok())
-        .map(|entry| entry.path())
-        .filter_map(|path| {
-            path.file_name()
-                .and_then(|name| name.to_str())
-                .map(|name| name.to_string())
-        })
+        .dependencies
+        .into_keys()
         .collect()
 }
 
@@ -45,29 +53,6 @@ fn collect_depth_1() {
         temp_dir_path.to_str().unwrap(),
     ]);
 
-    let expected_licenses = vec![
-        "once_cell-LICENSE-APACHE",
-        "anyhow-LICENSE-APACHE",
-        "serde-LICENSE-APACHE",
-        "spdx-LICENSE-MIT",
-        "colored-LICENSE",
-        "itertools-LICENSE-MIT",
-        "once_cell-LICENSE-MIT",
-        "toml-LICENSE-APACHE",
-        "spdx-LICENSE-APACHE",
-        "itertools-LICENSE-APACHE",
-        "indicatif-LICENSE",
-        "serde_json-LICENSE-APACHE",
-        "anyhow-LICENSE-MIT",
-        "serde-LICENSE-MIT",
-        "cargo_metadata-LICENSE-MIT",
-        "clap-LICENSE-APACHE",
-        "serde_json-LICENSE-MIT",
-        "strsim-LICENSE",
-        "clap-LICENSE-MIT",
-        "toml-LICENSE-MIT",
-    ];
-
     assert!(output.status.success());
-    assert_eq!(expected_licenses, list_files(temp_dir_path))
+    assert_eq!(collected_dependencies(temp_dir_path), actual_dependencies());
 }
