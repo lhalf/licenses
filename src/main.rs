@@ -98,7 +98,6 @@ fn main() -> anyhow::Result<()> {
     let CargoSubcommand::Licenses { args, command } = CargoSubcommand::parse();
 
     let file_system = FileSystem {};
-    let progress_bar = progress_bar();
     let config = load_config(&file_system, args)?;
     let crates_we_want = crate_names(
         config.global.depth,
@@ -112,25 +111,29 @@ fn main() -> anyhow::Result<()> {
     match command {
         LicensesSubcommand::Collect { path } => {
             let path = PathBuf::from(path);
+            let progress_bar = progress_bar("collecting licenses");
+
             create_output_folder(&path)?;
+
+            let all_licenses =
+                collect_licenses(&file_system, &filtered_packages, &config.crate_configs)?;
+
             let statuses = check_licenses(
                 &file_system,
                 progress_bar,
-                collect_licenses(&file_system, &filtered_packages, &config.crate_configs)?,
+                &all_licenses,
                 &config.crate_configs,
             );
+
             if statuses.any_invalid() {
                 print!("{statuses}");
             }
-            copy_licenses(
-                &file_system,
-                collect_licenses(&file_system, &filtered_packages, &config.crate_configs)?,
-                path,
-                &config.crate_configs,
-            )?;
+
+            copy_licenses(&file_system, all_licenses, path, &config.crate_configs)?;
         }
         LicensesSubcommand::Summary(args) => {
             let crates_per_license = crates_per_license(filtered_packages);
+
             println!(
                 "{}",
                 // clap should make it impossible for both to be true
@@ -144,12 +147,15 @@ fn main() -> anyhow::Result<()> {
             )
         }
         LicensesSubcommand::Check => {
+            let progress_bar = progress_bar("checking licenses");
+
             let statuses = check_licenses(
                 &file_system,
                 progress_bar,
-                collect_licenses(&file_system, &filtered_packages, &config.crate_configs)?,
+                &collect_licenses(&file_system, &filtered_packages, &config.crate_configs)?,
                 &config.crate_configs,
             );
+
             if statuses.any_invalid() {
                 print!("{statuses}");
                 std::process::exit(1)

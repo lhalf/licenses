@@ -11,13 +11,13 @@ use std::collections::HashMap;
 pub fn check_licenses(
     file_io: &impl FileIO,
     progress_bar: impl ProgressBar,
-    all_licenses: HashMap<Package, Vec<DirEntry>>,
+    all_licenses: &HashMap<Package, Vec<DirEntry>>,
     crate_configs: &HashMap<String, CrateConfig>,
 ) -> LicenseStatuses {
     progress_bar.set_len(all_licenses.len() as u64);
     LicenseStatuses(
         all_licenses
-            .into_iter()
+            .iter()
             .map(|(package, licenses)| {
                 progress_bar.increment();
                 (
@@ -26,9 +26,9 @@ pub fn check_licenses(
                         validate_licenses(
                             file_io,
                             &package.license.as_deref().map(License::parse),
-                            &licenses,
+                            licenses,
                         ),
-                        &package,
+                        package,
                         crate_configs,
                     ),
                 )
@@ -124,7 +124,7 @@ mod tests {
             check_licenses(
                 &file_io_spy,
                 progress_bar_spy.clone(),
-                all_licenses,
+                &all_licenses,
                 &HashMap::new()
             )
         );
@@ -157,7 +157,7 @@ mod tests {
             check_licenses(
                 &file_io_spy,
                 progress_bar_spy.clone(),
-                all_licenses.clone(),
+                &all_licenses,
                 &HashMap::new()
             )
             .any_invalid()
@@ -179,7 +179,7 @@ mod tests {
             check_licenses(
                 &file_io_spy,
                 progress_bar_spy.clone(),
-                all_licenses.clone(),
+                &all_licenses,
                 &config
             )
             .any_invalid()
@@ -198,7 +198,7 @@ mod tests {
 
         // fine when status is allowed
         assert!(
-            !check_licenses(&file_io_spy, progress_bar_spy, all_licenses, &config).any_invalid()
+            !check_licenses(&file_io_spy, progress_bar_spy, &all_licenses, &config).any_invalid()
         );
     }
 }
