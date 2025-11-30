@@ -41,6 +41,16 @@ fn help_flag() {
 }
 
 #[test]
+fn summary_depth_1() {
+    let output = call_licenses_command(&["summary", "--depth", "1"]);
+    assert!(output.status.success());
+    assert_eq!(
+        include_str!("stdout/summary"),
+        String::from_utf8(output.stdout).unwrap()
+    )
+}
+
+#[test]
 fn collect_depth_1() {
     let temp_dir = tempfile::TempDir::new().unwrap();
     let temp_dir_path = temp_dir.path();
