@@ -5,12 +5,12 @@ pub fn warning(message: &str) -> String {
 }
 
 pub fn progress_bar(msg: &str) -> indicatif::ProgressBar {
-    let progress_bar = indicatif::ProgressBar::new(0).with_style(
-        indicatif::ProgressStyle::with_template("{spinner} {msg}...\n{wide_bar} {pos}/{len}")
-            .expect("invalid progress bar style"),
-    );
-    progress_bar.set_message(msg.to_owned());
-    progress_bar
+    indicatif::ProgressBar::new(0)
+        .with_style(
+            indicatif::ProgressStyle::with_template("{spinner} {msg}...\n{wide_bar} {pos}/{len}")
+                .expect("invalid progress bar style"),
+        )
+        .with_message(msg.to_owned())
 }
 
 #[cfg_attr(test, autospy::autospy)]
