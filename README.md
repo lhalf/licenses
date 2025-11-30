@@ -43,10 +43,11 @@ Collects all licenses into a folder.
 The output folder path can be specified with `--path`, defaults to `licenses`. 
 
 Prints a warning:
-- If the crate had no declared license on crates.io
-- If no licenses were found for a crate
-- If there were more licenses found for a crate than declared by the author on crates.io
-- If the content of the found licenses did not match the expected content for those licenses
+- If the crate had no declared license on crates.io (none declared)
+- If no licenses were found for a crate (empty)
+- If there were fewer licenses found for a crate than declared by the author on crates.io (too few)
+- If there were more licenses found for a crate than declared by the author on crates.io (additional)
+- If the content of the found licenses did not match the expected content for those licenses (mismatch)
 
 ```bash
 $ cargo licenses collect --depth 1
@@ -100,7 +101,7 @@ Checks all licenses for inconsistencies.
 Returns a non-zero exit code:
 - If the crate had no declared license on crates.io (none declared)
 - If no licenses were found for a crate (empty)
-- If there were less licenses found for a crate than declared by the author on crates.io (too few)
+- If there were fewer licenses found for a crate than declared by the author on crates.io (too few)
 - If there were more licenses found for a crate than declared by the author on crates.io (additional)
 - If the content of the found licenses did not match the expected content for those licenses (mismatch)
 
