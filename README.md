@@ -98,19 +98,20 @@ MPL-2.0 - colored
 Checks all licenses for inconsistencies.
 
 Returns a non-zero exit code:
-- If the crate had no declared license on crates.io
-- If no licenses were found for a crate
-- If there were more licenses found for a crate than declared by the author on crates.io
-- If the content of the found licenses did not match the expected content for those licenses
+- If the crate had no declared license on crates.io (none declared)
+- If no licenses were found for a crate (empty)
+- If there were less licenses found for a crate than declared by the author on crates.io (too few)
+- If there were more licenses found for a crate than declared by the author on crates.io (additional)
+- If the content of the found licenses did not match the expected content for those licenses (mismatch)
 
 ```
 $ cargo licenses check
-warning: mismatch - found license(s) whose content was not similar to declared licenses for:
-        portable_atomic - LICENSE-APACHE
 warning: additional - found all declared licenses, but found additional licenses for:
         memchr - COPYING
         unicode_xid - COPYRIGHT
         utf8_iter - COPYRIGHT
+warning: mismatch - found license(s) whose content was not similar to declared licenses for:
+        portable_atomic - LICENSE-APACHE
 ```
 
 ### Diff

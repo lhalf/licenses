@@ -68,6 +68,7 @@ impl LicenseStatuses {
             .values()
             .filter(|status| !matches!(status, LicenseStatus::Valid))
             .filter(move |status| seen.insert(discriminant(*status)))
+            .sorted()
     }
 
     fn packages_with_status(
