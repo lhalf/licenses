@@ -103,7 +103,27 @@ mod tests {
     use crate::file_io::FileIOSpy;
     use std::ffi::OsString;
 
-    // TODO: add test for failure to read licenses
+    #[test]
+    fn failure_to_read_license_file_causes_mismatch() {
+        let file_io_spy = FileIOSpy::default();
+        file_io_spy
+            .read_file
+            .returns
+            .set([Err(anyhow::anyhow!("deliberate test error"))]);
+
+        assert_eq!(
+            LicenseStatus::Mismatch(vec!["LICENSE".to_string()]),
+            validate_licenses(
+                &file_io_spy,
+                &Some(License::parse("MIT")),
+                &[DirEntry {
+                    name: OsString::from("LICENSE"),
+                    path: Default::default(),
+                    is_file: true,
+                }]
+            )
+        );
+    }
 
     #[test]
     fn no_licenses_found() {
