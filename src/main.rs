@@ -1,18 +1,11 @@
-use crate::cargo_metadata::{Package, try_get_packages};
+use crate::cargo_metadata::{filtered_packages, try_get_packages};
 use crate::cargo_tree::crate_names;
 use crate::config::load_config;
 use crate::file_io::FileSystem;
-use crate::licenses::check::check_licenses;
-use crate::licenses::collect::collect_licenses;
-use crate::licenses::diff::diff_licenses;
 use crate::licenses::subcommand;
-use crate::licenses::summarise::{crates_per_license, summarise};
-use crate::log::progress_bar;
-use anyhow::Context;
 use clap::{Args, Parser, Subcommand};
 use serde::Deserialize;
-use std::collections::BTreeSet;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 mod cargo_metadata;
 mod cargo_tree;
@@ -99,68 +92,22 @@ fn main() -> anyhow::Result<()> {
 
     let file_system = FileSystem {};
     let config = load_config(&file_system, args)?;
-    let crates_we_want = crate_names(&config)?;
-    let filtered_packages = filter_packages(try_get_packages()?, crates_we_want);
+    let filtered_packages = filtered_packages(try_get_packages()?, crate_names(&config)?);
 
     match command {
         LicensesSubcommand::Collect { path } => {
-            subcommand::collect(&file_system, &config, filtered_packages, path)?;
+            subcommand::collect(&file_system, &config, &filtered_packages, path)?;
         }
         LicensesSubcommand::Summary(args) => {
-            let crates_per_license = crates_per_license(filtered_packages);
-
-            println!(
-                "{}",
-                // clap should make it impossible for both to be true
-                if args.json {
-                    serde_json::to_string_pretty(&crates_per_license)?
-                } else if args.toml {
-                    toml::to_string_pretty(&crates_per_license)?
-                } else {
-                    summarise(crates_per_license)
-                }
-            )
+            subcommand::summary(filtered_packages, args)?;
         }
         LicensesSubcommand::Check => {
-            let progress_bar = progress_bar("checking licenses");
-
-            let statuses = check_licenses(
-                &file_system,
-                progress_bar,
-                &collect_licenses(&file_system, &filtered_packages, &config.crate_configs)?,
-                &config.crate_configs,
-            );
-
-            if statuses.any_invalid() {
-                print!("{statuses}");
-                std::process::exit(1)
-            }
+            subcommand::check(&file_system, &config, &filtered_packages)?;
         }
         LicensesSubcommand::Diff { path } => {
-            if let Ok(diff) = diff_licenses(
-                &file_system,
-                PathBuf::from(path),
-                &config.crate_configs,
-                collect_licenses(&file_system, &filtered_packages, &config.crate_configs)?,
-            ) && !diff.is_empty()
-            {
-                print!("{diff}");
-                std::process::exit(1)
-            }
+            subcommand::diff(&file_system, &config, &filtered_packages, path)?;
         }
     }
 
     Ok(())
-}
-
-fn create_output_folder(path: &Path) -> anyhow::Result<()> {
-    let _ = std::fs::remove_dir_all(path);
-    std::fs::create_dir(path).context("failed to create output folder")
-}
-
-fn filter_packages(all_packages: Vec<Package>, crates_we_want: BTreeSet<String>) -> Vec<Package> {
-    all_packages
-        .into_iter()
-        .filter(|package| crates_we_want.contains(&package.normalised_name))
-        .collect()
 }

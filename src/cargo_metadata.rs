@@ -1,5 +1,6 @@
 use anyhow::Context;
 use cargo_metadata::camino::Utf8PathBuf;
+use std::collections::BTreeSet;
 use std::hash::{Hash, Hasher};
 
 #[derive(Debug, Eq, Clone, PartialOrd, Ord)]
@@ -48,6 +49,16 @@ impl Hash for Package {
         self.normalised_name.hash(state);
         self.license.hash(state);
     }
+}
+
+pub fn filtered_packages(
+    all_packages: Vec<Package>,
+    crates_we_want: BTreeSet<String>,
+) -> Vec<Package> {
+    all_packages
+        .into_iter()
+        .filter(|package| crates_we_want.contains(&package.normalised_name))
+        .collect()
 }
 
 pub fn try_get_packages() -> anyhow::Result<Vec<Package>> {
