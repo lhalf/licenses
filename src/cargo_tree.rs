@@ -1,30 +1,22 @@
+use crate::config::Config;
 use anyhow::Context;
 use itertools::Itertools;
 use std::collections::BTreeSet;
 use std::process::Command;
 
-pub fn crate_names(
-    depth: Option<u8>,
-    include_dev_dependencies: bool,
-    include_build_dependencies: bool,
-    excluded_workspaces: Vec<String>,
-    ignored_crates: Vec<String>,
-) -> anyhow::Result<BTreeSet<String>> {
+pub fn crate_names(config: &Config) -> anyhow::Result<BTreeSet<String>> {
     to_crate_names(
         cargo_output_with_args(args(
-            depth,
-            include_dev_dependencies,
-            include_build_dependencies,
-            excluded_workspaces,
+            config.global.depth,
+            config.global.dev,
+            config.global.build,
+            config.global.exclude.as_slice(),
         ))?,
-        ignored_crates,
+        config.global.ignore.as_slice(),
     )
 }
 
-fn to_crate_names(
-    output: Vec<u8>,
-    ignored_crates: Vec<String>,
-) -> anyhow::Result<BTreeSet<String>> {
+fn to_crate_names(output: Vec<u8>, ignored_crates: &[String]) -> anyhow::Result<BTreeSet<String>> {
     Ok(String::from_utf8(output)
         .context("cargo tree output contained invalid UTF-8")?
         .replace(" ", "")
@@ -47,7 +39,7 @@ fn args(
     depth: Option<u8>,
     include_dev_dependencies: bool,
     include_build_dependencies: bool,
-    excluded_workspaces: Vec<String>,
+    excluded_workspaces: &[String],
 ) -> Vec<String> {
     let mut args = vec![
         "tree".to_string(),
@@ -77,9 +69,9 @@ fn args(
 
     if !excluded_workspaces.is_empty() {
         args.push("--workspace".to_string());
-        excluded_workspaces.into_iter().for_each(|workspace| {
+        excluded_workspaces.iter().for_each(|workspace| {
             args.push("--exclude".to_string());
-            args.push(workspace);
+            args.push(workspace.clone());
         });
     };
 
@@ -104,7 +96,7 @@ mod tests {
                 "--edges".to_string(),
                 "no-dev,no-build".to_string(),
             ],
-            args(None, false, false, vec![])
+            args(None, false, false, &[])
         );
     }
 
@@ -121,7 +113,7 @@ mod tests {
                 "--edges".to_string(),
                 "no-build".to_string(),
             ],
-            args(None, true, false, vec![])
+            args(None, true, false, &[])
         );
     }
 
@@ -138,7 +130,7 @@ mod tests {
                 "--edges".to_string(),
                 "no-dev".to_string(),
             ],
-            args(None, false, true, vec![])
+            args(None, false, true, &[])
         );
     }
 
@@ -155,7 +147,7 @@ mod tests {
                 "--depth".to_string(),
                 "1".to_string()
             ],
-            args(Some(1), true, true, vec![])
+            args(Some(1), true, true, &[])
         );
     }
 
@@ -173,7 +165,7 @@ mod tests {
                 "--exclude".to_string(),
                 "excluded".to_string(),
             ],
-            args(None, true, true, vec!["excluded".to_string()])
+            args(None, true, true, &["excluded".to_string()])
         );
     }
 
@@ -181,9 +173,7 @@ mod tests {
     fn invalid_utf8_in_cargo_tree_output() {
         assert_eq!(
             "cargo tree output contained invalid UTF-8",
-            to_crate_names(vec![255], Vec::new())
-                .unwrap_err()
-                .to_string()
+            to_crate_names(vec![255], &[]).unwrap_err().to_string()
         );
     }
 
@@ -191,11 +181,11 @@ mod tests {
     fn strips_whitespace_from_cargo_tree_output() {
         assert_eq!(
             BTreeSet::new(),
-            to_crate_names(b"                 ".to_vec(), Vec::new()).unwrap()
+            to_crate_names(b"                 ".to_vec(), &[]).unwrap()
         );
         assert_eq!(
             BTreeSet::from(["example".to_string()]),
-            to_crate_names(b"       example".to_vec(), Vec::new()).unwrap()
+            to_crate_names(b"       example".to_vec(), &[]).unwrap()
         );
     }
 
@@ -203,11 +193,11 @@ mod tests {
     fn ignores_empty_entries_in_cargo_tree_output() {
         assert_eq!(
             BTreeSet::new(),
-            to_crate_names(b"\n\n\n".to_vec(), Vec::new()).unwrap()
+            to_crate_names(b"\n\n\n".to_vec(), &[]).unwrap()
         );
         assert_eq!(
             BTreeSet::from(["example".to_string()]),
-            to_crate_names(b"\nexample\n\n".to_vec(), Vec::new()).unwrap()
+            to_crate_names(b"\nexample\n\n".to_vec(), &[]).unwrap()
         );
     }
 
@@ -215,7 +205,7 @@ mod tests {
     fn normalises_crate_names_in_cargo_tree_output() {
         assert_eq!(
             BTreeSet::from(["example_one".to_string(), "example_two".to_string()]),
-            to_crate_names(b"example-one\nexample_two".to_vec(), Vec::new()).unwrap()
+            to_crate_names(b"example-one\nexample_two".to_vec(), &[]).unwrap()
         );
     }
 
@@ -223,7 +213,7 @@ mod tests {
     fn only_returns_unique_crate_names_in_cargo_tree_output() {
         assert_eq!(
             BTreeSet::from(["example".to_string()]),
-            to_crate_names(b"example\n   example    \n\nexample".to_vec(), Vec::new()).unwrap()
+            to_crate_names(b"example\n   example    \n\nexample".to_vec(), &[]).unwrap()
         );
     }
 
@@ -231,7 +221,7 @@ mod tests {
     fn ignores_single_specified_crate() {
         assert_eq!(
             BTreeSet::from(["one".to_string()]),
-            to_crate_names(b"one\nignore_two".to_vec(), vec!["ignore_two".to_string()]).unwrap()
+            to_crate_names(b"one\nignore_two".to_vec(), &["ignore_two".to_string()]).unwrap()
         );
     }
 
@@ -241,7 +231,7 @@ mod tests {
             BTreeSet::from(["one".to_string()]),
             to_crate_names(
                 b"one\nignore_two\nignore_three".to_vec(),
-                vec!["ignore_two".to_string(), "ignore_three".to_string()]
+                &["ignore_two".to_string(), "ignore_three".to_string()]
             )
             .unwrap()
         );
@@ -251,7 +241,7 @@ mod tests {
     fn ignores_invalid_ignored_crates() {
         assert_eq!(
             BTreeSet::from(["one".to_string(), "two".to_string(), "three".to_string()]),
-            to_crate_names(b"one\ntwo\nthree".to_vec(), vec!["four".to_string()]).unwrap()
+            to_crate_names(b"one\ntwo\nthree".to_vec(), &["four".to_string()]).unwrap()
         );
     }
 }

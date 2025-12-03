@@ -4,8 +4,8 @@ use crate::config::load_config;
 use crate::file_io::FileSystem;
 use crate::licenses::check::check_licenses;
 use crate::licenses::collect::collect_licenses;
-use crate::licenses::copy::copy_licenses;
 use crate::licenses::diff::diff_licenses;
+use crate::licenses::subcommand;
 use crate::licenses::summarise::{crates_per_license, summarise};
 use crate::log::progress_bar;
 use anyhow::Context;
@@ -99,37 +99,12 @@ fn main() -> anyhow::Result<()> {
 
     let file_system = FileSystem {};
     let config = load_config(&file_system, args)?;
-    let crates_we_want = crate_names(
-        config.global.depth,
-        config.global.dev,
-        config.global.build,
-        config.global.exclude,
-        config.global.ignore,
-    )?;
+    let crates_we_want = crate_names(&config)?;
     let filtered_packages = filter_packages(try_get_packages()?, crates_we_want);
 
     match command {
         LicensesSubcommand::Collect { path } => {
-            let path = PathBuf::from(path);
-            let progress_bar = progress_bar("collecting licenses");
-
-            create_output_folder(&path)?;
-
-            let all_licenses =
-                collect_licenses(&file_system, &filtered_packages, &config.crate_configs)?;
-
-            let statuses = check_licenses(
-                &file_system,
-                progress_bar,
-                &all_licenses,
-                &config.crate_configs,
-            );
-
-            if statuses.any_invalid() {
-                print!("{statuses}");
-            }
-
-            copy_licenses(&file_system, all_licenses, path, &config.crate_configs)?;
+            subcommand::collect(&file_system, &config, filtered_packages, path)?;
         }
         LicensesSubcommand::Summary(args) => {
             let crates_per_license = crates_per_license(filtered_packages);

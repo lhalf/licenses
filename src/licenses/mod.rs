@@ -4,6 +4,7 @@ pub mod copy;
 pub mod diff;
 pub mod is_license;
 pub mod status;
+pub mod subcommand;
 pub mod summarise;
 pub mod validate;
 
