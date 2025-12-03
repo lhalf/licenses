@@ -14,6 +14,31 @@ mod file_io;
 mod licenses;
 mod log;
 
+fn main() -> anyhow::Result<()> {
+    let CargoSubcommand::Licenses { args, command } = CargoSubcommand::parse();
+
+    let file_system = FileSystem {};
+    let config = load_config(&file_system, args)?;
+    let filtered_packages = filtered_packages(try_get_packages()?, crate_names(&config)?);
+
+    match command {
+        LicensesSubcommand::Collect { path } => {
+            subcommand::collect(&file_system, &config, &filtered_packages, path)?;
+        }
+        LicensesSubcommand::Summary(args) => {
+            subcommand::summary(filtered_packages, args)?;
+        }
+        LicensesSubcommand::Check => {
+            subcommand::check(&file_system, &config, &filtered_packages)?;
+        }
+        LicensesSubcommand::Diff { path } => {
+            subcommand::diff(&file_system, &config, &filtered_packages, path)?;
+        }
+    }
+
+    Ok(())
+}
+
 #[derive(Parser)]
 #[command(bin_name = "cargo", disable_help_subcommand = true)]
 enum CargoSubcommand {
@@ -85,29 +110,4 @@ struct SummaryArgs {
     /// Display the summary as TOML
     #[arg(long)]
     toml: bool,
-}
-
-fn main() -> anyhow::Result<()> {
-    let CargoSubcommand::Licenses { args, command } = CargoSubcommand::parse();
-
-    let file_system = FileSystem {};
-    let config = load_config(&file_system, args)?;
-    let filtered_packages = filtered_packages(try_get_packages()?, crate_names(&config)?);
-
-    match command {
-        LicensesSubcommand::Collect { path } => {
-            subcommand::collect(&file_system, &config, &filtered_packages, path)?;
-        }
-        LicensesSubcommand::Summary(args) => {
-            subcommand::summary(filtered_packages, args)?;
-        }
-        LicensesSubcommand::Check => {
-            subcommand::check(&file_system, &config, &filtered_packages)?;
-        }
-        LicensesSubcommand::Diff { path } => {
-            subcommand::diff(&file_system, &config, &filtered_packages, path)?;
-        }
-    }
-
-    Ok(())
 }
