@@ -17,18 +17,17 @@ path = "src/main.rs"
 anyhow = { version = "1.0.100", default-features = false }
 itertools = { version = "0.14.0", default-features = false, features = ["use_std"] }
 clap = { version = "4.5.53", default-features = false, features = ["derive", "std", "help", "usage"] }
-cargo_metadata = { version = "0.22.0", default-features = false }
+cargo_metadata = { version = "0.23.1", default-features = false }
 colored = { version = "3.0.0", default-features = false }
 serde = { version = "1.0.228", default-features = false }
 serde_json = { version = "1.0.145", default-features = false }
-spdx = { version = "0.12.0", default-features = false, features = ["text"] }
+spdx = { version = "0.13.2", default-features = false, features = ["text"] }
 strsim = { version = "0.11.1", default-features = false }
 toml = { version = "0.9.8", default-features = false, features = ["serde", "display", "parse"] }
 indicatif = { version = "0.18.3", default-features = false }
 
 [dev-dependencies]
 autospy = { version = "1.4.0", default-features = false, features = ["test"] }
-cargo-util-schemas = { version = "0.8.2", default-features = false }
 strip-ansi-escapes = { version = "0.2.1", default-features = false }
 tempfile = { version = "3.23.0", default-features = false }
 cargo_toml = { version = "0.22.3", default-features = false }

@@ -74,8 +74,8 @@ pub fn try_get_packages() -> anyhow::Result<Vec<Package>> {
 #[cfg(test)]
 mod tests {
     use super::Package;
+    use cargo_metadata::PackageName;
     use cargo_metadata::camino::Utf8PathBuf;
-    use cargo_util_schemas::manifest::PackageName;
     use std::collections::HashSet;
     use std::str::FromStr;
 
