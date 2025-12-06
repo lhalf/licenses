@@ -1,0 +1,32 @@
+name: nightly
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check-strict:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: install tools
+        uses: taiki-e/install-action@v2
+        with:
+          tool: just, cargo-outdated, cargo-audit
+
+      - name: check strict
+        run: just check-strict
+
+      - name: check outdated dependencies
+        run: cargo outdated --root-deps-only --exit-code 1
+
+      - name: check security vulnerabilities
+        run: cargo audit

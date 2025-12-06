@@ -9,3 +9,6 @@ check:
 
 test: build
     cargo test
+
+check-strict:
+    cargo clippy --all-targets --all-features -- -D clippy::pedantic -D clippy::nursery
