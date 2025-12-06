@@ -24,17 +24,17 @@ pub fn collect(
 
     let all_licenses = collect_licenses(file_io, filtered_packages, &config.crate_configs)?;
 
-    let statuses = check_licenses(file_io, progress_bar, &all_licenses, &config.crate_configs);
+    let statuses = check_licenses(file_io, &progress_bar, &all_licenses, &config.crate_configs);
 
     if statuses.any_invalid() {
         print!("{statuses}");
     }
 
-    copy_licenses(file_io, all_licenses, path, &config.crate_configs)?;
+    copy_licenses(file_io, all_licenses, &path, &config.crate_configs)?;
     Ok(())
 }
 
-pub fn summary(filtered_packages: Vec<Package>, args: SummaryArgs) -> anyhow::Result<()> {
+pub fn summary(filtered_packages: Vec<Package>, args: &SummaryArgs) -> anyhow::Result<()> {
     let crates_per_license = crates_per_license(filtered_packages);
 
     println!(
@@ -61,7 +61,7 @@ pub fn check(
 
     let statuses = check_licenses(
         file_io,
-        progress_bar,
+        &progress_bar,
         &collect_licenses(file_io, filtered_packages, &config.crate_configs)?,
         &config.crate_configs,
     );
@@ -82,7 +82,7 @@ pub fn diff(
 ) -> anyhow::Result<()> {
     if let Ok(diff) = diff_licenses(
         file_io,
-        PathBuf::from(path),
+        &PathBuf::from(path),
         &config.crate_configs,
         collect_licenses(file_io, filtered_packages, &config.crate_configs)?,
     ) && !diff.is_empty()

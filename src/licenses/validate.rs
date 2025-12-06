@@ -1,17 +1,17 @@
 use crate::file_io::{DirEntry, FileIO};
 use crate::licenses::License;
 use crate::licenses::status::LicenseStatus;
-use once_cell::sync::Lazy;
 use std::cmp::Ordering;
 use std::collections::HashMap;
+use std::sync::LazyLock;
 use strsim::normalized_levenshtein;
 
-pub static LICENSE_TEXTS: Lazy<HashMap<&'static str, &'static str>> =
-    Lazy::new(|| spdx::text::LICENSE_TEXTS.iter().cloned().collect());
+pub static LICENSE_TEXTS: LazyLock<HashMap<&'static str, &'static str>> =
+    LazyLock::new(|| spdx::text::LICENSE_TEXTS.iter().copied().collect());
 
 pub fn validate_licenses(
     file_io: &impl FileIO,
-    declared_licenses: &Option<License>,
+    declared_licenses: Option<&License>,
     actual_licenses: &[DirEntry],
 ) -> LicenseStatus {
     if actual_licenses.is_empty() {
@@ -102,6 +102,7 @@ mod tests {
     use super::*;
     use crate::file_io::FileIOSpy;
     use std::ffi::OsString;
+    use std::path::PathBuf;
 
     #[test]
     fn failure_to_read_license_file_causes_mismatch() {
@@ -115,10 +116,10 @@ mod tests {
             LicenseStatus::Mismatch(vec!["LICENSE".to_string()]),
             validate_licenses(
                 &file_io_spy,
-                &Some(License::parse("MIT")),
+                Some(&License::parse("MIT")),
                 &[DirEntry {
                     name: OsString::from("LICENSE"),
-                    path: Default::default(),
+                    path: PathBuf::new(),
                     is_file: true,
                 }]
             )
@@ -130,7 +131,7 @@ mod tests {
         let file_io_spy = FileIOSpy::default();
         assert_eq!(
             LicenseStatus::Empty,
-            validate_licenses(&file_io_spy, &Some(License::parse("MIT")), &[])
+            validate_licenses(&file_io_spy, Some(&License::parse("MIT")), &[])
         );
     }
 
@@ -141,10 +142,10 @@ mod tests {
             LicenseStatus::NoneDeclared,
             validate_licenses(
                 &file_io_spy,
-                &None,
+                None,
                 &[DirEntry {
-                    name: Default::default(),
-                    path: Default::default(),
+                    name: OsString::new(),
+                    path: PathBuf::new(),
                     is_file: false,
                 }]
             )
@@ -157,16 +158,16 @@ mod tests {
         file_io_spy
             .read_file
             .returns
-            .set([Ok(LICENSE_TEXTS.get("MIT").unwrap().to_string())]);
+            .set([Ok((*LICENSE_TEXTS.get("MIT").unwrap()).to_string())]);
 
         assert_eq!(
             LicenseStatus::TooFew,
             validate_licenses(
                 &file_io_spy,
-                &Some(License::parse("MIT OR Apache-2.0")),
+                Some(&License::parse("MIT OR Apache-2.0")),
                 &[DirEntry {
                     name: OsString::from("LICENSE_MIT"),
-                    path: Default::default(),
+                    path: PathBuf::new(),
                     is_file: true,
                 }]
             )
@@ -179,16 +180,16 @@ mod tests {
         file_io_spy
             .read_file
             .returns
-            .set([Ok(LICENSE_TEXTS.get("MIT").unwrap().to_string())]);
+            .set([Ok((*LICENSE_TEXTS.get("MIT").unwrap()).to_string())]);
 
         assert_eq!(
             LicenseStatus::TooFew,
             validate_licenses(
                 &file_io_spy,
-                &Some(License::parse("MIT/Apache-2.0")),
+                Some(&License::parse("MIT/Apache-2.0")),
                 &[DirEntry {
                     name: OsString::from("LICENSE_MIT"),
-                    path: Default::default(),
+                    path: PathBuf::new(),
                     is_file: true,
                 }]
             )
@@ -199,25 +200,25 @@ mod tests {
     fn too_few_licenses_complex_requirements() {
         let file_io_spy = FileIOSpy::default();
         file_io_spy.read_file.returns.set([
-            Ok(LICENSE_TEXTS.get("MIT").unwrap().to_string()),
-            Ok(LICENSE_TEXTS.get("Unicode-3.0").unwrap().to_string()),
-            Ok(LICENSE_TEXTS.get("Unicode-3.0").unwrap().to_string()),
+            Ok((*LICENSE_TEXTS.get("MIT").unwrap()).to_string()),
+            Ok((*LICENSE_TEXTS.get("Unicode-3.0").unwrap()).to_string()),
+            Ok((*LICENSE_TEXTS.get("Unicode-3.0").unwrap()).to_string()),
         ]);
 
         assert_eq!(
             LicenseStatus::TooFew,
             validate_licenses(
                 &file_io_spy,
-                &Some(License::parse("(MIT OR Apache-2.0) AND Unicode-3.0")),
+                Some(&License::parse("(MIT OR Apache-2.0) AND Unicode-3.0")),
                 &[
                     DirEntry {
                         name: OsString::from("LICENSE_MIT"),
-                        path: Default::default(),
+                        path: PathBuf::new(),
                         is_file: true,
                     },
                     DirEntry {
                         name: OsString::from("LICENSE_UNICODE"),
-                        path: Default::default(),
+                        path: PathBuf::new(),
                         is_file: true,
                     }
                 ]
@@ -231,22 +232,22 @@ mod tests {
         file_io_spy
             .read_file
             .returns
-            .set([Ok(LICENSE_TEXTS.get("MIT").unwrap().to_string())]);
+            .set([Ok((*LICENSE_TEXTS.get("MIT").unwrap()).to_string())]);
 
         assert_eq!(
             LicenseStatus::Additional(vec!["COPYING".to_string()]),
             validate_licenses(
                 &file_io_spy,
-                &Some(License::parse("MIT")),
+                Some(&License::parse("MIT")),
                 &[
                     DirEntry {
                         name: OsString::from("LICENSE_MIT"),
-                        path: Default::default(),
+                        path: PathBuf::new(),
                         is_file: true,
                     },
                     DirEntry {
                         name: OsString::from("COPYING"),
-                        path: Default::default(),
+                        path: PathBuf::new(),
                         is_file: true,
                     }
                 ]
@@ -260,16 +261,16 @@ mod tests {
         file_io_spy
             .read_file
             .returns
-            .set([Ok(LICENSE_TEXTS.get("Apache-2.0").unwrap().to_string())]);
+            .set([Ok((*LICENSE_TEXTS.get("Apache-2.0").unwrap()).to_string())]);
 
         assert_eq!(
             LicenseStatus::Mismatch(vec!["LICENSE_MIT".to_string()]),
             validate_licenses(
                 &file_io_spy,
-                &Some(License::parse("MIT")),
+                Some(&License::parse("MIT")),
                 &[DirEntry {
                     name: OsString::from("LICENSE_MIT"),
-                    path: Default::default(),
+                    path: PathBuf::new(),
                     is_file: true,
                 }]
             )

@@ -10,7 +10,7 @@ use std::collections::HashMap;
 
 pub fn check_licenses(
     file_io: &impl FileIO,
-    progress_bar: impl ProgressBar,
+    progress_bar: &impl ProgressBar,
     all_licenses: &HashMap<Package, Vec<DirEntry>>,
     crate_configs: &HashMap<String, CrateConfig>,
 ) -> LicenseStatuses {
@@ -25,7 +25,7 @@ pub fn check_licenses(
                     license_status_after_allowed(
                         validate_licenses(
                             file_io,
-                            &package.license.as_deref().map(License::parse),
+                            package.license.as_deref().map(License::parse).as_ref(),
                             licenses,
                         ),
                         package,
@@ -60,6 +60,7 @@ mod tests {
     use crate::licenses::status::{LicenseStatus, LicenseStatuses};
     use crate::licenses::validate::LICENSE_TEXTS;
     use crate::log::ProgressBarSpy;
+    use cargo_metadata::camino::Utf8PathBuf;
     use std::collections::HashMap;
     use std::ffi::OsString;
     use std::path::PathBuf;
@@ -70,16 +71,16 @@ mod tests {
         file_io_spy
             .read_file
             .returns
-            .set([Ok(LICENSE_TEXTS.get("MIT").unwrap().to_string())]);
+            .set([Ok((*LICENSE_TEXTS.get("MIT").unwrap()).to_string())]);
         let progress_bar_spy = ProgressBarSpy::default();
         progress_bar_spy.set_len.returns.set_fn(|_| ());
-        progress_bar_spy.increment.returns.set_fn(|_| ());
+        progress_bar_spy.increment.returns.set_fn(|()| ());
 
         let all_licenses = [
             (
                 Package {
                     normalised_name: "bad".to_string(),
-                    path: Default::default(),
+                    path: Utf8PathBuf::default(),
                     url: None,
                     license: None,
                 },
@@ -88,7 +89,7 @@ mod tests {
             (
                 Package {
                     normalised_name: "good".to_string(),
-                    path: Default::default(),
+                    path: Utf8PathBuf::default(),
                     url: None,
                     license: Some("MIT".to_string()),
                 },
@@ -108,7 +109,7 @@ mod tests {
                 (
                     Package {
                         normalised_name: "good".to_string(),
-                        path: Default::default(),
+                        path: Utf8PathBuf::default(),
                         url: None,
                         license: Some("MIT".to_string()),
                     },
@@ -123,7 +124,7 @@ mod tests {
             expected_statuses,
             check_licenses(
                 &file_io_spy,
-                progress_bar_spy.clone(),
+                &progress_bar_spy,
                 &all_licenses,
                 &HashMap::new()
             )
@@ -138,67 +139,58 @@ mod tests {
         let file_io_spy = FileIOSpy::default();
         let progress_bar_spy = ProgressBarSpy::default();
         progress_bar_spy.set_len.returns.set_fn(|_| ());
-        progress_bar_spy.increment.returns.set_fn(|_| ());
+        progress_bar_spy.increment.returns.set_fn(|()| ());
 
-        let all_licenses: HashMap<_, _> = [(
+        let all_licenses: HashMap<_, _> = std::iter::once((
             Package {
                 normalised_name: "some_crate".to_string(),
-                path: Default::default(),
+                path: Utf8PathBuf::default(),
                 url: None,
                 license: Some("MIT".to_string()),
             },
             vec![],
-        )]
-        .into_iter()
+        ))
         .collect();
 
         // errors with no allowed status
         assert!(
             check_licenses(
                 &file_io_spy,
-                progress_bar_spy.clone(),
+                &progress_bar_spy,
                 &all_licenses,
                 &HashMap::new()
             )
             .any_invalid()
         );
 
-        let config = [(
+        let config = std::iter::once((
             "some_crate".to_string(),
             CrateConfig {
                 skip: vec![],
                 allow: Some(LicenseStatus::TooFew),
                 include: vec![],
             },
-        )]
-        .into_iter()
+        ))
         .collect();
 
         // errors when allowed status is incorrect
         assert!(
-            check_licenses(
-                &file_io_spy,
-                progress_bar_spy.clone(),
-                &all_licenses,
-                &config
-            )
-            .any_invalid()
+            check_licenses(&file_io_spy, &progress_bar_spy, &all_licenses, &config).any_invalid()
         );
 
-        let config = [(
+        let config = std::iter::once((
             "some_crate".to_string(),
             CrateConfig {
                 skip: vec![],
                 allow: Some(LicenseStatus::Empty),
                 include: vec![],
             },
-        )]
-        .into_iter()
+        ))
         .collect();
 
         // fine when status is allowed
         assert!(
-            !check_licenses(&file_io_spy, progress_bar_spy, &all_licenses, &config).any_invalid()
+            !check_licenses(&file_io_spy, &progress_bar_spy, &all_licenses, &config).any_invalid()
         );
     }
 }

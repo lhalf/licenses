@@ -3,17 +3,17 @@ use crate::config::{CrateConfig, IncludedLicense};
 use crate::file_io::{DirEntry, FileIO};
 use anyhow::Context;
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 pub fn copy_licenses(
     file_io: &impl FileIO,
     all_licenses: HashMap<Package, Vec<DirEntry>>,
-    output_folder: PathBuf,
+    output_folder: &Path,
     crate_configs: &HashMap<String, CrateConfig>,
 ) -> anyhow::Result<()> {
     for (package, licenses) in all_licenses {
-        copy_licenses_to_output_folder(file_io, &licenses, &output_folder, &package)?;
-        add_included_licenses_to_output_folder(file_io, &output_folder, &package, crate_configs)?;
+        copy_licenses_to_output_folder(file_io, &licenses, output_folder, &package)?;
+        add_included_licenses_to_output_folder(file_io, output_folder, &package, crate_configs)?;
     }
 
     println!("{}", output_folder.to_string_lossy());
@@ -38,7 +38,7 @@ fn copy_licenses_to_output_folder(
                     .context("license name contained invalid UTF-8")?
                     .to_string_lossy()
             )),
-        )?
+        )?;
     }
     Ok(())
 }
@@ -79,7 +79,7 @@ mod tests {
             copy_licenses(
                 &file_io_spy,
                 HashMap::new(),
-                PathBuf::default(),
+                &PathBuf::new(),
                 &HashMap::new()
             )
             .is_ok()
@@ -109,14 +109,9 @@ mod tests {
 
         assert_eq!(
             "deliberate test error",
-            copy_licenses(
-                &file_io_spy,
-                all_licenses,
-                PathBuf::default(),
-                &HashMap::new()
-            )
-            .unwrap_err()
-            .to_string()
+            copy_licenses(&file_io_spy, all_licenses, &PathBuf::new(), &HashMap::new())
+                .unwrap_err()
+                .to_string()
         );
     }
 

@@ -19,14 +19,14 @@ fn main() -> anyhow::Result<()> {
 
     let file_system = FileSystem {};
     let config = load_config(&file_system, args)?;
-    let filtered_packages = filtered_packages(try_get_packages()?, crate_names(&config)?);
+    let filtered_packages = filtered_packages(try_get_packages()?, &crate_names(&config)?);
 
     match command {
         LicensesSubcommand::Collect { path } => {
             subcommand::collect(&file_system, &config, &filtered_packages, path)?;
         }
         LicensesSubcommand::Summary(args) => {
-            subcommand::summary(filtered_packages, args)?;
+            subcommand::summary(filtered_packages, &args)?;
         }
         LicensesSubcommand::Check => {
             subcommand::check(&file_system, &config, &filtered_packages)?;
@@ -52,7 +52,7 @@ enum CargoSubcommand {
     },
 }
 
-#[derive(Debug, Args, Deserialize, PartialEq, Default, Clone)]
+#[derive(Debug, Args, Deserialize, PartialEq, Eq, Default, Clone)]
 #[serde(default, deny_unknown_fields)]
 pub struct GlobalArgs {
     /// Include dev dependencies [default: excluded]

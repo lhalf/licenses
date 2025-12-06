@@ -15,7 +15,7 @@ pub struct Package {
 impl Package {
     pub fn called(name: &str) -> Self {
         Self {
-            path: Default::default(),
+            path: Utf8PathBuf::default(),
             normalised_name: name.to_string(),
             url: None,
             license: None,
@@ -26,7 +26,7 @@ impl Package {
 impl Package {
     fn try_from_metadata(package: cargo_metadata::Package) -> anyhow::Result<Self> {
         Ok(Self {
-            normalised_name: package.name.to_string().replace("-", "_"),
+            normalised_name: package.name.to_string().replace('-', "_"),
             path: package
                 .manifest_path
                 .parent()
@@ -53,7 +53,7 @@ impl Hash for Package {
 
 pub fn filtered_packages(
     all_packages: Vec<Package>,
-    crates_we_want: BTreeSet<String>,
+    crates_we_want: &BTreeSet<String>,
 ) -> Vec<Package> {
     all_packages
         .into_iter()
@@ -120,7 +120,7 @@ mod tests {
             Package::try_from_metadata(metadata_package)
                 .unwrap()
                 .normalised_name
-        )
+        );
     }
 
     #[test]
@@ -132,7 +132,7 @@ mod tests {
             Package::try_from_metadata(metadata_package)
                 .unwrap_err()
                 .to_string()
-        )
+        );
     }
 
     #[test]
@@ -142,7 +142,7 @@ mod tests {
                 .unwrap()
                 .url
                 .is_none()
-        )
+        );
     }
 
     #[test]
@@ -152,7 +152,7 @@ mod tests {
                 .unwrap()
                 .license
                 .is_none()
-        )
+        );
     }
 
     #[test]
@@ -214,7 +214,7 @@ mod tests {
 
         let mut set = HashSet::new();
         set.insert(package_1.clone());
-        set.insert(package_2.clone());
+        set.insert(package_2);
         set.insert(package_3.clone());
 
         assert_eq!(set.len(), 2);

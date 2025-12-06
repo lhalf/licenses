@@ -19,9 +19,9 @@ pub fn crate_names(config: &Config) -> anyhow::Result<BTreeSet<String>> {
 fn to_crate_names(output: Vec<u8>, ignored_crates: &[String]) -> anyhow::Result<BTreeSet<String>> {
     Ok(String::from_utf8(output)
         .context("cargo tree output contained invalid UTF-8")?
-        .replace(" ", "")
+        .replace(' ', "")
         .split('\n')
-        .map(|crate_name| crate_name.to_string().replace("-", "_"))
+        .map(|crate_name| crate_name.to_string().replace('-', "_"))
         .filter(|crate_name| !crate_name.is_empty() && !ignored_crates.contains(crate_name))
         .unique()
         .collect())
@@ -69,11 +69,11 @@ fn args(
 
     if !excluded_workspaces.is_empty() {
         args.push("--workspace".to_string());
-        excluded_workspaces.iter().for_each(|workspace| {
+        for workspace in excluded_workspaces {
             args.push("--exclude".to_string());
             args.push(workspace.clone());
-        });
-    };
+        }
+    }
 
     args
 }

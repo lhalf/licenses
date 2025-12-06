@@ -39,7 +39,7 @@ mod tests {
 
     #[test]
     fn no_packages() {
-        assert!(summarise(crates_per_license(Vec::new())).is_empty())
+        assert!(summarise(crates_per_license(Vec::new())).is_empty());
     }
 
     #[test]
@@ -47,12 +47,12 @@ mod tests {
         assert!(
             summarise(crates_per_license(vec![Package {
                 normalised_name: "no_license".to_string(),
-                path: Default::default(),
+                path: Utf8PathBuf::new(),
                 url: None,
                 license: None,
             }]))
             .is_empty()
-        )
+        );
     }
 
     #[test]
@@ -61,11 +61,11 @@ mod tests {
             "MIT - example",
             strip_ansi_escapes::strip_str(summarise(crates_per_license(vec![Package {
                 normalised_name: "example".to_string(),
-                path: Default::default(),
+                path: Utf8PathBuf::new(),
                 url: None,
                 license: Some("MIT".to_string()),
             }])))
-        )
+        );
     }
 
     #[test]
@@ -75,18 +75,18 @@ mod tests {
             strip_ansi_escapes::strip_str(summarise(crates_per_license(vec![
                 Package {
                     normalised_name: "example".to_string(),
-                    path: Default::default(),
+                    path: Utf8PathBuf::new(),
                     url: None,
                     license: Some("MIT".to_string()),
                 },
                 Package {
                     normalised_name: "another".to_string(),
-                    path: Default::default(),
+                    path: Utf8PathBuf::new(),
                     url: None,
                     license: Some("Apache-2.0".to_string()),
                 }
             ])))
-        )
+        );
     }
 
     #[test]
@@ -96,24 +96,24 @@ mod tests {
             strip_ansi_escapes::strip_str(summarise(crates_per_license(vec![
                 Package {
                     normalised_name: "c".to_string(),
-                    path: Default::default(),
+                    path: Utf8PathBuf::new(),
                     url: None,
                     license: Some("MIT".to_string()),
                 },
                 Package {
                     normalised_name: "a".to_string(),
-                    path: Default::default(),
+                    path: Utf8PathBuf::new(),
                     url: None,
                     license: Some("MIT".to_string()),
                 },
                 Package {
                     normalised_name: "b".to_string(),
-                    path: Default::default(),
+                    path: Utf8PathBuf::new(),
                     url: None,
                     license: Some("MIT".to_string()),
                 }
             ])))
-        )
+        );
     }
 
     #[test]
@@ -134,6 +134,6 @@ mod tests {
                     license: Some("MIT".to_string()),
                 }
             ])))
-        )
+        );
     }
 }

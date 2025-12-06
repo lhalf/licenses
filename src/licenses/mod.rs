@@ -25,23 +25,21 @@ pub enum License {
 impl License {
     pub fn parse(license: &str) -> Self {
         fn parse(expression: &str) -> License {
-            match Expression::parse_mode(expression, ParseMode::LAX) {
-                Ok(expression) => License::Known(expression),
-                Err(_) => License::Unknown(expression.to_string()),
-            }
+            Expression::parse_mode(expression, ParseMode::LAX)
+                .map_or_else(|_| License::Unknown(expression.to_string()), License::Known)
         }
 
         match Expression::canonicalize(license) {
             Ok(Some(expression)) => parse(&expression),
             Ok(None) => parse(license),
-            Err(_) => License::Unknown(license.to_string()),
+            Err(_) => Self::Unknown(license.to_string()),
         }
     }
 
     pub fn requirements(&self) -> Box<dyn Iterator<Item = &ExpressionReq> + '_> {
         match self {
-            License::Known(expression) => Box::new(expression.requirements()),
-            License::Unknown(_) => Box::new(Vec::<&ExpressionReq>::new().into_iter()),
+            Self::Known(expression) => Box::new(expression.requirements()),
+            Self::Unknown(_) => Box::new(Vec::<&ExpressionReq>::new().into_iter()),
         }
     }
 }
@@ -49,10 +47,10 @@ impl License {
 impl PartialEq for License {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (License::Known(expression_1), License::Known(expression_2)) => {
+            (Self::Known(expression_1), Self::Known(expression_2)) => {
                 sorted_expression(expression_1) == sorted_expression(expression_2)
             }
-            (License::Unknown(license_1), License::Unknown(license_2)) => license_1 == license_2,
+            (Self::Unknown(license_1), Self::Unknown(license_2)) => license_1 == license_2,
             _ => false,
         }
     }
@@ -63,8 +61,8 @@ impl Eq for License {}
 impl Hash for License {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
-            License::Known(expression) => sorted_expression(expression).hash(state),
-            License::Unknown(license) => license.hash(state),
+            Self::Known(expression) => sorted_expression(expression).hash(state),
+            Self::Unknown(license) => license.hash(state),
         }
     }
 }
@@ -72,8 +70,8 @@ impl Hash for License {
 impl Serialize for License {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         match self {
-            License::Known(expression) => serializer.serialize_str(expression.as_ref()),
-            License::Unknown(license) => serializer.serialize_str(license),
+            Self::Known(expression) => serializer.serialize_str(expression.as_ref()),
+            Self::Unknown(license) => serializer.serialize_str(license),
         }
     }
 }
@@ -84,8 +82,8 @@ impl Display for License {
             f,
             "{}",
             match self {
-                License::Known(expression) => expression.to_string(),
-                License::Unknown(license) => license.to_string(),
+                Self::Known(expression) => expression.to_string(),
+                Self::Unknown(license) => license.clone(),
             }
         )
     }

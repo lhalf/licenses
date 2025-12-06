@@ -3,9 +3,10 @@ use std::path::Path;
 use std::process::{Command, Output};
 
 fn call_licenses_command(args: &[&str]) -> Output {
-    if !std::fs::exists("target/release/cargo-licenses").unwrap() {
-        panic!("cargo-licenses has not been built")
-    }
+    assert!(
+        std::fs::exists("target/release/cargo-licenses").unwrap(),
+        "cargo-licenses has not been built"
+    );
     Command::new("target/release/cargo-licenses")
         .arg("licenses")
         .args(args)
@@ -37,7 +38,7 @@ fn help_flag() {
     assert_eq!(
         include_str!("stdout/help"),
         String::from_utf8(output.stdout).unwrap()
-    )
+    );
 }
 
 #[test]
@@ -47,7 +48,7 @@ fn summary_depth_1() {
     assert_eq!(
         include_str!("stdout/summary"),
         String::from_utf8(output.stdout).unwrap()
-    )
+    );
 }
 
 #[test]

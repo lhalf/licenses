@@ -64,8 +64,6 @@ licenses
 ├── indicatif-LICENSE
 ├── itertools-LICENSE-APACHE
 ├── itertools-LICENSE-MIT
-├── once_cell-LICENSE-APACHE
-├── once_cell-LICENSE-MIT
 ├── serde-LICENSE-APACHE
 ├── serde-LICENSE-MIT
 ├── serde_json-LICENSE-APACHE
@@ -90,7 +88,7 @@ The summary can be formatted as JSON or TOML with `--json` or `--toml` respectiv
 ```
 $ cargo licenses summary --depth 1
 MIT - cargo_metadata,indicatif,strsim
-MIT OR Apache-2.0 - anyhow,clap,itertools,once_cell,serde,serde_json,spdx,toml
+MIT OR Apache-2.0 - anyhow,clap,itertools,serde,serde_json,spdx,toml
 MPL-2.0 - colored
 ```
 

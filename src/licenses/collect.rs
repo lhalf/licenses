@@ -40,16 +40,14 @@ fn skipped_files_for_package<'a>(
 ) -> &'a [String] {
     crate_configs
         .get(&package.normalised_name)
-        .map(|config| config.skip.as_slice())
-        .unwrap_or(&[])
+        .map_or(&[], |config| config.skip.as_slice())
 }
 
 fn is_skipped_file(dir_entry: &DirEntry, skipped_files: &[String]) -> bool {
     dir_entry
         .name
         .to_str()
-        .map(|file_name| skipped_files.contains(&file_name.to_string()))
-        .unwrap_or(true)
+        .is_none_or(|file_name| skipped_files.contains(&file_name.to_string()))
 }
 
 #[cfg(test)]
@@ -60,6 +58,7 @@ mod tests {
     use crate::licenses::collect::collect_licenses;
     use std::collections::HashMap;
     use std::ffi::OsString;
+    use std::path::PathBuf;
 
     #[test]
     fn failure_to_read_dir_causes_error() {
@@ -79,9 +78,8 @@ mod tests {
         let file_io_spy = FileIOSpy::default();
         file_io_spy.read_dir.returns.set([Ok(Vec::new())]);
 
-        let expected_licenses: HashMap<_, _> = [(Package::called("example"), Vec::new())]
-            .into_iter()
-            .collect();
+        let expected_licenses: HashMap<_, _> =
+            std::iter::once((Package::called("example"), Vec::new())).collect();
 
         assert_eq!(
             expected_licenses,
@@ -94,13 +92,12 @@ mod tests {
         let file_io_spy = FileIOSpy::default();
         file_io_spy.read_dir.returns.set([Ok(vec![DirEntry {
             name: OsString::from("some_file"),
-            path: Default::default(),
+            path: PathBuf::new(),
             is_file: true,
         }])]);
 
-        let expected_licenses: HashMap<_, _> = [(Package::called("example"), Vec::new())]
-            .into_iter()
-            .collect();
+        let expected_licenses: HashMap<_, _> =
+            std::iter::once((Package::called("example"), Vec::new())).collect();
 
         assert_eq!(
             expected_licenses,
@@ -113,7 +110,7 @@ mod tests {
         let file_io_spy = FileIOSpy::default();
         let dir_entry = DirEntry {
             name: OsString::from("LICENSE"),
-            path: Default::default(),
+            path: PathBuf::new(),
             is_file: true,
         };
         file_io_spy
@@ -121,9 +118,8 @@ mod tests {
             .returns
             .set([Ok(vec![dir_entry.clone()])]);
 
-        let expected_licenses: HashMap<_, _> = [(Package::called("example"), vec![dir_entry])]
-            .into_iter()
-            .collect();
+        let expected_licenses: HashMap<_, _> =
+            std::iter::once((Package::called("example"), vec![dir_entry])).collect();
 
         assert_eq!(
             expected_licenses,
@@ -136,24 +132,22 @@ mod tests {
         let file_io_spy = FileIOSpy::default();
         file_io_spy.read_dir.returns.set([Ok(vec![DirEntry {
             name: OsString::from("LICENSE"),
-            path: Default::default(),
+            path: PathBuf::new(),
             is_file: true,
         }])]);
 
-        let skipped_files: HashMap<_, _> = [(
+        let skipped_files: HashMap<_, _> = std::iter::once((
             "example".to_string(),
             CrateConfig {
                 skip: vec!["LICENSE".to_string()],
                 allow: None,
                 include: vec![],
             },
-        )]
-        .into_iter()
+        ))
         .collect();
 
-        let expected_licenses: HashMap<_, _> = [(Package::called("example"), Vec::new())]
-            .into_iter()
-            .collect();
+        let expected_licenses: HashMap<_, _> =
+            std::iter::once((Package::called("example"), Vec::new())).collect();
 
         assert_eq!(
             expected_licenses,
@@ -167,41 +161,39 @@ mod tests {
         file_io_spy.read_dir.returns.set([Ok(vec![
             DirEntry {
                 name: OsString::from("LICENSE-MIT"),
-                path: Default::default(),
+                path: PathBuf::new(),
                 is_file: true,
             },
             DirEntry {
                 name: OsString::from("LICENSE-APACHE"),
-                path: Default::default(),
+                path: PathBuf::new(),
                 is_file: true,
             },
             DirEntry {
                 name: OsString::from("COPYRIGHT"),
-                path: Default::default(),
+                path: PathBuf::new(),
                 is_file: true,
             },
         ])]);
 
-        let skipped_files: HashMap<_, _> = [(
+        let skipped_files: HashMap<_, _> = std::iter::once((
             "example".to_string(),
             CrateConfig {
                 skip: vec!["COPYRIGHT".to_string(), "LICENSE-APACHE".to_string()],
                 allow: None,
                 include: vec![],
             },
-        )]
-        .into_iter()
+        ))
         .collect();
 
-        let expected_licenses: HashMap<_, _> = [(
+        let expected_licenses: HashMap<_, _> = std::iter::once((
             Package::called("example"),
             vec![DirEntry {
                 name: OsString::from("LICENSE-MIT"),
-                path: Default::default(),
+                path: PathBuf::new(),
                 is_file: true,
             }],
-        )]
-        .into_iter()
+        ))
         .collect();
 
         assert_eq!(

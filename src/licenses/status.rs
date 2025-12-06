@@ -26,24 +26,24 @@ pub enum LicenseStatus {
 impl Display for LicenseStatus {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            LicenseStatus::Valid => Ok(()),
-            LicenseStatus::Empty => {
+            Self::Valid => Ok(()),
+            Self::Empty => {
                 writeln!(f, "{} - did not find any licenses for:", "empty".bold())
             }
-            LicenseStatus::NoneDeclared => {
+            Self::NoneDeclared => {
                 writeln!(f, "{} - no declared licenses for:", "none declared".bold())
             }
-            LicenseStatus::TooFew => writeln!(
+            Self::TooFew => writeln!(
                 f,
                 "{} - did not find as many licenses as declared for:",
                 "too few".bold()
             ),
-            LicenseStatus::Additional(_) => writeln!(
+            Self::Additional(_) => writeln!(
                 f,
                 "{} - found all declared licenses, but found additional licenses for:",
                 "additional".bold()
             ),
-            LicenseStatus::Mismatch(_) => writeln!(
+            Self::Mismatch(_) => writeln!(
                 f,
                 "{} - found license(s) whose content was not similar to declared licenses for:",
                 "mismatch".bold()
@@ -52,7 +52,7 @@ impl Display for LicenseStatus {
     }
 }
 
-#[cfg_attr(test, derive(Debug, PartialEq))]
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub struct LicenseStatuses(pub HashMap<Package, LicenseStatus>);
 
 impl LicenseStatuses {
@@ -98,7 +98,7 @@ impl LicenseStatuses {
         package: &Package,
         status: &LicenseStatus,
     ) -> std::fmt::Result {
-        use LicenseStatus::*;
+        use LicenseStatus::{Additional, Empty, Mismatch};
 
         write!(f, "\t{}", package.normalised_name.bold())?;
 
@@ -109,10 +109,10 @@ impl LicenseStatuses {
             Empty => writeln!(
                 f,
                 " - {}",
-                match &package.url {
-                    None => "no url".to_string(),
-                    Some(url) => format!("try looking here: {url}"),
-                }
+                package.url.as_ref().map_or_else(
+                    || "no url".to_string(),
+                    |url| format!("try looking here: {url}")
+                )
             ),
             _ => writeln!(f),
         }
@@ -132,6 +132,7 @@ impl Display for LicenseStatuses {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use cargo_metadata::camino::Utf8PathBuf;
 
     #[test]
     fn valid_deserialize() {
@@ -191,7 +192,7 @@ mod tests {
                         (
                             Package {
                                 normalised_name: "example".to_string(),
-                                path: Default::default(),
+                                path: Utf8PathBuf::new(),
                                 url: Some("example.url".to_string()),
                                 license: None,
                             },
@@ -200,7 +201,7 @@ mod tests {
                         (
                             Package {
                                 normalised_name: "example2".to_string(),
-                                path: Default::default(),
+                                path: Utf8PathBuf::new(),
                                 url: None,
                                 license: None,
                             },

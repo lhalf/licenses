@@ -5,7 +5,7 @@ use anyhow::Context;
 use serde::Deserialize;
 use std::collections::HashMap;
 
-#[derive(Debug, PartialEq, Deserialize, Default)]
+#[derive(Debug, PartialEq, Eq, Deserialize, Default)]
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
     pub global: GlobalArgs,
@@ -13,7 +13,7 @@ pub struct Config {
     pub crate_configs: HashMap<String, CrateConfig>,
 }
 
-#[derive(Debug, PartialEq, Deserialize, Default)]
+#[derive(Debug, PartialEq, Eq, Deserialize, Default)]
 #[serde(default, deny_unknown_fields)]
 pub struct CrateConfig {
     pub skip: Vec<String>,
@@ -21,14 +21,14 @@ pub struct CrateConfig {
     pub include: Vec<IncludedLicense>,
 }
 
-#[derive(Debug, PartialEq, Deserialize, Clone)]
+#[derive(Debug, PartialEq, Eq, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum IncludedLicense {
     Text { name: String, text: String },
 }
 
 impl GlobalArgs {
-    fn merge(&mut self, other: GlobalArgs) {
+    fn merge(&mut self, other: Self) {
         self.dev |= other.dev;
         self.build |= other.build;
         if other.depth.is_some() {
@@ -60,7 +60,7 @@ fn parse_config(contents: &str) -> anyhow::Result<Config> {
 fn normalised_crate_names(crates: HashMap<String, CrateConfig>) -> HashMap<String, CrateConfig> {
     crates
         .into_iter()
-        .map(|(crate_name, config)| (crate_name.replace("-", "_"), config))
+        .map(|(crate_name, config)| (crate_name.replace('-', "_"), config))
         .collect()
 }
 
@@ -80,16 +80,16 @@ mod tests {
 
     #[test]
     fn config_with_invalid_heading_is_invalid() {
-        let contents = r#"[invalid]"#;
+        let contents = r"[invalid]";
         assert!(parse_config(contents).is_err());
     }
 
     #[test]
     fn config_with_valid_heading_but_no_skipped_files_is_valid() {
         for contents in [
-            r#"[crates.anyhow]"#,
-            r#"[global] 
-        [crates.anyhow]"#,
+            r"[crates.anyhow]",
+            r"[global]
+        [crates.anyhow]",
         ] {
             assert_eq!(
                 config_with_crates([("anyhow", crate_config(&[], &[], None))]),
@@ -258,7 +258,7 @@ mod tests {
                 config: None,
             },
             global_args_1
-        )
+        );
     }
 
     #[test]
@@ -283,7 +283,7 @@ mod tests {
             load_config(&file_io_spy, global_args)
                 .unwrap_err()
                 .to_string()
-        )
+        );
     }
 
     #[test]
@@ -299,8 +299,8 @@ mod tests {
     fn crates_in_config_are_normalised() {
         let file_io_spy = FileIOSpy::default();
 
-        let contents = r#"
-        [crates.normalise-me]"#;
+        let contents = r"
+        [crates.normalise-me]";
 
         file_io_spy
             .read_file
@@ -330,7 +330,7 @@ mod tests {
         allow: Option<LicenseStatus>,
     ) -> CrateConfig {
         CrateConfig {
-            skip: skipped.iter().map(|s| s.to_string()).collect(),
+            skip: skipped.iter().map(ToString::to_string).collect(),
             allow,
             include: included.to_vec(),
         }
@@ -341,7 +341,7 @@ mod tests {
         I: IntoIterator<Item = (&'static str, CrateConfig)>,
     {
         Config {
-            global: Default::default(),
+            global: GlobalArgs::default(),
             crate_configs: crates
                 .into_iter()
                 .map(|(k, v)| (k.to_string(), v))

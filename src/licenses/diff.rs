@@ -5,9 +5,9 @@ use crate::log::warning;
 use itertools::Itertools;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
-use std::path::PathBuf;
+use std::path::Path;
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub struct LicenseDiff {
     additional: HashSet<String>,
     missing: HashSet<String>,
@@ -47,11 +47,11 @@ impl LicenseDiff {
 
 pub fn diff_licenses(
     file_io: &impl FileIO,
-    path: PathBuf,
+    path: &Path,
     crate_configs: &HashMap<String, CrateConfig>,
     found_licenses: HashMap<Package, Vec<DirEntry>>,
 ) -> anyhow::Result<LicenseDiff> {
-    let current_licenses = set_of_current_licenses(file_io.read_dir(&path)?);
+    let current_licenses = set_of_current_licenses(file_io.read_dir(path)?);
     let mut found_licenses = flatten(found_licenses);
     found_licenses.extend(included_licenses(crate_configs));
 
@@ -127,7 +127,7 @@ mod tests {
         assert!(
             diff_licenses(
                 &file_io_spy,
-                PathBuf::new(),
+                &PathBuf::new(),
                 &HashMap::new(),
                 HashMap::new()
             )
@@ -141,27 +141,26 @@ mod tests {
 
         let current_dir_entries = vec![DirEntry {
             name: OsString::from("example-LICENSE"),
-            path: Default::default(),
+            path: PathBuf::new(),
             is_file: true,
         }];
 
         file_io_spy.read_dir.returns.set([Ok(current_dir_entries)]);
 
-        let found_licenses = [(
+        let found_licenses = std::iter::once((
             Package::called("example"),
             vec![DirEntry {
                 name: OsString::from("LICENSE"),
                 path: PathBuf::from("example/LICENSE"),
                 is_file: true,
             }],
-        )]
-        .into_iter()
+        ))
         .collect();
 
         assert!(
             diff_licenses(
                 &file_io_spy,
-                PathBuf::new(),
+                &PathBuf::new(),
                 &HashMap::new(),
                 found_licenses
             )
@@ -176,32 +175,31 @@ mod tests {
         let current_dir_entries = vec![
             DirEntry {
                 name: OsString::from("example-LICENSE"),
-                path: Default::default(),
+                path: PathBuf::new(),
                 is_file: true,
             },
             DirEntry {
                 name: OsString::from("dir-not-a-file"),
-                path: Default::default(),
+                path: PathBuf::new(),
                 is_file: false,
             },
         ];
         file_io_spy.read_dir.returns.set([Ok(current_dir_entries)]);
 
-        let found_licenses = [(
+        let found_licenses = std::iter::once((
             Package::called("example"),
             vec![DirEntry {
                 name: OsString::from("LICENSE"),
                 path: PathBuf::from("example/LICENSE"),
                 is_file: true,
             }],
-        )]
-        .into_iter()
+        ))
         .collect();
 
         assert!(
             diff_licenses(
                 &file_io_spy,
-                PathBuf::new(),
+                &PathBuf::new(),
                 &HashMap::new(),
                 found_licenses
             )
@@ -215,15 +213,14 @@ mod tests {
         let file_io_spy = FileIOSpy::default();
         file_io_spy.read_dir.returns.set([Ok(Vec::new())]);
 
-        let found_licenses = [(
+        let found_licenses = std::iter::once((
             Package::called("example"),
             vec![DirEntry {
                 name: OsString::from("LICENSE"),
                 path: PathBuf::from("example/LICENSE"),
                 is_file: true,
             }],
-        )]
-        .into_iter()
+        ))
         .collect();
 
         let expected_diff = LicenseDiff {
@@ -235,7 +232,7 @@ mod tests {
             expected_diff,
             diff_licenses(
                 &file_io_spy,
-                PathBuf::new(),
+                &PathBuf::new(),
                 &HashMap::new(),
                 found_licenses
             )
@@ -248,7 +245,7 @@ mod tests {
         let file_io_spy = FileIOSpy::default();
         file_io_spy.read_dir.returns.set([Ok(vec![DirEntry {
             name: OsString::from("example-LICENSE"),
-            path: Default::default(),
+            path: PathBuf::new(),
             is_file: true,
         }])]);
 
@@ -263,7 +260,7 @@ mod tests {
             expected_diff,
             diff_licenses(
                 &file_io_spy,
-                PathBuf::new(),
+                &PathBuf::new(),
                 &HashMap::new(),
                 found_licenses
             )
@@ -276,13 +273,13 @@ mod tests {
         let file_io_spy = FileIOSpy::default();
         file_io_spy.read_dir.returns.set([Ok(vec![DirEntry {
             name: OsString::from("example-LICENSE"),
-            path: Default::default(),
+            path: PathBuf::new(),
             is_file: true,
         }])]);
 
         let found_licenses = HashMap::new();
 
-        let config = [(
+        let config = std::iter::once((
             "example".to_string(),
             CrateConfig {
                 skip: vec![],
@@ -292,15 +289,14 @@ mod tests {
                     text: "I got included!".to_string(),
                 }],
             },
-        )]
-        .into_iter()
+        ))
         .collect();
 
         // there is a diff if we don't use the config
         assert!(
             !diff_licenses(
                 &file_io_spy,
-                PathBuf::new(),
+                &PathBuf::new(),
                 &HashMap::new(),
                 found_licenses.clone()
             )
@@ -310,13 +306,13 @@ mod tests {
 
         file_io_spy.read_dir.returns.set([Ok(vec![DirEntry {
             name: OsString::from("example-LICENSE"),
-            path: Default::default(),
+            path: PathBuf::new(),
             is_file: true,
         }])]);
 
         // no diff if the additional license is from the included section of the config
         assert!(
-            diff_licenses(&file_io_spy, PathBuf::new(), &config, found_licenses)
+            diff_licenses(&file_io_spy, &PathBuf::new(), &config, found_licenses)
                 .unwrap()
                 .is_empty()
         );

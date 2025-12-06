@@ -7,6 +7,7 @@ pub fn warning(message: &str) -> String {
 pub fn progress_bar(msg: &str) -> indicatif::ProgressBar {
     indicatif::ProgressBar::new(0)
         .with_style(
+            #[allow(clippy::literal_string_with_formatting_args)]
             indicatif::ProgressStyle::with_template("{spinner} {msg}...\n{wide_bar} {pos}/{len}")
                 .expect("invalid progress bar style"),
         )

@@ -433,7 +433,6 @@ dependencies = [
  "colored",
  "indicatif",
  "itertools",
- "once_cell",
  "serde",
  "serde_json",
  "spdx",

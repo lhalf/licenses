@@ -27,14 +27,15 @@ mod tests {
     use crate::file_io::DirEntry;
     use crate::licenses::is_license::is_license;
     use std::ffi::OsString;
+    use std::path::PathBuf;
 
     #[test]
     fn directories_are_not_licenses() {
         assert!(!is_license(&DirEntry {
             name: OsString::from("LICENSE_DIRECTORY"),
-            path: Default::default(),
+            path: PathBuf::new(),
             is_file: false,
-        }))
+        }));
     }
 
     #[test]
@@ -51,7 +52,7 @@ mod tests {
         ] {
             assert!(is_license(&DirEntry {
                 name: OsString::from(license),
-                path: Default::default(),
+                path: PathBuf::new(),
                 is_file: true
             }));
         }
@@ -62,7 +63,7 @@ mod tests {
         for license in ["LICENS_APACHE", "LICENCE", "LICENS", "LICENSE-MT"] {
             assert!(is_license(&DirEntry {
                 name: OsString::from(license),
-                path: Default::default(),
+                path: PathBuf::new(),
                 is_file: true
             }));
         }
@@ -73,7 +74,7 @@ mod tests {
         for license in ["PATENT", "README"] {
             assert!(!is_license(&DirEntry {
                 name: OsString::from(license),
-                path: Default::default(),
+                path: PathBuf::new(),
                 is_file: true
             }));
         }
