@@ -16,9 +16,9 @@ checksum = "a23eb6b1614318a8071c9b2521f36b424b2c83db5eb3a0fead4a6c0809af6e61"
 
 [[package]]
 name = "autospy"
-version = "1.4.0"
+version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "36374f0bc378af4e1145d7e0ac4aae7852c8c10c6c161101346e99a904988cbd"
+checksum = "d5158a4a94c290fe1f805c943d2b705416811c0537da519cad8b89c75672c1db"
 dependencies = [
  "autospy_macro",
  "const-default",
