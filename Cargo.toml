@@ -21,9 +21,9 @@ cargo_metadata = { version = "0.23.1", default-features = false }
 colored = { version = "3.0.0", default-features = false }
 serde = { version = "1.0.228", default-features = false }
 serde_json = { version = "1.0.145", default-features = false }
-spdx = { version = "0.13.2", default-features = false, features = ["text"] }
+spdx = { version = "0.13.3", default-features = false, features = ["text"] }
 strsim = { version = "0.11.1", default-features = false }
-toml = { version = "0.9.8", default-features = false, features = ["serde", "display", "parse"] }
+toml = { version = "0.9.10", default-features = false, features = ["serde", "display", "parse"] }
 indicatif = { version = "0.18.3", default-features = false }
 
 [dev-dependencies]

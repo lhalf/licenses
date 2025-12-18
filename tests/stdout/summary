@@ -1,3 +1,4 @@
+Apache-2.0 - spdx
 MIT - cargo_metadata,indicatif,strsim
-MIT OR Apache-2.0 - anyhow,clap,itertools,serde,serde_json,spdx,toml
+MIT OR Apache-2.0 - anyhow,clap,itertools,serde,serde_json,toml
 MPL-2.0 - colored
