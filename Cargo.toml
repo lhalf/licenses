@@ -16,7 +16,7 @@ path = "src/main.rs"
 [dependencies]
 anyhow = { version = "1.0.100", default-features = false }
 itertools = { version = "0.14.0", default-features = false, features = ["use_std"] }
-clap = { version = "4.5.53", default-features = false, features = ["derive", "std", "help", "usage"] }
+clap = { version = "4.5.54", default-features = false, features = ["derive", "std", "help", "usage"] }
 cargo_metadata = { version = "0.23.1", default-features = false }
 colored = { version = "3.0.0", default-features = false }
 serde = { version = "1.0.228", default-features = false }
