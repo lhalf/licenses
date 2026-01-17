@@ -16,9 +16,9 @@ checksum = "a23eb6b1614318a8071c9b2521f36b424b2c83db5eb3a0fead4a6c0809af6e61"
 
 [[package]]
 name = "autospy"
-version = "1.5.0"
+version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d5158a4a94c290fe1f805c943d2b705416811c0537da519cad8b89c75672c1db"
+checksum = "4990e4836aecbe2c7111895707ecffe906e5bce82d51d7993a992c06eb5dff32"
 dependencies = [
  "autospy_macro",
  "const-default",
@@ -26,9 +26,9 @@ dependencies = [
 
 [[package]]
 name = "autospy_macro"
-version = "1.4.0"
+version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "26306d38b8be6374204fdbac06ddd0d84aa8602358816d8309baa3d6e598b7c7"
+checksum = "88037c0af72654440acc6b990b55bf125e9b0add52dc6865e57e746ca484904b"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -315,9 +315,9 @@ dependencies = [
 
 [[package]]
 name = "quote"
-version = "1.0.41"
+version = "1.0.43"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce25767e7b499d1b604768e7cde645d14cc8584231ea6b295e9c9eb22c02e1d1"
+checksum = "dc74d9a594b72ae6656596548f56f667211f8a97b3d4c3d467150794690dc40a"
 dependencies = [
  "proc-macro2",
 ]
@@ -435,9 +435,9 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
 name = "syn"
-version = "2.0.108"
+version = "2.0.114"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da58917d35242480a05c2897064da0a80589a2a0476c9a3f2fdc83b53502e917"
+checksum = "d4d107df263a3013ef9b1879b0df87d706ff80f65a86ea879bd9c31f9b307c2a"
 dependencies = [
  "proc-macro2",
  "quote",
