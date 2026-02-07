@@ -11,6 +11,7 @@ pub fn crate_names(config: &Config) -> anyhow::Result<BTreeSet<String>> {
             config.global.dev,
             config.global.build,
             config.global.all_features,
+            config.global.no_default_features,
             config.global.exclude.as_slice(),
         ))?,
         config.global.ignore.as_slice(),
@@ -41,6 +42,7 @@ fn args(
     include_dev_dependencies: bool,
     include_build_dependencies: bool,
     all_features: bool,
+    no_default_features: bool,
     excluded_workspaces: &[String],
 ) -> Vec<String> {
     let mut args = vec![
@@ -66,6 +68,10 @@ fn args(
 
     if all_features {
         args.push("--all-features".to_string());
+    }
+
+    if no_default_features {
+        args.push("--no-default-features".to_string());
     }
 
     if let Some(depth) = depth {
@@ -102,7 +108,7 @@ mod tests {
                 "--edges".to_string(),
                 "no-dev,no-build".to_string(),
             ],
-            args(None, false, false, false, &[])
+            args(None, false, false, false, false, &[])
         );
     }
 
@@ -119,7 +125,7 @@ mod tests {
                 "--edges".to_string(),
                 "no-build".to_string(),
             ],
-            args(None, true, false, false, &[])
+            args(None, true, false, false, false, &[])
         );
     }
 
@@ -136,7 +142,7 @@ mod tests {
                 "--edges".to_string(),
                 "no-dev".to_string(),
             ],
-            args(None, false, true, false, &[])
+            args(None, false, true, false, false, &[])
         );
     }
 
@@ -154,7 +160,25 @@ mod tests {
                 "no-dev,no-build".to_string(),
                 "--all-features".to_string(),
             ],
-            args(None, false, false, true, &[])
+            args(None, false, false, true, false, &[])
+        );
+    }
+
+    #[test]
+    fn no_default_features_args() {
+        assert_eq!(
+            vec![
+                "tree".to_string(),
+                "--format".to_string(),
+                "{lib}".to_string(),
+                "--prefix".to_string(),
+                "none".to_string(),
+                "--no-dedupe".to_string(),
+                "--edges".to_string(),
+                "no-dev,no-build".to_string(),
+                "--no-default-features".to_string(),
+            ],
+            args(None, false, false, false, true, &[])
         );
     }
 
@@ -171,7 +195,7 @@ mod tests {
                 "--depth".to_string(),
                 "1".to_string()
             ],
-            args(Some(1), true, true, false, &[])
+            args(Some(1), true, true, false, false, &[])
         );
     }
 
@@ -189,7 +213,7 @@ mod tests {
                 "--exclude".to_string(),
                 "excluded".to_string(),
             ],
-            args(None, true, true, false, &["excluded".to_string()])
+            args(None, true, true, false, false, &["excluded".to_string()])
         );
     }
 

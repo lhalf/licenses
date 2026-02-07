@@ -32,6 +32,7 @@ impl GlobalArgs {
         self.dev |= other.dev;
         self.build |= other.build;
         self.all_features |= other.all_features;
+        self.no_default_features |= other.no_default_features;
         if other.depth.is_some() {
             self.depth = other.depth;
         }
@@ -213,6 +214,7 @@ mod tests {
         build = false
         depth = 1
         all-features = true
+        no-default-features = true
         exclude = ["test"]
         ignore = ["crate1","crate2"]"#;
         assert_eq!(
@@ -222,6 +224,7 @@ mod tests {
                     build: false,
                     depth: Some(1),
                     all_features: true,
+                    no_default_features: true,
                     exclude: vec!["test".to_string()],
                     ignore: vec!["crate1".to_string(), "crate2".to_string()],
                     config: None,
@@ -239,6 +242,7 @@ mod tests {
             build: false,
             depth: Some(10),
             all_features: true,
+            no_default_features: false,
             exclude: vec!["test".to_string()],
             ignore: vec![],
             config: None,
@@ -247,7 +251,8 @@ mod tests {
             dev: false,
             build: true,
             depth: Some(20),
-            all_features: true,
+            all_features: false,
+            no_default_features: true,
             exclude: vec![],
             ignore: vec!["lemon".to_string()],
             config: None,
@@ -259,6 +264,7 @@ mod tests {
                 build: true,
                 depth: Some(20),
                 all_features: true,
+                no_default_features: true,
                 exclude: vec!["test".to_string()],
                 ignore: vec!["lemon".to_string()],
                 config: None,
@@ -280,6 +286,7 @@ mod tests {
             build: false,
             depth: None,
             all_features: false,
+            no_default_features: false,
             exclude: vec![],
             ignore: vec![],
             config: Some(PathBuf::from("path")),
@@ -323,6 +330,7 @@ mod tests {
                     build: false,
                     depth: None,
                     all_features: false,
+                    no_default_features: false,
                     exclude: vec![],
                     ignore: vec![],
                     config: Some(PathBuf::from("path")),

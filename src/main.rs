@@ -72,6 +72,11 @@ pub struct GlobalArgs {
     #[serde(rename = "all-features")]
     all_features: bool,
 
+    /// Do not activate default features [default: default features]
+    #[arg(long, global = true)]
+    #[serde(rename = "no-default-features")]
+    no_default_features: bool,
+
     /// Exclude specified workspace [default: all included]
     #[arg(short, long, value_name = "WORKSPACE", global = true)]
     exclude: Vec<String>,
