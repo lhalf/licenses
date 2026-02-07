@@ -23,11 +23,18 @@ fn to_crate_names(output: Vec<u8>, ignored_crates: &[String]) -> anyhow::Result<
 }
 
 fn cargo_output_with_args(args: Vec<String>) -> anyhow::Result<Vec<u8>> {
-    Ok(Command::new("cargo")
-        .args(args)
+    let output = Command::new("cargo")
+        .args(&args)
         .output()
-        .context("failed to call cargo tree")?
-        .stdout)
+        .context("failed to call cargo tree")?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let message = stderr.strip_prefix("error: ").unwrap_or(&stderr).trim();
+        return Err(anyhow::anyhow!("{message}"));
+    }
+
+    Ok(output.stdout)
 }
 
 fn args(config: &Config) -> Vec<String> {
