@@ -28,6 +28,8 @@ Options:
   -d, --dev                  Include dev dependencies [default: excluded]
   -b, --build                Include build dependencies [default: excluded]
   -D, --depth <DEPTH>        The depth of dependencies to include [default: all sub dependencies]
+      --all-features         Activate all features [default: default features]
+      --no-default-features  Do not activate default features [default: default features]
   -e, --exclude <WORKSPACE>  Exclude specified workspace [default: all included]
   -i, --ignore <CRATE>       Ignore specified crate [default: all included]
   -c, --config <PATH>        Path to configuration file
@@ -187,6 +189,7 @@ The below is an example of a TOML configuration file that could be used via the 
 dev = true
 build = true
 depth = 1
+all_features = true
 exclude = ["workspace"]
 ignore = ["crate"]
 
