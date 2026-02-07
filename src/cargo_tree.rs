@@ -6,14 +6,7 @@ use std::process::Command;
 
 pub fn crate_names(config: &Config) -> anyhow::Result<BTreeSet<String>> {
     to_crate_names(
-        cargo_output_with_args(args(
-            config.global.depth,
-            config.global.dev,
-            config.global.build,
-            config.global.all_features,
-            config.global.no_default_features,
-            config.global.exclude.as_slice(),
-        ))?,
+        cargo_output_with_args(args(config))?,
         config.global.ignore.as_slice(),
     )
 }
@@ -37,14 +30,7 @@ fn cargo_output_with_args(args: Vec<String>) -> anyhow::Result<Vec<u8>> {
         .stdout)
 }
 
-fn args(
-    depth: Option<u8>,
-    include_dev_dependencies: bool,
-    include_build_dependencies: bool,
-    all_features: bool,
-    no_default_features: bool,
-    excluded_workspaces: &[String],
-) -> Vec<String> {
+fn args(config: &Config) -> Vec<String> {
     let mut args = vec![
         "tree".to_string(),
         "--format".to_string(),
@@ -55,10 +41,10 @@ fn args(
     ];
 
     let mut edges = Vec::new();
-    if !include_dev_dependencies {
+    if !config.global.dev {
         edges.push("no-dev");
     }
-    if !include_build_dependencies {
+    if !config.global.build {
         edges.push("no-build");
     }
     if !edges.is_empty() {
@@ -66,22 +52,22 @@ fn args(
         args.push(edges.join(","));
     }
 
-    if all_features {
+    if config.global.all_features {
         args.push("--all-features".to_string());
     }
 
-    if no_default_features {
+    if config.global.no_default_features {
         args.push("--no-default-features".to_string());
     }
 
-    if let Some(depth) = depth {
+    if let Some(depth) = config.global.depth {
         args.push("--depth".to_string());
         args.push(depth.to_string());
     }
 
-    if !excluded_workspaces.is_empty() {
+    if !config.global.exclude.is_empty() {
         args.push("--workspace".to_string());
-        for workspace in excluded_workspaces {
+        for workspace in &config.global.exclude {
             args.push("--exclude".to_string());
             args.push(workspace.clone());
         }
@@ -93,6 +79,7 @@ fn args(
 #[cfg(test)]
 mod tests {
     use crate::cargo_tree::{args, to_crate_names};
+    use crate::config::Config;
     use std::collections::BTreeSet;
 
     #[test]
@@ -108,12 +95,15 @@ mod tests {
                 "--edges".to_string(),
                 "no-dev,no-build".to_string(),
             ],
-            args(None, false, false, false, false, &[])
+            args(&Config::default())
         );
     }
 
     #[test]
     fn include_dev_dependencies_args() {
+        let mut config = Config::default();
+        config.global.dev = true;
+
         assert_eq!(
             vec![
                 "tree".to_string(),
@@ -125,12 +115,15 @@ mod tests {
                 "--edges".to_string(),
                 "no-build".to_string(),
             ],
-            args(None, true, false, false, false, &[])
+            args(&config)
         );
     }
 
     #[test]
     fn include_build_dependencies_args() {
+        let mut config = Config::default();
+        config.global.build = true;
+
         assert_eq!(
             vec![
                 "tree".to_string(),
@@ -142,12 +135,15 @@ mod tests {
                 "--edges".to_string(),
                 "no-dev".to_string(),
             ],
-            args(None, false, true, false, false, &[])
+            args(&config)
         );
     }
 
     #[test]
     fn all_features_args() {
+        let mut config = Config::default();
+        config.global.all_features = true;
+
         assert_eq!(
             vec![
                 "tree".to_string(),
@@ -160,12 +156,15 @@ mod tests {
                 "no-dev,no-build".to_string(),
                 "--all-features".to_string(),
             ],
-            args(None, false, false, true, false, &[])
+            args(&config)
         );
     }
 
     #[test]
     fn no_default_features_args() {
+        let mut config = Config::default();
+        config.global.no_default_features = true;
+
         assert_eq!(
             vec![
                 "tree".to_string(),
@@ -178,12 +177,15 @@ mod tests {
                 "no-dev,no-build".to_string(),
                 "--no-default-features".to_string(),
             ],
-            args(None, false, false, false, true, &[])
+            args(&config)
         );
     }
 
     #[test]
     fn depth_1_args() {
+        let mut config = Config::default();
+        config.global.depth = Some(1);
+
         assert_eq!(
             vec![
                 "tree".to_string(),
@@ -192,15 +194,20 @@ mod tests {
                 "--prefix".to_string(),
                 "none".to_string(),
                 "--no-dedupe".to_string(),
+                "--edges".to_string(),
+                "no-dev,no-build".to_string(),
                 "--depth".to_string(),
                 "1".to_string()
             ],
-            args(Some(1), true, true, false, false, &[])
+            args(&config)
         );
     }
 
     #[test]
     fn excludes_specific_workspace_args() {
+        let mut config = Config::default();
+        config.global.exclude = vec!["excluded".to_string()];
+
         assert_eq!(
             vec![
                 "tree".to_string(),
@@ -209,11 +216,13 @@ mod tests {
                 "--prefix".to_string(),
                 "none".to_string(),
                 "--no-dedupe".to_string(),
+                "--edges".to_string(),
+                "no-dev,no-build".to_string(),
                 "--workspace".to_string(),
                 "--exclude".to_string(),
                 "excluded".to_string(),
             ],
-            args(None, true, true, false, false, &["excluded".to_string()])
+            args(&config)
         );
     }
 
