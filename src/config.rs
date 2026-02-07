@@ -282,14 +282,8 @@ mod tests {
             .set([Err(anyhow::anyhow!("deliberate test error"))]);
 
         let global_args = GlobalArgs {
-            dev: false,
-            build: false,
-            depth: None,
-            all_features: false,
-            no_default_features: false,
-            exclude: vec![],
-            ignore: vec![],
             config: Some(PathBuf::from("path")),
+            ..Default::default()
         };
 
         assert_eq!(
@@ -326,14 +320,8 @@ mod tests {
             load_config(
                 &file_io_spy,
                 GlobalArgs {
-                    dev: false,
-                    build: false,
-                    depth: None,
-                    all_features: false,
-                    no_default_features: false,
-                    exclude: vec![],
-                    ignore: vec![],
                     config: Some(PathBuf::from("path")),
+                    ..Default::default()
                 }
             )
             .unwrap()
