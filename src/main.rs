@@ -42,7 +42,13 @@ fn main() -> anyhow::Result<()> {
 #[derive(Parser)]
 #[command(bin_name = "cargo", disable_help_subcommand = true)]
 enum CargoSubcommand {
-    #[command(name = "licenses", version, author, disable_version_flag = true)]
+    #[command(
+        name = "licenses",
+        version,
+        author,
+        disable_version_flag = true,
+        override_usage = "cargo licenses <COMMAND> [OPTIONS]"
+    )]
     Licenses {
         #[command(flatten)]
         args: GlobalArgs,

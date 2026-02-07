@@ -16,7 +16,7 @@ $ cargo install licenses
 
 ```
 $ cargo licenses --help
-Usage: cargo licenses [OPTIONS] <COMMAND>
+Usage: cargo licenses <COMMAND> [OPTIONS]
 
 Commands:
   collect  Collects all licenses into a folder
