@@ -67,6 +67,11 @@ pub struct GlobalArgs {
     #[arg(short = 'D', long, global = true)]
     depth: Option<u8>,
 
+    /// Activate all features [default: default features]
+    #[arg(long, global = true)]
+    #[serde(rename = "all-features")]
+    all_features: bool,
+
     /// Exclude specified workspace [default: all included]
     #[arg(short, long, value_name = "WORKSPACE", global = true)]
     exclude: Vec<String>,

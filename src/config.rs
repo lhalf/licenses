@@ -31,6 +31,7 @@ impl GlobalArgs {
     fn merge(&mut self, other: Self) {
         self.dev |= other.dev;
         self.build |= other.build;
+        self.all_features |= other.all_features;
         if other.depth.is_some() {
             self.depth = other.depth;
         }
@@ -211,6 +212,7 @@ mod tests {
         dev = true # a comment
         build = false
         depth = 1
+        all-features = true
         exclude = ["test"]
         ignore = ["crate1","crate2"]"#;
         assert_eq!(
@@ -219,6 +221,7 @@ mod tests {
                     dev: true,
                     build: false,
                     depth: Some(1),
+                    all_features: true,
                     exclude: vec!["test".to_string()],
                     ignore: vec!["crate1".to_string(), "crate2".to_string()],
                     config: None,
@@ -235,6 +238,7 @@ mod tests {
             dev: true,
             build: false,
             depth: Some(10),
+            all_features: true,
             exclude: vec!["test".to_string()],
             ignore: vec![],
             config: None,
@@ -243,6 +247,7 @@ mod tests {
             dev: false,
             build: true,
             depth: Some(20),
+            all_features: true,
             exclude: vec![],
             ignore: vec!["lemon".to_string()],
             config: None,
@@ -253,6 +258,7 @@ mod tests {
                 dev: true,
                 build: true,
                 depth: Some(20),
+                all_features: true,
                 exclude: vec!["test".to_string()],
                 ignore: vec!["lemon".to_string()],
                 config: None,
@@ -273,6 +279,7 @@ mod tests {
             dev: false,
             build: false,
             depth: None,
+            all_features: false,
             exclude: vec![],
             ignore: vec![],
             config: Some(PathBuf::from("path")),
@@ -315,6 +322,7 @@ mod tests {
                     dev: false,
                     build: false,
                     depth: None,
+                    all_features: false,
                     exclude: vec![],
                     ignore: vec![],
                     config: Some(PathBuf::from("path")),
