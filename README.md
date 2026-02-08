@@ -30,6 +30,7 @@ Options:
   -D, --depth <DEPTH>        The depth of dependencies to include [default: all sub dependencies]
       --all-features         Activate all features [default: default features]
       --no-default-features  Do not activate default features [default: default features]
+  -F, --feature <FEATURE>    Enable specified feature [default: default features]
   -e, --exclude <WORKSPACE>  Exclude specified workspace [default: all included]
   -i, --ignore <CRATE>       Ignore specified crate [default: all included]
   -c, --config <PATH>        Path to configuration file
