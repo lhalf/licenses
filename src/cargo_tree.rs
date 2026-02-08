@@ -67,6 +67,11 @@ fn args(config: &Config) -> Vec<String> {
         args.push("--no-default-features".to_string());
     }
 
+    if !config.global.feature.is_empty() {
+        args.push("--features".to_string());
+        args.push(config.global.feature.join(","));
+    }
+
     if let Some(depth) = config.global.depth {
         args.push("--depth".to_string());
         args.push(depth.to_string());
@@ -228,6 +233,28 @@ mod tests {
                 "--workspace".to_string(),
                 "--exclude".to_string(),
                 "excluded".to_string(),
+            ],
+            args(&config)
+        );
+    }
+
+    #[test]
+    fn enable_specific_features_args() {
+        let mut config = Config::default();
+        config.global.feature = vec!["feature1".to_string(), "feature2".to_string()];
+
+        assert_eq!(
+            vec![
+                "tree".to_string(),
+                "--format".to_string(),
+                "{lib}".to_string(),
+                "--prefix".to_string(),
+                "none".to_string(),
+                "--no-dedupe".to_string(),
+                "--edges".to_string(),
+                "no-dev,no-build".to_string(),
+                "--features".to_string(),
+                "feature1,feature2".to_string(),
             ],
             args(&config)
         );

@@ -84,6 +84,10 @@ pub struct GlobalArgs {
     #[serde(rename = "no-default-features")]
     no_default_features: bool,
 
+    /// Enable specified feature [default: default features]
+    #[arg(short = 'F', long, value_name = "FEATURE", global = true)]
+    feature: Vec<String>,
+
     /// Exclude specified workspace [default: all included]
     #[arg(short, long, value_name = "WORKSPACE", global = true)]
     exclude: Vec<String>,

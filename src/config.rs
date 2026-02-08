@@ -36,6 +36,7 @@ impl GlobalArgs {
         if other.depth.is_some() {
             self.depth = other.depth;
         }
+        self.feature.extend(other.feature);
         self.exclude.extend(other.exclude);
         self.ignore.extend(other.ignore);
     }
@@ -215,6 +216,7 @@ mod tests {
         depth = 1
         all-features = true
         no-default-features = true
+        feature = ["feature"]
         exclude = ["test"]
         ignore = ["crate1","crate2"]"#;
         assert_eq!(
@@ -225,6 +227,7 @@ mod tests {
                     depth: Some(1),
                     all_features: true,
                     no_default_features: true,
+                    feature: vec!["feature".to_string()],
                     exclude: vec!["test".to_string()],
                     ignore: vec!["crate1".to_string(), "crate2".to_string()],
                     config: None,
@@ -243,6 +246,7 @@ mod tests {
             depth: Some(10),
             all_features: true,
             no_default_features: false,
+            feature: vec!["feature1".to_string()],
             exclude: vec!["test".to_string()],
             ignore: vec![],
             config: None,
@@ -253,6 +257,7 @@ mod tests {
             depth: Some(20),
             all_features: false,
             no_default_features: true,
+            feature: vec!["feature2".to_string()],
             exclude: vec![],
             ignore: vec!["lemon".to_string()],
             config: None,
@@ -265,6 +270,7 @@ mod tests {
                 depth: Some(20),
                 all_features: true,
                 no_default_features: true,
+                feature: vec!["feature1".to_string(), "feature2".to_string()],
                 exclude: vec!["test".to_string()],
                 ignore: vec!["lemon".to_string()],
                 config: None,
