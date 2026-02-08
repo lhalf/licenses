@@ -60,6 +60,7 @@ enum CargoSubcommand {
 
 #[derive(Debug, Args, Deserialize, PartialEq, Eq, Default, Clone)]
 #[serde(default, deny_unknown_fields)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct GlobalArgs {
     /// Include dev dependencies [default: excluded]
     #[arg(short, long, global = true)]

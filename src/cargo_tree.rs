@@ -6,7 +6,7 @@ use std::process::Command;
 
 pub fn crate_names(config: &Config) -> anyhow::Result<BTreeSet<String>> {
     to_crate_names(
-        cargo_output_with_args(args(config))?,
+        cargo_output_with_args(&args(config))?,
         config.global.ignore.as_slice(),
     )
 }
@@ -22,9 +22,9 @@ fn to_crate_names(output: Vec<u8>, ignored_crates: &[String]) -> anyhow::Result<
         .collect())
 }
 
-fn cargo_output_with_args(args: Vec<String>) -> anyhow::Result<Vec<u8>> {
+fn cargo_output_with_args(args: &[String]) -> anyhow::Result<Vec<u8>> {
     let output = Command::new("cargo")
-        .args(&args)
+        .args(args)
         .output()
         .context("failed to call cargo tree")?;
 
