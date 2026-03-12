@@ -29,5 +29,5 @@ indicatif = { version = "0.18.4", default-features = false }
 [dev-dependencies]
 autospy = { version = "1.6.1", default-features = false, features = ["test"] }
 strip-ansi-escapes = { version = "0.2.1", default-features = false }
-tempfile = { version = "3.26.0", default-features = false }
+tempfile = { version = "3.27.0", default-features = false }
 cargo_toml = { version = "0.22.3", default-features = false }
