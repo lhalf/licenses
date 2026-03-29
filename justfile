@@ -12,3 +12,5 @@ test: build
 
 check-strict:
     cargo clippy --all-targets --all-features -- -D clippy::pedantic -D clippy::nursery
+
+update:
