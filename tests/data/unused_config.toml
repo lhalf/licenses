@@ -1,0 +1,14 @@
+[global]
+depth = 1
+
+# crate does not exist in the dependency tree
+[crates.fake_crate]
+allow = "too few"
+
+# anyhow's license is already valid, so allow is unnecessary
+[crates.anyhow]
+allow = "too few"
+
+# strsim does not have a file called NONEXISTENT
+[crates.strsim]
+skip = ["NONEXISTENT"]

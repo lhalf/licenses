@@ -7,6 +7,7 @@ use crate::licenses::collect::collect_licenses;
 use crate::licenses::copy::copy_licenses;
 use crate::licenses::diff::diff_licenses;
 use crate::licenses::summarise::{crates_per_license, summarise};
+use crate::licenses::unused::find_unused_configs;
 use crate::log::progress_bar;
 use anyhow::Context;
 use std::path::{Path, PathBuf};
@@ -59,12 +60,14 @@ pub fn check(
 ) -> anyhow::Result<()> {
     let progress_bar = progress_bar("checking licenses");
 
-    let statuses = check_licenses(
-        file_io,
-        &progress_bar,
-        &collect_licenses(file_io, filtered_packages, &config.crate_configs)?,
-        &config.crate_configs,
-    );
+    let all_licenses = collect_licenses(file_io, filtered_packages, &config.crate_configs)?;
+
+    let statuses = check_licenses(file_io, &progress_bar, &all_licenses, &config.crate_configs);
+
+    let unused = find_unused_configs(file_io, &all_licenses, &config.crate_configs);
+    if unused.any() {
+        print!("{unused}");
+    }
 
     if statuses.any_invalid() {
         print!("{statuses}");

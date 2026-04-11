@@ -6,6 +6,7 @@ pub mod is_license;
 pub mod status;
 pub mod subcommand;
 pub mod summarise;
+pub mod unused;
 pub mod validate;
 
 use itertools::Itertools;

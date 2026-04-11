@@ -172,6 +172,23 @@ that can be allowed are included in the warning message, these are:
 example_crate = { allow = "too few" }
 ```
 
+### Unused configuration warnings
+
+The `check` command will warn if any entries in the configuration file are not being used. This helps keep the
+configuration file clean as dependencies change. The following unused entries are detected:
+
+- A crate in the config that is not found in the dependency tree
+- An `allow` that is not required because the license status is already valid
+- A `skip` for a file that does not exist in the crate's directory
+
+```
+$ cargo licenses check --config licenses.toml
+warning: unused - entries in the config are not being used:
+        fake_crate - crate not found in dependencies
+        example_crate - 'allow' is not required
+        another_crate - 'skip' for NONEXISTENT is not required
+```
+
 ### Include licenses
 
 Additional licenses can be included for a specific crate via the configuration file.

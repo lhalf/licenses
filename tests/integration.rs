@@ -67,3 +67,17 @@ fn collect_depth_1() {
     assert!(output.status.success());
     assert_eq!(collected_dependencies(temp_dir_path), actual_dependencies());
 }
+
+#[test]
+fn check_warns_about_unused_config() {
+    let output = call_licenses_command(&["check", "--config", "tests/data/unused_config.toml"]);
+
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let stdout = strip_ansi_escapes::strip_str(&stdout);
+
+    assert!(stdout.contains("anyhow - 'allow' is not required"));
+    assert!(stdout.contains("fake_crate - crate not found in dependencies"));
+    assert!(stdout.contains("strsim - 'skip' for NONEXISTENT is not required"));
+}
