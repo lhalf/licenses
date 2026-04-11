@@ -1,6 +1,6 @@
 set shell := ["bash", "-euc"]
 
-pre-commit: fmt check test
+pre-commit: fmt check test 
 
 build:
     cargo build --locked --release
@@ -18,5 +18,8 @@ test: build
 check-strict:
     cargo clippy --all-targets --all-features -- -D clippy::pedantic -D clippy::nursery
 
-update:
+update: update-readme
     cargo upgrade --incompatible
+
+update-readme: build
+    mdsh

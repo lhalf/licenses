@@ -14,8 +14,12 @@ $ cargo install licenses
 
 ## Usage
 
-```
+```bash
 $ cargo licenses --help
+```
+
+<!-- `$ cargo run -q -- licenses --help` -->
+```
 Usage: cargo licenses <COMMAND> [OPTIONS]
 
 Commands:
@@ -57,28 +61,6 @@ Prints a warning:
 $ cargo licenses collect --depth 1
 ```
 
-```
-licenses
-├── anyhow-LICENSE-APACHE
-├── anyhow-LICENSE-MIT
-├── cargo_metadata-LICENSE-MIT
-├── clap-LICENSE-APACHE
-├── clap-LICENSE-MIT
-├── colored-LICENSE
-├── indicatif-LICENSE
-├── itertools-LICENSE-APACHE
-├── itertools-LICENSE-MIT
-├── serde-LICENSE-APACHE
-├── serde-LICENSE-MIT
-├── serde_json-LICENSE-APACHE
-├── serde_json-LICENSE-MIT
-├── spdx-LICENSE-APACHE
-├── spdx-LICENSE-MIT
-├── strsim-LICENSE
-├── toml-LICENSE-APACHE
-└── toml-LICENSE-MIT
-```
-
 ### Summary
 
 Summarises the declared licenses.
@@ -90,8 +72,12 @@ declared licenses and the actual licenses.
 
 The summary can be formatted as JSON or TOML with `--json` or `--toml` respectively.
 
-```
+```bash
 $ cargo licenses summary --depth 1
+```
+
+<!-- `$ cargo run -q -- licenses summary --depth 1` -->
+```
 Apache-2.0 - spdx
 MIT - cargo_metadata,indicatif,strsim
 MIT OR Apache-2.0 - anyhow,clap,itertools,serde,serde_json,toml
@@ -110,14 +96,16 @@ Returns a non-zero exit code:
 - If there were more licenses found for a crate than declared by the author on crates.io (additional)
 - If the content of the found licenses did not match the expected content for those licenses (mismatch)
 
-```
+```bash
 $ cargo licenses check
+```
+
+<!-- `$ cargo run -q -- licenses check || true` -->
+```
 warning: additional - found all declared licenses, but found additional licenses for:
-        memchr - COPYING
-        unicode_xid - COPYRIGHT
-        utf8_iter - COPYRIGHT
-warning: mismatch - found license(s) whose content was not similar to declared licenses for:
-        portable_atomic - LICENSE-APACHE
+	aho_corasick - COPYING
+	memchr - COPYING
+	unicode_normalization - COPYRIGHT
 ```
 
 ### Diff
