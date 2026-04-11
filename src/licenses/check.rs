@@ -60,6 +60,7 @@ mod tests {
     use crate::file_io::{DirEntry, FileIOSpy};
     use crate::licenses::check::check_licenses;
     use crate::licenses::status::{LicenseStatus, LicenseStatuses};
+    use crate::licenses::validate::LICENSE_TEXTS;
     use crate::log::ProgressBarSpy;
     use cargo_metadata::camino::Utf8PathBuf;
     use std::collections::HashMap;
@@ -195,11 +196,6 @@ mod tests {
     }
 
     fn license_text(id: &str) -> String {
-        spdx::text::LICENSE_TEXTS
-            .iter()
-            .find(|(name, _)| *name == id)
-            .unwrap()
-            .1
-            .to_string()
+        LICENSE_TEXTS.get(id).unwrap().to_string()
     }
 }
