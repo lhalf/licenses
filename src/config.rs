@@ -358,4 +358,93 @@ mod tests {
                 .collect(),
         }
     }
+
+    #[test]
+    fn config_with_all_allowed_statuses() {
+        for (input, expected) in [
+            (r#"allow = "empty""#, LicenseStatus::Empty),
+            (r#"allow = "none declared""#, LicenseStatus::NoneDeclared),
+            (r#"allow = "too few""#, LicenseStatus::TooFew),
+        ] {
+            let contents = format!("[crates.test]\n{input}");
+            let config = parse_config(&contents).unwrap();
+            assert_eq!(
+                Some(&expected),
+                config.crate_configs.get("test").unwrap().allow.as_ref()
+            );
+        }
+    }
+
+    #[test]
+    fn merge_preserves_first_depth_when_second_is_none() {
+        let mut args1 = GlobalArgs {
+            depth: Some(5),
+            ..Default::default()
+        };
+        let args2 = GlobalArgs {
+            depth: None,
+            ..Default::default()
+        };
+        args1.merge(args2);
+        // When second has None depth, first keeps its value
+        // Looking at merge: `if other.depth.is_some() { self.depth = other.depth; }`
+        assert_eq!(Some(5), args1.depth);
+    }
+
+    #[test]
+    fn merge_overwrites_depth_when_second_has_value() {
+        let mut args1 = GlobalArgs {
+            depth: Some(5),
+            ..Default::default()
+        };
+        let args2 = GlobalArgs {
+            depth: Some(10),
+            ..Default::default()
+        };
+        args1.merge(args2);
+        assert_eq!(Some(10), args1.depth);
+    }
+
+    #[test]
+    fn merge_combines_features() {
+        let mut args1 = GlobalArgs {
+            feature: vec!["f1".to_string()],
+            ..Default::default()
+        };
+        let args2 = GlobalArgs {
+            feature: vec!["f2".to_string()],
+            ..Default::default()
+        };
+        args1.merge(args2);
+        assert_eq!(vec!["f1".to_string(), "f2".to_string()], args1.feature);
+    }
+
+    #[test]
+    fn merge_booleans_are_or() {
+        let mut args1 = GlobalArgs {
+            dev: false,
+            build: true,
+            ..Default::default()
+        };
+        let args2 = GlobalArgs {
+            dev: true,
+            build: false,
+            ..Default::default()
+        };
+        args1.merge(args2);
+        assert!(args1.dev);
+        assert!(args1.build);
+    }
+
+    #[test]
+    fn config_with_multiple_included_licenses() {
+        let contents = r#"
+        [crates.example]
+        include = [
+            { name = "LICENSE-A", text = "text a" },
+            { name = "LICENSE-B", text = "text b" }
+        ]"#;
+        let config = parse_config(contents).unwrap();
+        assert_eq!(2, config.crate_configs["example"].include.len());
+    }
 }

@@ -155,4 +155,77 @@ mod tests {
             )]
         );
     }
+
+    #[test]
+    fn multiple_licenses_for_single_package_are_all_copied() {
+        let file_io_spy = FileIOSpy::default();
+        file_io_spy.copy_file.returns.set([Ok(()), Ok(())]);
+
+        let all_licenses = vec![(
+            Package::called("example"),
+            vec![
+                DirEntry {
+                    name: OsString::from("LICENSE-MIT"),
+                    path: PathBuf::from("example/LICENSE-MIT"),
+                    is_file: true,
+                },
+                DirEntry {
+                    name: OsString::from("LICENSE-APACHE"),
+                    path: PathBuf::from("example/LICENSE-APACHE"),
+                    is_file: true,
+                },
+            ],
+        )]
+        .into_iter()
+        .collect();
+
+        assert!(
+            copy_licenses(
+                &file_io_spy,
+                all_licenses,
+                &PathBuf::from("output"),
+                &HashMap::new()
+            )
+            .is_ok()
+        );
+
+        let copy_args = file_io_spy.copy_file.arguments.take();
+        assert_eq!(2, copy_args.len());
+    }
+
+    #[test]
+    fn copy_writes_to_correct_output_path() {
+        let file_io_spy = FileIOSpy::default();
+        file_io_spy.copy_file.returns.set([Ok(())]);
+
+        let all_licenses = vec![(
+            Package::called("my_crate"),
+            vec![DirEntry {
+                name: OsString::from("LICENSE"),
+                path: PathBuf::from("/src/my_crate/LICENSE"),
+                is_file: true,
+            }],
+        )]
+        .into_iter()
+        .collect();
+
+        assert!(
+            copy_licenses(
+                &file_io_spy,
+                all_licenses,
+                &PathBuf::from("licenses"),
+                &HashMap::new()
+            )
+            .is_ok()
+        );
+
+        let copy_args = file_io_spy.copy_file.arguments.take();
+        assert_eq!(
+            copy_args[0],
+            (
+                PathBuf::from("/src/my_crate/LICENSE"),
+                PathBuf::from("licenses/my_crate-LICENSE")
+            )
+        );
+    }
 }

@@ -201,4 +201,69 @@ mod tests {
             collect_licenses(&file_io_spy, &[Package::called("example")], &skipped_files).unwrap()
         );
     }
+
+    #[test]
+    fn multiple_packages_collected() {
+        let file_io_spy = FileIOSpy::default();
+        let license_a = DirEntry {
+            name: OsString::from("LICENSE"),
+            path: PathBuf::new(),
+            is_file: true,
+        };
+        let license_b = DirEntry {
+            name: OsString::from("LICENSE-MIT"),
+            path: PathBuf::new(),
+            is_file: true,
+        };
+        file_io_spy
+            .read_dir
+            .returns
+            .set([Ok(vec![license_a.clone()]), Ok(vec![license_b.clone()])]);
+
+        let result = collect_licenses(
+            &file_io_spy,
+            &[Package::called("alpha"), Package::called("beta")],
+            &HashMap::new(),
+        )
+        .unwrap();
+
+        assert_eq!(2, result.len());
+        assert_eq!(vec![license_a], result[&Package::called("alpha")]);
+        assert_eq!(vec![license_b], result[&Package::called("beta")]);
+    }
+
+    #[test]
+    fn skip_config_only_applies_to_matching_crate() {
+        let file_io_spy = FileIOSpy::default();
+        let license = DirEntry {
+            name: OsString::from("COPYING"),
+            path: PathBuf::new(),
+            is_file: true,
+        };
+        file_io_spy
+            .read_dir
+            .returns
+            .set([Ok(vec![license.clone()]), Ok(vec![license.clone()])]);
+
+        let skipped_files: HashMap<_, _> = std::iter::once((
+            "alpha".to_string(),
+            CrateConfig {
+                skip: vec!["COPYING".to_string()],
+                allow: None,
+                include: vec![],
+            },
+        ))
+        .collect();
+
+        let result = collect_licenses(
+            &file_io_spy,
+            &[Package::called("alpha"), Package::called("beta")],
+            &skipped_files,
+        )
+        .unwrap();
+
+        // alpha has COPYING skipped, beta does not
+        assert!(result[&Package::called("alpha")].is_empty());
+        assert_eq!(vec![license], result[&Package::called("beta")]);
+    }
 }

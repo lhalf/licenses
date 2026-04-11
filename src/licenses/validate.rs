@@ -345,4 +345,51 @@ mod tests {
     fn license_text(id: &str) -> String {
         LICENSE_TEXTS.get(id).unwrap().to_string()
     }
+
+    #[test]
+    fn valid_dual_license() {
+        let file_io_spy = FileIOSpy::default();
+        file_io_spy
+            .read_file
+            .returns
+            .set([Ok(license_text("MIT")), Ok(license_text("Apache-2.0"))]);
+
+        assert_eq!(
+            LicenseStatus::Valid,
+            validate_licenses(
+                &file_io_spy,
+                Some(&License::parse("MIT OR Apache-2.0")),
+                &[
+                    DirEntry {
+                        name: OsString::from("LICENSE-MIT"),
+                        path: PathBuf::new(),
+                        is_file: true,
+                    },
+                    DirEntry {
+                        name: OsString::from("LICENSE-APACHE"),
+                        path: PathBuf::new(),
+                        is_file: true,
+                    }
+                ]
+            )
+        );
+    }
+
+    #[test]
+    fn unknown_declared_license_with_files_present() {
+        let file_io_spy = FileIOSpy::default();
+
+        assert_eq!(
+            LicenseStatus::Additional(vec!["LICENSE".to_string()]),
+            validate_licenses(
+                &file_io_spy,
+                Some(&License::parse("not-a-real-license")),
+                &[DirEntry {
+                    name: OsString::from("LICENSE"),
+                    path: PathBuf::new(),
+                    is_file: true,
+                }]
+            )
+        );
+    }
 }

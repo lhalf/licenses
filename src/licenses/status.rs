@@ -256,4 +256,102 @@ mod tests {
             )
         );
     }
+
+    #[test]
+    fn any_invalid_returns_true_when_invalid_statuses_present() {
+        assert!(
+            LicenseStatuses(
+                vec![(Package::called("example"), LicenseStatus::Empty)]
+                    .into_iter()
+                    .collect()
+            )
+            .any_invalid()
+        );
+    }
+
+    #[test]
+    fn any_invalid_returns_false_when_all_valid() {
+        assert!(
+            !LicenseStatuses(
+                vec![(Package::called("example"), LicenseStatus::Valid)]
+                    .into_iter()
+                    .collect()
+            )
+            .any_invalid()
+        );
+    }
+
+    #[test]
+    fn any_invalid_returns_false_for_empty() {
+        assert!(!LicenseStatuses(HashMap::new()).any_invalid());
+    }
+
+    #[test]
+    fn display_too_few_status() {
+        assert_eq!(
+            "warning: too few - did not find as many licenses as declared for:\nexample\n",
+            strip_ansi_escapes::strip_str(
+                LicenseStatuses(
+                    vec![(Package::called("example"), LicenseStatus::TooFew)]
+                        .into_iter()
+                        .collect()
+                )
+                .to_string()
+            )
+        );
+    }
+
+    #[test]
+    fn display_mismatch_status_with_files() {
+        assert_eq!(
+            "warning: mismatch - found license(s) whose content was not similar to declared licenses for:\nexample - COPYING, LICENSE\n",
+            strip_ansi_escapes::strip_str(
+                LicenseStatuses(
+                    vec![(
+                        Package::called("example"),
+                        LicenseStatus::Mismatch(vec!["LICENSE".to_string(), "COPYING".to_string()])
+                    )]
+                    .into_iter()
+                    .collect()
+                )
+                .to_string()
+            )
+        );
+    }
+
+    #[test]
+    fn display_multiple_different_status_types() {
+        let display = strip_ansi_escapes::strip_str(
+            LicenseStatuses(
+                vec![
+                    (Package::called("empty_pkg"), LicenseStatus::Empty),
+                    (Package::called("few_pkg"), LicenseStatus::TooFew),
+                    (Package::called("valid_pkg"), LicenseStatus::Valid),
+                ]
+                .into_iter()
+                .collect(),
+            )
+            .to_string(),
+        );
+        assert!(display.contains("empty"));
+        assert!(display.contains("empty_pkg"));
+        assert!(display.contains("too few"));
+        assert!(display.contains("few_pkg"));
+        assert!(!display.contains("valid_pkg"));
+    }
+
+    #[test]
+    fn display_none_declared_status() {
+        assert_eq!(
+            "warning: none declared - no declared licenses for:\nexample\n",
+            strip_ansi_escapes::strip_str(
+                LicenseStatuses(
+                    vec![(Package::called("example"), LicenseStatus::NoneDeclared)]
+                        .into_iter()
+                        .collect()
+                )
+                .to_string()
+            )
+        );
+    }
 }

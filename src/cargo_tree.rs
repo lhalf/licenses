@@ -335,4 +335,73 @@ mod tests {
             to_crate_names(b"one\ntwo\nthree".to_vec(), &["four".to_string()]).unwrap()
         );
     }
+
+    #[test]
+    fn include_both_dev_and_build_dependencies_args() {
+        let mut config = Config::default();
+        config.global.dev = true;
+        config.global.build = true;
+
+        assert_eq!(
+            vec![
+                "tree".to_string(),
+                "--format".to_string(),
+                "{lib}".to_string(),
+                "--prefix".to_string(),
+                "none".to_string(),
+                "--no-dedupe".to_string(),
+            ],
+            args(&config)
+        );
+    }
+
+    #[test]
+    fn multiple_excludes_args() {
+        let mut config = Config::default();
+        config.global.exclude = vec!["workspace_a".to_string(), "workspace_b".to_string()];
+
+        assert_eq!(
+            vec![
+                "tree".to_string(),
+                "--format".to_string(),
+                "{lib}".to_string(),
+                "--prefix".to_string(),
+                "none".to_string(),
+                "--no-dedupe".to_string(),
+                "--edges".to_string(),
+                "no-dev,no-build".to_string(),
+                "--workspace".to_string(),
+                "--exclude".to_string(),
+                "workspace_a".to_string(),
+                "--exclude".to_string(),
+                "workspace_b".to_string(),
+            ],
+            args(&config)
+        );
+    }
+
+    #[test]
+    fn combined_flags_args() {
+        let mut config = Config::default();
+        config.global.dev = true;
+        config.global.all_features = true;
+        config.global.depth = Some(3);
+
+        assert_eq!(
+            vec![
+                "tree".to_string(),
+                "--format".to_string(),
+                "{lib}".to_string(),
+                "--prefix".to_string(),
+                "none".to_string(),
+                "--no-dedupe".to_string(),
+                "--edges".to_string(),
+                "no-build".to_string(),
+                "--all-features".to_string(),
+                "--depth".to_string(),
+                "3".to_string(),
+            ],
+            args(&config)
+        );
+    }
 }

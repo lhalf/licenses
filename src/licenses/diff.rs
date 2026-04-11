@@ -346,4 +346,104 @@ mod tests {
             )
         );
     }
+
+    #[test]
+    fn display_groups_missing_under_one_heading() {
+        assert_eq!(
+            "warning: found licenses missing from the output folder:\nexample-LICENSE\n",
+            strip_ansi_escapes::strip_str(
+                LicenseDiff {
+                    additional: HashSet::new(),
+                    missing: HashSet::from(["example-LICENSE".to_string()]),
+                }
+                .to_string()
+            )
+        );
+    }
+
+    #[test]
+    fn display_both_additional_and_missing() {
+        let display = strip_ansi_escapes::strip_str(
+            LicenseDiff {
+                additional: HashSet::from(["extra-LICENSE".to_string()]),
+                missing: HashSet::from(["needed-LICENSE".to_string()]),
+            }
+            .to_string(),
+        );
+        assert!(display.contains("found additional licenses"));
+        assert!(display.contains("extra-LICENSE"));
+        assert!(display.contains("found licenses missing"));
+        assert!(display.contains("needed-LICENSE"));
+    }
+
+    #[test]
+    fn is_empty_returns_false_when_additional() {
+        assert!(
+            !LicenseDiff {
+                additional: HashSet::from(["extra".to_string()]),
+                missing: HashSet::new(),
+            }
+            .is_empty()
+        );
+    }
+
+    #[test]
+    fn is_empty_returns_false_when_missing() {
+        assert!(
+            !LicenseDiff {
+                additional: HashSet::new(),
+                missing: HashSet::from(["needed".to_string()]),
+            }
+            .is_empty()
+        );
+    }
+
+    #[test]
+    fn diff_with_multiple_packages() {
+        let file_io_spy = FileIOSpy::default();
+        file_io_spy.read_dir.returns.set([Ok(vec![
+            DirEntry {
+                name: OsString::from("alpha-LICENSE"),
+                path: PathBuf::new(),
+                is_file: true,
+            },
+            DirEntry {
+                name: OsString::from("beta-LICENSE"),
+                path: PathBuf::new(),
+                is_file: true,
+            },
+        ])]);
+
+        let found_licenses = vec![
+            (
+                Package::called("alpha"),
+                vec![DirEntry {
+                    name: OsString::from("LICENSE"),
+                    path: PathBuf::from("alpha/LICENSE"),
+                    is_file: true,
+                }],
+            ),
+            (
+                Package::called("beta"),
+                vec![DirEntry {
+                    name: OsString::from("LICENSE"),
+                    path: PathBuf::from("beta/LICENSE"),
+                    is_file: true,
+                }],
+            ),
+        ]
+        .into_iter()
+        .collect();
+
+        assert!(
+            diff_licenses(
+                &file_io_spy,
+                &PathBuf::new(),
+                &HashMap::new(),
+                found_licenses
+            )
+            .unwrap()
+            .is_empty()
+        );
+    }
 }

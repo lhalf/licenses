@@ -384,4 +384,101 @@ mod tests {
     fn license_text(id: &str) -> String {
         LICENSE_TEXTS.get(id).unwrap().to_string()
     }
+
+    #[test]
+    fn multiple_unused_reasons_for_same_crate() {
+        let file_io_spy = FileIOSpy::default();
+        file_io_spy.read_file.returns.set([Ok(license_text("MIT"))]);
+        file_io_spy.read_dir.returns.set([Ok(vec![DirEntry {
+            name: OsString::from("LICENSE"),
+            path: PathBuf::new(),
+            is_file: true,
+        }])]);
+
+        let package = Package {
+            normalised_name: "some_crate".to_string(),
+            path: Utf8PathBuf::default(),
+            url: None,
+            license: Some("MIT".to_string()),
+        };
+
+        let all_licenses: HashMap<_, _> = std::iter::once((
+            package,
+            vec![DirEntry {
+                name: OsString::from("LICENSE"),
+                path: PathBuf::from("example/LICENSE"),
+                is_file: true,
+            }],
+        ))
+        .collect();
+
+        let crate_configs = std::iter::once((
+            "some_crate".to_string(),
+            CrateConfig {
+                skip: vec!["NONEXISTENT".to_string()],
+                allow: Some(LicenseStatus::TooFew),
+                include: vec![],
+            },
+        ))
+        .collect();
+
+        let unused = find_unused_configs(&file_io_spy, &all_licenses, &crate_configs);
+        // Should report both unused allow AND unused skip
+        assert_eq!(2, unused.0.len());
+    }
+
+    #[test]
+    fn read_dir_failure_returns_empty_unused_skips() {
+        let file_io_spy = FileIOSpy::default();
+        file_io_spy
+            .read_dir
+            .returns
+            .set([Err(anyhow::anyhow!("read dir failed"))]);
+
+        let all_licenses: HashMap<_, _> =
+            std::iter::once((Package::called("some_crate"), vec![])).collect();
+
+        let crate_configs = std::iter::once((
+            "some_crate".to_string(),
+            CrateConfig {
+                skip: vec!["NONEXISTENT".to_string()],
+                allow: None,
+                include: vec![],
+            },
+        ))
+        .collect();
+
+        let unused = find_unused_configs(&file_io_spy, &all_licenses, &crate_configs);
+        // When read_dir fails, skip check returns empty (no unused skips reported)
+        assert!(!unused.any());
+    }
+
+    #[test]
+    fn unused_configs_sorted_by_crate_name() {
+        let file_io_spy = FileIOSpy::default();
+        let crate_configs: HashMap<_, _> = vec![
+            (
+                "zzz_crate".to_string(),
+                CrateConfig {
+                    skip: vec![],
+                    allow: Some(LicenseStatus::TooFew),
+                    include: vec![],
+                },
+            ),
+            (
+                "aaa_crate".to_string(),
+                CrateConfig {
+                    skip: vec![],
+                    allow: Some(LicenseStatus::TooFew),
+                    include: vec![],
+                },
+            ),
+        ]
+        .into_iter()
+        .collect();
+
+        let unused = find_unused_configs(&file_io_spy, &HashMap::new(), &crate_configs);
+        assert_eq!(unused.0[0].0, "aaa_crate");
+        assert_eq!(unused.0[1].0, "zzz_crate");
+    }
 }

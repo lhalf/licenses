@@ -221,4 +221,82 @@ mod tests {
         assert!(set.contains(&package_1));
         assert!(set.contains(&package_3));
     }
+
+    #[test]
+    fn filtered_packages_returns_only_matching_crates() {
+        use super::filtered_packages;
+        use std::collections::BTreeSet;
+
+        let packages = vec![
+            Package::called("alpha"),
+            Package::called("beta"),
+            Package::called("gamma"),
+        ];
+
+        let crates_we_want: BTreeSet<String> =
+            ["alpha", "gamma"].into_iter().map(String::from).collect();
+
+        let result = filtered_packages(packages, &crates_we_want);
+        assert_eq!(2, result.len());
+        assert!(result.iter().any(|p| p.normalised_name == "alpha"));
+        assert!(result.iter().any(|p| p.normalised_name == "gamma"));
+    }
+
+    #[test]
+    fn filtered_packages_returns_empty_when_no_matches() {
+        use super::filtered_packages;
+        use std::collections::BTreeSet;
+
+        let packages = vec![Package::called("alpha")];
+        let crates_we_want: BTreeSet<String> = ["beta"].into_iter().map(String::from).collect();
+
+        assert!(filtered_packages(packages, &crates_we_want).is_empty());
+    }
+
+    #[test]
+    fn filtered_packages_returns_empty_for_empty_inputs() {
+        use super::filtered_packages;
+        use std::collections::BTreeSet;
+
+        assert!(filtered_packages(vec![], &BTreeSet::new()).is_empty());
+    }
+
+    #[test]
+    fn packages_with_repository_sets_url() {
+        let mut metadata_package = metadata_package();
+        metadata_package.repository = Some("https://github.com/example/repo".to_string());
+        assert_eq!(
+            Some("https://github.com/example/repo".to_string()),
+            Package::try_from_metadata(metadata_package).unwrap().url
+        );
+    }
+
+    #[test]
+    fn packages_with_license_sets_license() {
+        let mut metadata_package = metadata_package();
+        metadata_package.license = Some("MIT OR Apache-2.0".to_string());
+        assert_eq!(
+            Some("MIT OR Apache-2.0".to_string()),
+            Package::try_from_metadata(metadata_package)
+                .unwrap()
+                .license
+        );
+    }
+
+    #[test]
+    fn packages_are_ordered_by_name_then_license() {
+        let a = Package {
+            normalised_name: "alpha".to_string(),
+            path: Utf8PathBuf::new(),
+            url: None,
+            license: Some("MIT".to_string()),
+        };
+        let b = Package {
+            normalised_name: "beta".to_string(),
+            path: Utf8PathBuf::new(),
+            url: None,
+            license: Some("MIT".to_string()),
+        };
+        assert!(a < b);
+    }
 }

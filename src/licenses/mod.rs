@@ -129,4 +129,104 @@ mod tests {
             License::parse("MIT OR (Apache-2.0 WITH Bison-exception-2.2)")
         );
     }
+
+    #[test]
+    fn unknown_license_is_parsed_when_invalid_spdx() {
+        assert!(matches!(
+            License::parse("not-a-real-license"),
+            License::Unknown(_)
+        ));
+    }
+
+    #[test]
+    fn known_license_is_parsed_for_valid_spdx() {
+        assert!(matches!(License::parse("MIT"), License::Known(_)));
+    }
+
+    #[test]
+    fn unknown_licenses_with_same_text_are_equal() {
+        assert_eq!(
+            License::parse("custom-license-1.0"),
+            License::parse("custom-license-1.0")
+        );
+    }
+
+    #[test]
+    fn unknown_licenses_with_different_text_are_not_equal() {
+        assert_ne!(
+            License::parse("custom-license-1.0"),
+            License::parse("custom-license-2.0")
+        );
+    }
+
+    #[test]
+    fn known_and_unknown_licenses_are_not_equal() {
+        assert_ne!(License::parse("MIT"), License::parse("not-a-real-license"));
+    }
+
+    #[test]
+    fn known_license_has_requirements() {
+        assert!(License::parse("MIT").requirements().count() > 0);
+    }
+
+    #[test]
+    fn unknown_license_has_no_requirements() {
+        assert_eq!(
+            0,
+            License::parse("not-a-real-license").requirements().count()
+        );
+    }
+
+    #[test]
+    fn dual_license_has_two_requirements() {
+        assert_eq!(
+            2,
+            License::parse("MIT OR Apache-2.0").requirements().count()
+        );
+    }
+
+    #[test]
+    fn display_known_license() {
+        assert_eq!("MIT", License::parse("MIT").to_string());
+    }
+
+    #[test]
+    fn display_unknown_license() {
+        assert_eq!(
+            "not-a-real-license",
+            License::parse("not-a-real-license").to_string()
+        );
+    }
+
+    #[test]
+    fn serialize_known_license() {
+        assert_eq!(
+            r#""MIT""#,
+            serde_json::to_string(&License::parse("MIT")).unwrap()
+        );
+    }
+
+    #[test]
+    fn serialize_unknown_license() {
+        assert_eq!(
+            r#""not-a-real-license""#,
+            serde_json::to_string(&License::parse("not-a-real-license")).unwrap()
+        );
+    }
+
+    #[test]
+    fn equal_licenses_have_equal_hashes() {
+        use std::collections::hash_map::DefaultHasher;
+
+        let hash = |license: License| {
+            let mut hasher = DefaultHasher::new();
+            license.hash(&mut hasher);
+            hasher.finish()
+        };
+
+        assert_eq!(
+            hash(License::parse("MIT OR Apache-2.0")),
+            hash(License::parse("Apache-2.0 OR MIT"))
+        );
+    }
 }
