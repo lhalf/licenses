@@ -18,6 +18,7 @@ pub fn progress_bar(msg: &str) -> indicatif::ProgressBar {
 pub trait ProgressBar {
     fn set_len(&self, len: u64);
     fn increment(&self);
+    fn finish(&self);
 }
 
 impl ProgressBar for indicatif::ProgressBar {
@@ -26,5 +27,8 @@ impl ProgressBar for indicatif::ProgressBar {
     }
     fn increment(&self) {
         self.inc(1);
+    }
+    fn finish(&self) {
+        self.finish_and_clear();
     }
 }

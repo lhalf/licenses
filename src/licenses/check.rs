@@ -15,7 +15,7 @@ pub fn check_licenses(
     crate_configs: &HashMap<String, CrateConfig>,
 ) -> LicenseStatuses {
     progress_bar.set_len(all_licenses.len() as u64);
-    LicenseStatuses(
+    let statuses = LicenseStatuses(
         all_licenses
             .iter()
             .map(|(package, licenses)| {
@@ -34,7 +34,9 @@ pub fn check_licenses(
                 )
             })
             .collect(),
-    )
+    );
+    progress_bar.finish();
+    statuses
 }
 
 fn license_status_after_allowed(
@@ -75,6 +77,7 @@ mod tests {
         let progress_bar_spy = ProgressBarSpy::default();
         progress_bar_spy.set_len.returns.set_fn(|_| ());
         progress_bar_spy.increment.returns.set_fn(|()| ());
+        progress_bar_spy.finish.returns.set_fn(|()| ());
 
         let all_licenses = [
             (
@@ -140,6 +143,7 @@ mod tests {
         let progress_bar_spy = ProgressBarSpy::default();
         progress_bar_spy.set_len.returns.set_fn(|_| ());
         progress_bar_spy.increment.returns.set_fn(|()| ());
+        progress_bar_spy.finish.returns.set_fn(|()| ());
 
         let all_licenses: HashMap<_, _> = std::iter::once((
             Package {
