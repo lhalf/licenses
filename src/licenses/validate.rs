@@ -1,10 +1,10 @@
 use crate::file_io::{DirEntry, FileIO};
 use crate::licenses::License;
 use crate::licenses::status::LicenseStatus;
+use spdx::detection::TextData;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::sync::LazyLock;
-use strsim::normalized_levenshtein;
 
 pub static LICENSE_TEXTS: LazyLock<HashMap<&'static str, &'static str>> =
     LazyLock::new(|| spdx::text::LICENSE_TEXTS.iter().copied().collect());
@@ -79,13 +79,13 @@ fn find_matching_entry(
     expected_text: &str,
     remaining_licenses: &[DirEntry],
 ) -> Option<DirEntry> {
+    let expected = TextData::from(expected_text);
     remaining_licenses
         .iter()
         .find(|entry| {
-            file_io
-                .read_file(&entry.path)
-                .ok()
-                .is_some_and(|contents| normalized_levenshtein(expected_text, &contents) >= 0.8)
+            file_io.read_file(&entry.path).ok().is_some_and(|contents| {
+                TextData::from(contents.as_str()).match_score(&expected) >= 0.8
+            })
         })
         .cloned()
 }
