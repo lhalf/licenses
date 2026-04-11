@@ -115,6 +115,44 @@ mod tests {
         );
     }
 
-    // TODO
-    // add test for included file calling write_file
+    #[test]
+    fn included_license_calls_write_file() {
+        use crate::config::{CrateConfig, IncludedLicense};
+
+        let file_io_spy = FileIOSpy::default();
+        file_io_spy.write_file.returns.set([Ok(())]);
+
+        let all_licenses = vec![(Package::called("example"), vec![])]
+            .into_iter()
+            .collect();
+
+        let crate_configs = HashMap::from([(
+            "example".to_string(),
+            CrateConfig {
+                include: vec![IncludedLicense::Text {
+                    name: "LICENSE-CUSTOM".to_string(),
+                    text: "custom license text".to_string(),
+                }],
+                ..CrateConfig::default()
+            },
+        )]);
+
+        assert!(
+            copy_licenses(
+                &file_io_spy,
+                all_licenses,
+                &PathBuf::from("output"),
+                &crate_configs
+            )
+            .is_ok()
+        );
+
+        assert_eq!(
+            file_io_spy.write_file.arguments.take(),
+            vec![(
+                PathBuf::from("output/example-LICENSE-CUSTOM"),
+                "custom license text".to_string()
+            )]
+        );
+    }
 }
