@@ -1,13 +1,14 @@
 use crate::file_io::{DirEntry, FileIO};
 use crate::licenses::License;
 use crate::licenses::status::LicenseStatus;
-use spdx::detection::TextData;
+use spdx::detection::scan::Scanner;
+use spdx::detection::{Store, TextData};
 use std::cmp::Ordering;
-use std::collections::HashMap;
 use std::sync::LazyLock;
 
-pub static LICENSE_TEXTS: LazyLock<HashMap<&'static str, &'static str>> =
-    LazyLock::new(|| spdx::text::LICENSE_TEXTS.iter().copied().collect());
+static LICENSE_STORE: LazyLock<Option<Store>> = LazyLock::new(|| Store::load_inline().ok());
+
+const CONFIDENCE_THRESHOLD: f32 = 0.8;
 
 pub fn validate_licenses(
     file_io: &impl FileIO,
@@ -22,9 +23,8 @@ pub fn validate_licenses(
         return LicenseStatus::NoneDeclared;
     };
 
-    let expected_texts = expected_texts_from_declared(declared);
-    let unmatched_license_files =
-        unmatched_license_files(file_io, &expected_texts, actual_licenses);
+    let declared_ids = declared_license_ids(declared);
+    let unmatched_license_files = unmatched_license_files(file_io, &declared_ids, actual_licenses);
 
     if !unmatched_license_files.is_empty()
         && !found_all_declared_licenses(declared, actual_licenses, &unmatched_license_files)
@@ -39,31 +39,69 @@ pub fn validate_licenses(
     }
 }
 
-fn expected_texts_from_declared(declared: &License) -> Vec<&'static str> {
+fn declared_license_ids(declared: &License) -> Vec<String> {
     declared
         .requirements()
-        .filter_map(|expression| {
-            LICENSE_TEXTS
-                .get(expression.req.license.to_string().as_str())
-                .copied()
-        })
+        .map(|req| req.req.license.to_string())
         .collect()
 }
 
 fn unmatched_license_files(
     file_io: &impl FileIO,
-    expected_texts: &[&str],
+    declared_ids: &[String],
     actual_licenses: &[DirEntry],
 ) -> Vec<DirEntry> {
-    let mut remaining: Vec<DirEntry> = actual_licenses.to_vec();
+    let Some(store) = LICENSE_STORE.as_ref() else {
+        return actual_licenses.to_vec();
+    };
 
-    for &expected in expected_texts {
-        if let Some(entry) = find_matching_entry(file_io, expected, &remaining) {
+    let scanner = Scanner::new(store)
+        .confidence_threshold(CONFIDENCE_THRESHOLD)
+        .optimize(true)
+        .shallow_limit(0.95);
+
+    let mut remaining: Vec<DirEntry> = actual_licenses.to_vec();
+    let mut unfound_ids: Vec<&str> = declared_ids.iter().map(String::as_str).collect();
+
+    for entry in actual_licenses {
+        let detected_ids = detect_license_ids(file_io, &scanner, entry);
+
+        let matched: Vec<usize> = unfound_ids
+            .iter()
+            .enumerate()
+            .filter_map(|(i, &id)| detected_ids.iter().any(|d| d == id).then_some(i))
+            .collect();
+
+        if !matched.is_empty() {
+            for i in matched.into_iter().rev() {
+                unfound_ids.remove(i);
+            }
             remaining.retain(|e| e.name != entry.name);
         }
     }
 
     remaining
+}
+
+fn detect_license_ids(file_io: &impl FileIO, scanner: &Scanner, entry: &DirEntry) -> Vec<String> {
+    let Ok(contents) = file_io.read_file(&entry.path) else {
+        return vec![];
+    };
+
+    let text_data = TextData::from(contents.as_str());
+    let result = scanner.scan(&text_data);
+
+    let mut ids = Vec::new();
+
+    if let Some(license) = result.license {
+        ids.push(license.name.to_string());
+    }
+
+    for contained in &result.containing {
+        ids.push(contained.license.name.to_string());
+    }
+
+    ids
 }
 
 fn found_all_declared_licenses(
@@ -72,22 +110,6 @@ fn found_all_declared_licenses(
     unmatched_license_files: &[DirEntry],
 ) -> bool {
     declared.requirements().count() == actual_licenses.len() - unmatched_license_files.len()
-}
-
-fn find_matching_entry(
-    file_io: &impl FileIO,
-    expected_text: &str,
-    remaining_licenses: &[DirEntry],
-) -> Option<DirEntry> {
-    let expected = TextData::from(expected_text);
-    remaining_licenses
-        .iter()
-        .find(|entry| {
-            file_io.read_file(&entry.path).ok().is_some_and(|contents| {
-                TextData::from(contents.as_str()).match_score(&expected) >= 0.8
-            })
-        })
-        .cloned()
 }
 
 fn to_file_names(entries: Vec<DirEntry>) -> Vec<String> {
@@ -155,10 +177,7 @@ mod tests {
     #[test]
     fn too_few_licenses() {
         let file_io_spy = FileIOSpy::default();
-        file_io_spy
-            .read_file
-            .returns
-            .set([Ok((*LICENSE_TEXTS.get("MIT").unwrap()).to_string())]);
+        file_io_spy.read_file.returns.set([Ok(license_text("MIT"))]);
 
         assert_eq!(
             LicenseStatus::TooFew,
@@ -177,10 +196,7 @@ mod tests {
     #[test]
     fn too_few_licenses_non_standard_seperator() {
         let file_io_spy = FileIOSpy::default();
-        file_io_spy
-            .read_file
-            .returns
-            .set([Ok((*LICENSE_TEXTS.get("MIT").unwrap()).to_string())]);
+        file_io_spy.read_file.returns.set([Ok(license_text("MIT"))]);
 
         assert_eq!(
             LicenseStatus::TooFew,
@@ -199,11 +215,10 @@ mod tests {
     #[test]
     fn too_few_licenses_complex_requirements() {
         let file_io_spy = FileIOSpy::default();
-        file_io_spy.read_file.returns.set([
-            Ok((*LICENSE_TEXTS.get("MIT").unwrap()).to_string()),
-            Ok((*LICENSE_TEXTS.get("Unicode-3.0").unwrap()).to_string()),
-            Ok((*LICENSE_TEXTS.get("Unicode-3.0").unwrap()).to_string()),
-        ]);
+        file_io_spy
+            .read_file
+            .returns
+            .set([Ok(license_text("MIT")), Ok(license_text("Unicode-3.0"))]);
 
         assert_eq!(
             LicenseStatus::TooFew,
@@ -229,10 +244,10 @@ mod tests {
     #[test]
     fn additional_licenses() {
         let file_io_spy = FileIOSpy::default();
-        file_io_spy
-            .read_file
-            .returns
-            .set([Ok((*LICENSE_TEXTS.get("MIT").unwrap()).to_string())]);
+        file_io_spy.read_file.returns.set([
+            Ok(license_text("MIT")),
+            Ok("not a recognized license".to_string()),
+        ]);
 
         assert_eq!(
             LicenseStatus::Additional(vec!["COPYING".to_string()]),
@@ -261,7 +276,7 @@ mod tests {
         file_io_spy
             .read_file
             .returns
-            .set([Ok((*LICENSE_TEXTS.get("Apache-2.0").unwrap()).to_string())]);
+            .set([Ok(license_text("Apache-2.0"))]);
 
         assert_eq!(
             LicenseStatus::Mismatch(vec!["LICENSE_MIT".to_string()]),
@@ -275,5 +290,84 @@ mod tests {
                 }]
             )
         );
+    }
+
+    #[test]
+    fn valid_license() {
+        let file_io_spy = FileIOSpy::default();
+        file_io_spy.read_file.returns.set([Ok(license_text("MIT"))]);
+
+        assert_eq!(
+            LicenseStatus::Valid,
+            validate_licenses(
+                &file_io_spy,
+                Some(&License::parse("MIT")),
+                &[DirEntry {
+                    name: OsString::from("LICENSE"),
+                    path: PathBuf::new(),
+                    is_file: true,
+                }]
+            )
+        );
+    }
+
+    #[test]
+    fn valid_license_with_different_copyright_header() {
+        let file_io_spy = FileIOSpy::default();
+        let mit_with_custom_copyright = license_text("MIT").replacen("[year]", "2026", 1).replacen(
+            "[fullname]",
+            "Custom Author Name",
+            1,
+        );
+        file_io_spy
+            .read_file
+            .returns
+            .set([Ok(mit_with_custom_copyright)]);
+
+        assert_eq!(
+            LicenseStatus::Valid,
+            validate_licenses(
+                &file_io_spy,
+                Some(&License::parse("MIT")),
+                &[DirEntry {
+                    name: OsString::from("LICENSE"),
+                    path: PathBuf::new(),
+                    is_file: true,
+                }]
+            )
+        );
+    }
+
+    #[test]
+    fn single_file_containing_both_declared_licenses() {
+        let file_io_spy = FileIOSpy::default();
+        let combined = format!(
+            "{}\n\n---\n\n{}",
+            license_text("MIT"),
+            license_text("Apache-2.0")
+        );
+        file_io_spy.read_file.returns.set([Ok(combined)]);
+
+        assert_eq!(
+            LicenseStatus::TooFew,
+            validate_licenses(
+                &file_io_spy,
+                Some(&License::parse("MIT OR Apache-2.0")),
+                &[DirEntry {
+                    name: OsString::from("LICENSE"),
+                    path: PathBuf::new(),
+                    is_file: true,
+                }]
+            )
+        );
+    }
+
+    fn license_text(id: &str) -> String {
+        spdx::text::LICENSE_TEXTS
+            .iter()
+            .find(|(name, _)| *name == id)
+            .unwrap()
+            .1
+            .to_string()
     }
 }

@@ -60,7 +60,6 @@ mod tests {
     use crate::file_io::{DirEntry, FileIOSpy};
     use crate::licenses::check::check_licenses;
     use crate::licenses::status::{LicenseStatus, LicenseStatuses};
-    use crate::licenses::validate::LICENSE_TEXTS;
     use crate::log::ProgressBarSpy;
     use cargo_metadata::camino::Utf8PathBuf;
     use std::collections::HashMap;
@@ -70,10 +69,7 @@ mod tests {
     #[test]
     fn checks_all_packages_even_if_the_first_has_issues() {
         let file_io_spy = FileIOSpy::default();
-        file_io_spy
-            .read_file
-            .returns
-            .set([Ok((*LICENSE_TEXTS.get("MIT").unwrap()).to_string())]);
+        file_io_spy.read_file.returns.set([Ok(license_text("MIT"))]);
         let progress_bar_spy = ProgressBarSpy::default();
         progress_bar_spy.set_len.returns.set_fn(|_| ());
         progress_bar_spy.increment.returns.set_fn(|()| ());
@@ -196,5 +192,14 @@ mod tests {
         assert!(
             !check_licenses(&file_io_spy, &progress_bar_spy, &all_licenses, &config).any_invalid()
         );
+    }
+
+    fn license_text(id: &str) -> String {
+        spdx::text::LICENSE_TEXTS
+            .iter()
+            .find(|(name, _)| *name == id)
+            .unwrap()
+            .1
+            .to_string()
     }
 }
