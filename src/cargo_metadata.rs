@@ -248,7 +248,7 @@ mod tests {
         use std::collections::BTreeSet;
 
         let packages = vec![Package::called("alpha")];
-        let crates_we_want: BTreeSet<String> = ["beta"].into_iter().map(String::from).collect();
+        let crates_we_want: BTreeSet<String> = std::iter::once("beta").map(String::from).collect();
 
         assert!(filtered_packages(packages, &crates_we_want).is_empty());
     }

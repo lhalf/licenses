@@ -22,7 +22,7 @@ pub enum UnusedConfigReason {
 }
 
 impl UnusedConfigs {
-    pub fn any(&self) -> bool {
+    pub const fn any(&self) -> bool {
         !self.0.is_empty()
     }
 }
@@ -149,7 +149,7 @@ fn find_unused_skip_files(
     let license_files: HashSet<String> = dir_entries
         .iter()
         .filter(|entry| is_license(entry))
-        .filter_map(|entry| entry.name.to_str().map(|name| name.to_string()))
+        .filter_map(|entry| entry.name.to_str().map(std::string::ToString::to_string))
         .collect();
 
     skip.iter()
