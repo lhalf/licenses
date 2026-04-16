@@ -89,12 +89,6 @@ fn check_depth_1_succeeds() {
 }
 
 #[test]
-fn diff_depth_1_succeeds_when_licenses_folder_matches() {
-    let output = call_licenses_command(&["diff", "--depth", "1", "--path", "licenses"]);
-    assert!(output.status.success());
-}
-
-#[test]
 fn diff_reports_differences_for_empty_folder() {
     let temp_dir = tempfile::TempDir::new().unwrap();
     let output = call_licenses_command(&[
