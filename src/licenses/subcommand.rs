@@ -83,13 +83,14 @@ pub fn diff(
     filtered_packages: &[Package],
     path: String,
 ) -> anyhow::Result<()> {
-    if let Ok(diff) = diff_licenses(
+    let diff = diff_licenses(
         file_io,
         &PathBuf::from(path),
         &config.crate_configs,
         collect_licenses(file_io, filtered_packages, &config.crate_configs)?,
-    ) && !diff.is_empty()
-    {
+    )?;
+
+    if !diff.is_empty() {
         print!("{diff}");
         std::process::exit(1)
     }
