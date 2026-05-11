@@ -3,14 +3,14 @@ use crate::config::{CrateConfig, IncludedLicense};
 use crate::file_io::{DirEntry, FileIO};
 use crate::log::warning;
 use itertools::Itertools;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap};
 use std::fmt::Display;
 use std::path::Path;
 
 #[derive(PartialEq, Eq, Debug)]
 pub struct LicenseDiff {
-    additional: HashSet<String>,
-    missing: HashSet<String>,
+    additional: BTreeSet<String>,
+    missing: BTreeSet<String>,
 }
 
 impl Display for LicenseDiff {
@@ -21,7 +21,7 @@ impl Display for LicenseDiff {
                 "{}",
                 warning(&format!(
                     "found additional licenses in the output folder:\n\t{}",
-                    self.additional.iter().sorted().join("\n\t")
+                    self.additional.iter().join("\n\t")
                 ))
             )?;
         }
@@ -31,7 +31,7 @@ impl Display for LicenseDiff {
                 "{}",
                 warning(&format!(
                     "found licenses missing from the output folder:\n\t{}",
-                    self.missing.iter().sorted().join("\n\t")
+                    self.missing.iter().join("\n\t")
                 ))
             )?;
         }
@@ -67,7 +67,7 @@ pub fn diff_licenses(
     })
 }
 
-fn set_of_current_licenses(dir_entries: Vec<DirEntry>) -> HashSet<String> {
+fn set_of_current_licenses(dir_entries: Vec<DirEntry>) -> BTreeSet<String> {
     dir_entries
         .into_iter()
         .filter(|dir_entry| dir_entry.is_file)
@@ -75,7 +75,7 @@ fn set_of_current_licenses(dir_entries: Vec<DirEntry>) -> HashSet<String> {
         .collect()
 }
 
-fn flatten(found_licenses: HashMap<Package, Vec<DirEntry>>) -> HashSet<String> {
+fn flatten(found_licenses: HashMap<Package, Vec<DirEntry>>) -> BTreeSet<String> {
     found_licenses
         .into_iter()
         .flat_map(|(package, dir_entries)| {
@@ -90,7 +90,7 @@ fn flatten(found_licenses: HashMap<Package, Vec<DirEntry>>) -> HashSet<String> {
         .collect()
 }
 
-fn included_licenses(crate_configs: &HashMap<String, CrateConfig>) -> HashSet<String> {
+fn included_licenses(crate_configs: &HashMap<String, CrateConfig>) -> BTreeSet<String> {
     crate_configs
         .iter()
         .flat_map(|(crate_name, config)| {
@@ -112,7 +112,7 @@ mod tests {
     use crate::cargo_metadata::Package;
     use crate::config::{CrateConfig, IncludedLicense};
     use crate::file_io::{DirEntry, FileIOSpy};
-    use std::collections::{HashMap, HashSet};
+    use std::collections::{BTreeSet, HashMap};
     use std::ffi::OsString;
     use std::path::PathBuf;
 
@@ -224,8 +224,8 @@ mod tests {
         .collect();
 
         let expected_diff = LicenseDiff {
-            additional: HashSet::new(),
-            missing: HashSet::from(["example-LICENSE".to_string()]),
+            additional: BTreeSet::new(),
+            missing: BTreeSet::from(["example-LICENSE".to_string()]),
         };
 
         assert_eq!(
@@ -252,8 +252,8 @@ mod tests {
         let found_licenses = HashMap::new();
 
         let expected_diff = LicenseDiff {
-            additional: HashSet::from(["example-LICENSE".to_string()]),
-            missing: HashSet::new(),
+            additional: BTreeSet::from(["example-LICENSE".to_string()]),
+            missing: BTreeSet::new(),
         };
 
         assert_eq!(
@@ -322,8 +322,8 @@ mod tests {
     fn display_empty_diff() {
         assert!(
             LicenseDiff {
-                additional: HashSet::new(),
-                missing: HashSet::new(),
+                additional: BTreeSet::new(),
+                missing: BTreeSet::new(),
             }
             .to_string()
             .is_empty()
@@ -336,11 +336,11 @@ mod tests {
             "warning: found additional licenses in the output folder:\nexample-COPYRIGHT\nexample2-COPYRIGHT\n",
             strip_ansi_escapes::strip_str(
                 LicenseDiff {
-                    additional: HashSet::from([
+                    additional: BTreeSet::from([
                         "example-COPYRIGHT".to_string(),
                         "example2-COPYRIGHT".to_string()
                     ]),
-                    missing: HashSet::new(),
+                    missing: BTreeSet::new(),
                 }
                 .to_string()
             )
@@ -353,8 +353,8 @@ mod tests {
             "warning: found licenses missing from the output folder:\nexample-LICENSE\n",
             strip_ansi_escapes::strip_str(
                 LicenseDiff {
-                    additional: HashSet::new(),
-                    missing: HashSet::from(["example-LICENSE".to_string()]),
+                    additional: BTreeSet::new(),
+                    missing: BTreeSet::from(["example-LICENSE".to_string()]),
                 }
                 .to_string()
             )
@@ -365,8 +365,8 @@ mod tests {
     fn display_both_additional_and_missing() {
         let display = strip_ansi_escapes::strip_str(
             LicenseDiff {
-                additional: HashSet::from(["extra-LICENSE".to_string()]),
-                missing: HashSet::from(["needed-LICENSE".to_string()]),
+                additional: BTreeSet::from(["extra-LICENSE".to_string()]),
+                missing: BTreeSet::from(["needed-LICENSE".to_string()]),
             }
             .to_string(),
         );
@@ -380,8 +380,8 @@ mod tests {
     fn is_empty_returns_false_when_additional() {
         assert!(
             !LicenseDiff {
-                additional: HashSet::from(["extra".to_string()]),
-                missing: HashSet::new(),
+                additional: BTreeSet::from(["extra".to_string()]),
+                missing: BTreeSet::new(),
             }
             .is_empty()
         );
@@ -391,8 +391,8 @@ mod tests {
     fn is_empty_returns_false_when_missing() {
         assert!(
             !LicenseDiff {
-                additional: HashSet::new(),
-                missing: HashSet::from(["needed".to_string()]),
+                additional: BTreeSet::new(),
+                missing: BTreeSet::from(["needed".to_string()]),
             }
             .is_empty()
         );
