@@ -56,15 +56,24 @@ fn unmatched_license_files(
     expected_texts: &[TextData],
     actual_licenses: &[DirEntry],
 ) -> Vec<DirEntry> {
-    let mut remaining: Vec<DirEntry> = actual_licenses.to_vec();
+    let mut candidates: Vec<(DirEntry, Option<TextData>)> = actual_licenses
+        .iter()
+        .map(|entry| {
+            let text_data = file_io
+                .read_file(&entry.path)
+                .ok()
+                .map(|contents| TextData::from(contents.as_str()));
+            (entry.clone(), text_data)
+        })
+        .collect();
 
     for expected in expected_texts {
-        if let Some(index) = find_matching_index(file_io, expected, &remaining) {
-            remaining.swap_remove(index);
+        if let Some(index) = find_matching_index(&candidates, expected) {
+            candidates.swap_remove(index);
         }
     }
 
-    remaining
+    candidates.into_iter().map(|(entry, _)| entry).collect()
 }
 
 fn found_all_declared_licenses(
@@ -76,14 +85,13 @@ fn found_all_declared_licenses(
 }
 
 fn find_matching_index(
-    file_io: &impl FileIO,
+    candidates: &[(DirEntry, Option<TextData>)],
     expected: &TextData,
-    remaining_licenses: &[DirEntry],
 ) -> Option<usize> {
-    remaining_licenses.iter().position(|entry| {
-        file_io.read_file(&entry.path).ok().is_some_and(|contents| {
-            TextData::from(contents.as_str()).match_score(expected) >= CONFIDENCE_THRESHOLD
-        })
+    candidates.iter().position(|(_, text_data)| {
+        text_data
+            .as_ref()
+            .is_some_and(|text_data| text_data.match_score(expected) >= CONFIDENCE_THRESHOLD)
     })
 }
 
@@ -192,11 +200,10 @@ mod tests {
     #[test]
     fn too_few_licenses_complex_requirements() {
         let file_io_spy = FileIOSpy::default();
-        file_io_spy.read_file.returns.set([
-            Ok(license_text("MIT")),
-            Ok(license_text("Unicode-3.0")),
-            Ok(license_text("Unicode-3.0")),
-        ]);
+        file_io_spy
+            .read_file
+            .returns
+            .set([Ok(license_text("MIT")), Ok(license_text("Unicode-3.0"))]);
 
         assert_eq!(
             LicenseStatus::TooFew,
@@ -222,7 +229,10 @@ mod tests {
     #[test]
     fn additional_licenses() {
         let file_io_spy = FileIOSpy::default();
-        file_io_spy.read_file.returns.set([Ok(license_text("MIT"))]);
+        file_io_spy
+            .read_file
+            .returns
+            .set([Ok(license_text("MIT")), Ok("not a license".to_string())]);
 
         assert_eq!(
             LicenseStatus::Additional(vec!["COPYING".to_string()]),
@@ -321,10 +331,7 @@ mod tests {
             license_text("MIT"),
             license_text("Apache-2.0")
         );
-        file_io_spy
-            .read_file
-            .returns
-            .set([Ok(combined.clone()), Ok(combined)]);
+        file_io_spy.read_file.returns.set([Ok(combined)]);
 
         assert_eq!(
             LicenseStatus::TooFew,
@@ -376,6 +383,10 @@ mod tests {
     #[test]
     fn unknown_declared_license_with_files_present() {
         let file_io_spy = FileIOSpy::default();
+        file_io_spy
+            .read_file
+            .returns
+            .set([Ok("anything".to_string())]);
 
         assert_eq!(
             LicenseStatus::Additional(vec!["LICENSE".to_string()]),
