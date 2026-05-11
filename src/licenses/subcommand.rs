@@ -16,9 +16,8 @@ pub fn collect(
     file_io: &impl FileIO,
     config: &Config,
     filtered_packages: &[Package],
-    path: String,
+    path: PathBuf,
 ) -> anyhow::Result<()> {
-    let path = PathBuf::from(path);
     let progress_bar = progress_bar("collecting licenses");
 
     create_output_folder(&path)?;
@@ -81,11 +80,11 @@ pub fn diff(
     file_io: &impl FileIO,
     config: &Config,
     filtered_packages: &[Package],
-    path: String,
+    path: PathBuf,
 ) -> anyhow::Result<()> {
     let diff = diff_licenses(
         file_io,
-        &PathBuf::from(path),
+        &path,
         &config.crate_configs,
         collect_licenses(file_io, filtered_packages, &config.crate_configs)?,
     )?;

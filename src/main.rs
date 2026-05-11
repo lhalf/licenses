@@ -107,8 +107,8 @@ enum LicensesSubcommand {
     /// Collects all licenses into a folder
     Collect {
         /// The output license folder path
-        #[arg(short, long, default_value_t = String::from("licenses"))]
-        path: String,
+        #[arg(short, long, default_value = "licenses")]
+        path: PathBuf,
     },
     /// Provides a summary of all licenses
     Summary(SummaryArgs),
@@ -117,8 +117,8 @@ enum LicensesSubcommand {
     /// Diff between the current licenses folder and the licenses that would be collected
     Diff {
         /// The current licenses folder path
-        #[arg(short, long, default_value_t = String::from("licenses"))]
-        path: String,
+        #[arg(short, long, default_value = "licenses")]
+        path: PathBuf,
     },
 }
 
