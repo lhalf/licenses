@@ -25,14 +25,9 @@ pub enum License {
 
 impl License {
     pub fn parse(license: &str) -> Self {
-        fn parse(expression: &str) -> License {
-            Expression::parse_mode(expression, ParseMode::LAX)
-                .map_or_else(|_| License::Unknown(expression.to_string()), License::Known)
-        }
-
         match Expression::canonicalize(license) {
-            Ok(Some(expression)) => parse(&expression),
-            Ok(None) => parse(license),
+            Ok(Some(expression)) => parse_expression(&expression),
+            Ok(None) => parse_expression(license),
             Err(_) => Self::Unknown(license.to_string()),
         }
     }
@@ -103,6 +98,11 @@ fn sorted_requirements(expression: &Expression) -> Vec<LicenseReq> {
         .map(|req| req.req.clone())
         .sorted()
         .collect()
+}
+
+fn parse_expression(expression: &str) -> License {
+    Expression::parse_mode(expression, ParseMode::LAX)
+        .map_or_else(|_| License::Unknown(expression.to_string()), License::Known)
 }
 
 #[cfg(test)]
