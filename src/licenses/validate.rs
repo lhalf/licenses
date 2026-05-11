@@ -92,10 +92,12 @@ fn find_matching_entry(
 }
 
 fn to_file_names(entries: Vec<DirEntry>) -> Vec<String> {
-    entries
+    let mut names: Vec<String> = entries
         .into_iter()
         .map(|entry| entry.name.to_string_lossy().to_string())
-        .collect()
+        .collect();
+    names.sort();
+    names
 }
 
 #[cfg(test)]

@@ -195,6 +195,68 @@ mod tests {
         );
     }
 
+    #[test]
+    fn allow_additional_matches_regardless_of_filesystem_order() {
+        let file_io_spy = FileIOSpy::default();
+        file_io_spy
+            .read_file
+            .returns
+            .set([Ok(license_text("MIT")), Ok(license_text("Apache-2.0"))]);
+        let progress_bar_spy = ProgressBarSpy::default();
+        progress_bar_spy.set_len.returns.set_fn(|_| ());
+        progress_bar_spy.increment.returns.set_fn(|()| ());
+        progress_bar_spy.finish.returns.set_fn(|()| ());
+
+        let all_licenses: HashMap<_, _> = std::iter::once((
+            Package {
+                normalised_name: "zstd_sys".to_string(),
+                path: Utf8PathBuf::default(),
+                url: None,
+                license: Some("MIT/Apache-2.0".to_string()),
+            },
+            vec![
+                DirEntry {
+                    name: OsString::from("LICENSE-MIT"),
+                    path: PathBuf::new(),
+                    is_file: true,
+                },
+                DirEntry {
+                    name: OsString::from("LICENSE-APACHE"),
+                    path: PathBuf::new(),
+                    is_file: true,
+                },
+                DirEntry {
+                    name: OsString::from("LICENSE.BSD-3-Clause"),
+                    path: PathBuf::from("LICENSE.BSD-3-Clause"),
+                    is_file: true,
+                },
+                DirEntry {
+                    name: OsString::from("LICENSE"),
+                    path: PathBuf::from("LICENSE"),
+                    is_file: true,
+                },
+            ],
+        ))
+        .collect();
+
+        let config = std::iter::once((
+            "zstd_sys".to_string(),
+            CrateConfig {
+                skip: vec![],
+                allow: Some(LicenseStatus::Additional(vec![
+                    "LICENSE".to_string(),
+                    "LICENSE.BSD-3-Clause".to_string(),
+                ])),
+                include: vec![],
+            },
+        ))
+        .collect();
+
+        assert!(
+            !check_licenses(&file_io_spy, &progress_bar_spy, &all_licenses, &config).any_invalid()
+        );
+    }
+
     fn license_text(id: &str) -> String {
         LICENSE_TEXTS.get(id).unwrap().to_string()
     }
