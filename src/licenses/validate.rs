@@ -59,8 +59,8 @@ fn unmatched_license_files(
     let mut remaining: Vec<DirEntry> = actual_licenses.to_vec();
 
     for expected in expected_texts {
-        if let Some(entry) = find_matching_entry(file_io, expected, &remaining) {
-            remaining.retain(|e| e.name != entry.name);
+        if let Some(index) = find_matching_index(file_io, expected, &remaining) {
+            remaining.swap_remove(index);
         }
     }
 
@@ -75,19 +75,16 @@ fn found_all_declared_licenses(
     declared.requirements().count() == actual_licenses.len() - unmatched_license_files.len()
 }
 
-fn find_matching_entry(
+fn find_matching_index(
     file_io: &impl FileIO,
     expected: &TextData,
     remaining_licenses: &[DirEntry],
-) -> Option<DirEntry> {
-    remaining_licenses
-        .iter()
-        .find(|entry| {
-            file_io.read_file(&entry.path).ok().is_some_and(|contents| {
-                TextData::from(contents.as_str()).match_score(expected) >= CONFIDENCE_THRESHOLD
-            })
+) -> Option<usize> {
+    remaining_licenses.iter().position(|entry| {
+        file_io.read_file(&entry.path).ok().is_some_and(|contents| {
+            TextData::from(contents.as_str()).match_score(expected) >= CONFIDENCE_THRESHOLD
         })
-        .cloned()
+    })
 }
 
 fn to_file_names(entries: Vec<DirEntry>) -> Vec<String> {

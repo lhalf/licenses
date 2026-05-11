@@ -198,10 +198,16 @@ mod tests {
     #[test]
     fn allow_additional_matches_regardless_of_filesystem_order() {
         let file_io_spy = FileIOSpy::default();
-        file_io_spy
-            .read_file
-            .returns
-            .set([Ok(license_text("MIT")), Ok(license_text("Apache-2.0"))]);
+        file_io_spy.read_file.returns.set_fn(|path| {
+            let name = path.file_name().unwrap().to_string_lossy();
+            if name.contains("MIT") {
+                Ok(license_text("MIT"))
+            } else if name.contains("APACHE") {
+                Ok(license_text("Apache-2.0"))
+            } else {
+                Ok("unrelated content".to_string())
+            }
+        });
         let progress_bar_spy = ProgressBarSpy::default();
         progress_bar_spy.set_len.returns.set_fn(|_| ());
         progress_bar_spy.increment.returns.set_fn(|()| ());
@@ -217,12 +223,12 @@ mod tests {
             vec![
                 DirEntry {
                     name: OsString::from("LICENSE-MIT"),
-                    path: PathBuf::new(),
+                    path: PathBuf::from("LICENSE-MIT"),
                     is_file: true,
                 },
                 DirEntry {
                     name: OsString::from("LICENSE-APACHE"),
-                    path: PathBuf::new(),
+                    path: PathBuf::from("LICENSE-APACHE"),
                     is_file: true,
                 },
                 DirEntry {
