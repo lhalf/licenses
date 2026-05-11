@@ -11,6 +11,7 @@ use crate::licenses::unused::find_unused_configs;
 use crate::log::progress_bar;
 use anyhow::Context;
 use std::path::{Path, PathBuf};
+use std::process::ExitCode;
 
 pub fn collect(
     file_io: &impl FileIO,
@@ -56,7 +57,7 @@ pub fn check(
     file_io: &impl FileIO,
     config: &Config,
     filtered_packages: &[Package],
-) -> anyhow::Result<()> {
+) -> anyhow::Result<ExitCode> {
     let progress_bar = progress_bar("checking licenses");
 
     let all_licenses = collect_licenses(file_io, filtered_packages, &config.crate_configs)?;
@@ -70,10 +71,10 @@ pub fn check(
 
     if statuses.any_invalid() {
         print!("{statuses}");
-        std::process::exit(1)
+        return Ok(ExitCode::FAILURE);
     }
 
-    Ok(())
+    Ok(ExitCode::SUCCESS)
 }
 
 pub fn diff(
@@ -81,7 +82,7 @@ pub fn diff(
     config: &Config,
     filtered_packages: &[Package],
     path: PathBuf,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<ExitCode> {
     let diff = diff_licenses(
         file_io,
         &path,
@@ -91,10 +92,10 @@ pub fn diff(
 
     if !diff.is_empty() {
         print!("{diff}");
-        std::process::exit(1)
+        return Ok(ExitCode::FAILURE);
     }
 
-    Ok(())
+    Ok(ExitCode::SUCCESS)
 }
 
 fn create_output_folder(path: &Path) -> anyhow::Result<()> {

@@ -6,6 +6,7 @@ use crate::licenses::subcommand;
 use clap::{Args, Parser, Subcommand};
 use serde::Deserialize;
 use std::path::PathBuf;
+use std::process::ExitCode;
 
 mod cargo_metadata;
 mod cargo_tree;
@@ -14,29 +15,29 @@ mod file_io;
 mod licenses;
 mod log;
 
-fn main() -> anyhow::Result<()> {
+fn main() -> anyhow::Result<ExitCode> {
     let CargoSubcommand::Licenses { args, command } = CargoSubcommand::parse();
 
     let file_system = FileSystem {};
     let config = load_config(&file_system, args)?;
     let filtered_packages = filtered_packages(try_get_packages()?, &crate_names(&config)?);
 
-    match command {
+    let exit_code = match command {
         LicensesSubcommand::Collect { path } => {
             subcommand::collect(&file_system, &config, &filtered_packages, path)?;
+            ExitCode::SUCCESS
         }
         LicensesSubcommand::Summary(args) => {
             subcommand::summary(filtered_packages, &args)?;
+            ExitCode::SUCCESS
         }
-        LicensesSubcommand::Check => {
-            subcommand::check(&file_system, &config, &filtered_packages)?;
-        }
+        LicensesSubcommand::Check => subcommand::check(&file_system, &config, &filtered_packages)?,
         LicensesSubcommand::Diff { path } => {
-            subcommand::diff(&file_system, &config, &filtered_packages, path)?;
+            subcommand::diff(&file_system, &config, &filtered_packages, path)?
         }
-    }
+    };
 
-    Ok(())
+    Ok(exit_code)
 }
 
 #[derive(Parser)]
