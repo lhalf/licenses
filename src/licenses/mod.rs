@@ -37,10 +37,13 @@ impl License {
         }
     }
 
-    pub fn requirements(&self) -> Box<dyn Iterator<Item = &ExpressionReq> + '_> {
+    pub fn requirements(
+        &self,
+    ) -> itertools::Either<impl Iterator<Item = &ExpressionReq>, std::iter::Empty<&ExpressionReq>>
+    {
         match self {
-            Self::Known(expression) => Box::new(expression.requirements()),
-            Self::Unknown(_) => Box::new(Vec::<&ExpressionReq>::new().into_iter()),
+            Self::Known(expression) => itertools::Either::Left(expression.requirements()),
+            Self::Unknown(_) => itertools::Either::Right(std::iter::empty()),
         }
     }
 }
