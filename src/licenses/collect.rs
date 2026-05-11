@@ -47,7 +47,7 @@ fn is_skipped_file(dir_entry: &DirEntry, skipped_files: &[String]) -> bool {
     dir_entry
         .name
         .to_str()
-        .is_none_or(|file_name| skipped_files.contains(&file_name.to_string()))
+        .is_none_or(|file_name| skipped_files.iter().any(|skipped| skipped == file_name))
 }
 
 #[cfg(test)]
