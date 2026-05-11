@@ -64,7 +64,7 @@ pub fn check(
 
     let statuses = check_licenses(file_io, &progress_bar, &all_licenses, &config.crate_configs);
 
-    let unused = find_unused_configs(file_io, &all_licenses, &config.crate_configs);
+    let unused = find_unused_configs(file_io, &all_licenses, &config.crate_configs)?;
     if unused.any() {
         print!("{unused}");
     }

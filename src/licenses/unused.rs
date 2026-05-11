@@ -63,7 +63,7 @@ pub fn find_unused_configs(
     file_io: &impl FileIO,
     all_licenses: &HashMap<Package, Vec<DirEntry>>,
     crate_configs: &HashMap<String, CrateConfig>,
-) -> UnusedConfigs {
+) -> anyhow::Result<UnusedConfigs> {
     let package_map: HashMap<&str, (&Package, &Vec<DirEntry>)> = all_licenses
         .iter()
         .map(|(package, licenses)| (package.normalised_name.as_str(), (package, licenses)))
@@ -72,7 +72,7 @@ pub fn find_unused_configs(
     let unused = crate_configs
         .iter()
         .sorted_by_key(|(name, _)| (*name).clone())
-        .flat_map(|(crate_name, config)| {
+        .map(|(crate_name, config)| {
             find_unused_for_crate(
                 file_io,
                 crate_name,
@@ -80,9 +80,12 @@ pub fn find_unused_configs(
                 package_map.get(crate_name.as_str()),
             )
         })
+        .collect::<anyhow::Result<Vec<_>>>()?
+        .into_iter()
+        .flatten()
         .collect();
 
-    UnusedConfigs(unused)
+    Ok(UnusedConfigs(unused))
 }
 
 fn find_unused_for_crate(
@@ -90,9 +93,12 @@ fn find_unused_for_crate(
     crate_name: &str,
     config: &CrateConfig,
     package_entry: Option<&(&Package, &Vec<DirEntry>)>,
-) -> Vec<(String, UnusedConfigReason)> {
+) -> anyhow::Result<Vec<(String, UnusedConfigReason)>> {
     let Some((package, licenses)) = package_entry else {
-        return vec![(crate_name.to_string(), UnusedConfigReason::CrateNotFound)];
+        return Ok(vec![(
+            crate_name.to_string(),
+            UnusedConfigReason::CrateNotFound,
+        )]);
     };
 
     let mut unused = Vec::new();
@@ -101,11 +107,11 @@ fn find_unused_for_crate(
         unused.push((crate_name.to_string(), reason));
     }
 
-    if let Some(reason) = check_unused_skip(file_io, config, package) {
+    if let Some(reason) = check_unused_skip(file_io, config, package)? {
         unused.push((crate_name.to_string(), reason));
     }
 
-    unused
+    Ok(unused)
 }
 
 fn check_unused_allow(
@@ -128,23 +134,21 @@ fn check_unused_skip(
     file_io: &impl FileIO,
     config: &CrateConfig,
     package: &Package,
-) -> Option<UnusedConfigReason> {
+) -> anyhow::Result<Option<UnusedConfigReason>> {
     if config.skip.is_empty() {
-        return None;
+        return Ok(None);
     }
 
-    let unused_skips = find_unused_skip_files(file_io, package, &config.skip);
-    (!unused_skips.is_empty()).then_some(UnusedConfigReason::SkipNotRequired(unused_skips))
+    let unused_skips = find_unused_skip_files(file_io, package, &config.skip)?;
+    Ok((!unused_skips.is_empty()).then_some(UnusedConfigReason::SkipNotRequired(unused_skips)))
 }
 
 fn find_unused_skip_files(
     file_io: &impl FileIO,
     package: &Package,
     skip: &[String],
-) -> Vec<String> {
-    let Ok(dir_entries) = file_io.read_dir(package.path.as_ref()) else {
-        return Vec::new();
-    };
+) -> anyhow::Result<Vec<String>> {
+    let dir_entries = file_io.read_dir(package.path.as_ref())?;
 
     let license_files: HashSet<String> = dir_entries
         .iter()
@@ -152,10 +156,11 @@ fn find_unused_skip_files(
         .filter_map(|entry| entry.name.to_str().map(std::string::ToString::to_string))
         .collect();
 
-    skip.iter()
+    Ok(skip
+        .iter()
         .filter(|file| !license_files.contains(file.as_str()))
         .cloned()
-        .collect()
+        .collect())
 }
 
 #[cfg(test)]
@@ -174,7 +179,7 @@ mod tests {
     #[test]
     fn no_unused_configs_when_no_config() {
         let file_io_spy = FileIOSpy::default();
-        let unused = find_unused_configs(&file_io_spy, &HashMap::new(), &HashMap::new());
+        let unused = find_unused_configs(&file_io_spy, &HashMap::new(), &HashMap::new()).unwrap();
         assert!(!unused.any());
     }
 
@@ -191,7 +196,7 @@ mod tests {
         ))
         .collect();
 
-        let unused = find_unused_configs(&file_io_spy, &HashMap::new(), &crate_configs);
+        let unused = find_unused_configs(&file_io_spy, &HashMap::new(), &crate_configs).unwrap();
         assert_eq!(
             unused.0,
             vec![(
@@ -233,7 +238,7 @@ mod tests {
         ))
         .collect();
 
-        let unused = find_unused_configs(&file_io_spy, &all_licenses, &crate_configs);
+        let unused = find_unused_configs(&file_io_spy, &all_licenses, &crate_configs).unwrap();
         assert_eq!(
             unused.0,
             vec![(
@@ -266,7 +271,7 @@ mod tests {
         ))
         .collect();
 
-        let unused = find_unused_configs(&file_io_spy, &all_licenses, &crate_configs);
+        let unused = find_unused_configs(&file_io_spy, &all_licenses, &crate_configs).unwrap();
         assert!(!unused.any());
     }
 
@@ -299,7 +304,7 @@ mod tests {
         ))
         .collect();
 
-        let unused = find_unused_configs(&file_io_spy, &all_licenses, &crate_configs);
+        let unused = find_unused_configs(&file_io_spy, &all_licenses, &crate_configs).unwrap();
         assert_eq!(
             unused.0,
             vec![(
@@ -345,7 +350,7 @@ mod tests {
         ))
         .collect();
 
-        let unused = find_unused_configs(&file_io_spy, &all_licenses, &crate_configs);
+        let unused = find_unused_configs(&file_io_spy, &all_licenses, &crate_configs).unwrap();
         assert!(!unused.any());
     }
 
@@ -422,13 +427,12 @@ mod tests {
         ))
         .collect();
 
-        let unused = find_unused_configs(&file_io_spy, &all_licenses, &crate_configs);
-        // Should report both unused allow AND unused skip
+        let unused = find_unused_configs(&file_io_spy, &all_licenses, &crate_configs).unwrap();
         assert_eq!(2, unused.0.len());
     }
 
     #[test]
-    fn read_dir_failure_returns_empty_unused_skips() {
+    fn read_dir_failure_propagates_as_error() {
         let file_io_spy = FileIOSpy::default();
         file_io_spy
             .read_dir
@@ -448,9 +452,12 @@ mod tests {
         ))
         .collect();
 
-        let unused = find_unused_configs(&file_io_spy, &all_licenses, &crate_configs);
-        // When read_dir fails, skip check returns empty (no unused skips reported)
-        assert!(!unused.any());
+        assert_eq!(
+            "read dir failed",
+            find_unused_configs(&file_io_spy, &all_licenses, &crate_configs)
+                .unwrap_err()
+                .to_string()
+        );
     }
 
     #[test]
@@ -477,7 +484,7 @@ mod tests {
         .into_iter()
         .collect();
 
-        let unused = find_unused_configs(&file_io_spy, &HashMap::new(), &crate_configs);
+        let unused = find_unused_configs(&file_io_spy, &HashMap::new(), &crate_configs).unwrap();
         assert_eq!(unused.0[0].0, "aaa_crate");
         assert_eq!(unused.0[1].0, "zzz_crate");
     }
