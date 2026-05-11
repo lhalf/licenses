@@ -24,17 +24,19 @@ impl FileIO for FileSystem {
 
     fn read_dir(&self, path: &Path) -> anyhow::Result<Vec<DirEntry>> {
         std::fs::read_dir(path)
-            .context("failed to read directory")?
+            .with_context(|| format!("failed to read directory {}", path.display()))?
             .map(DirEntry::try_from)
             .collect()
     }
 
     fn read_file(&self, path: &Path) -> anyhow::Result<String> {
-        std::fs::read_to_string(path).context("failed to read file")
+        std::fs::read_to_string(path)
+            .with_context(|| format!("failed to read file {}", path.display()))
     }
 
     fn write_file(&self, path: &Path, content: &str) -> anyhow::Result<()> {
-        std::fs::write(path, content).context("failed to write file")
+        std::fs::write(path, content)
+            .with_context(|| format!("failed to write file {}", path.display()))
     }
 }
 
