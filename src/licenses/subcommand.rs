@@ -100,5 +100,5 @@ pub fn diff(
 
 fn create_output_folder(path: &Path) -> anyhow::Result<()> {
     let _ = std::fs::remove_dir_all(path);
-    std::fs::create_dir(path).context("failed to create output folder")
+    std::fs::create_dir_all(path).context("failed to create output folder")
 }
