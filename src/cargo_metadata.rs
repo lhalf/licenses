@@ -1,9 +1,10 @@
 use anyhow::Context;
 use cargo_metadata::camino::Utf8PathBuf;
+use std::cmp::Ordering;
 use std::collections::BTreeSet;
 use std::hash::{Hash, Hasher};
 
-#[derive(Debug, Eq, Clone, PartialOrd, Ord)]
+#[derive(Debug, Eq, Clone)]
 pub struct Package {
     pub normalised_name: String,
     pub path: Utf8PathBuf,
@@ -41,6 +42,20 @@ impl Package {
 impl PartialEq for Package {
     fn eq(&self, other: &Self) -> bool {
         self.normalised_name == other.normalised_name && self.license == other.license
+    }
+}
+
+impl Ord for Package {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.normalised_name
+            .cmp(&other.normalised_name)
+            .then_with(|| self.license.cmp(&other.license))
+    }
+}
+
+impl PartialOrd for Package {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
     }
 }
 
