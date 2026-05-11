@@ -45,9 +45,8 @@ fn expected_texts_from_declared(declared: &License) -> Vec<TextData> {
     declared
         .requirements()
         .filter_map(|expression| {
-            LICENSE_TEXTS
-                .get(expression.req.license.to_string().as_str())
-                .map(|&text| TextData::new(text))
+            let id = expression.req.license.id()?;
+            LICENSE_TEXTS.get(id.name).map(|&text| TextData::new(text))
         })
         .collect()
 }
