@@ -71,7 +71,7 @@ pub fn find_unused_configs(
 
     let unused = crate_configs
         .iter()
-        .sorted_by_key(|(name, _)| (*name).clone())
+        .sorted_by(|(left_name, _), (right_name, _)| left_name.cmp(right_name))
         .map(|(crate_name, config)| {
             find_unused_for_crate(
                 file_io,
