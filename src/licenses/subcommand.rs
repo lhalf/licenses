@@ -10,18 +10,18 @@ use crate::licenses::summarise::{crates_per_license, summarise};
 use crate::licenses::unused::find_unused_configs;
 use crate::log::progress_bar;
 use anyhow::Context;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::ExitCode;
 
 pub fn collect(
     file_io: &impl FileIO,
     config: &Config,
     filtered_packages: &[Package],
-    path: PathBuf,
+    path: &Path,
 ) -> anyhow::Result<()> {
     let progress_bar = progress_bar("collecting licenses");
 
-    create_output_folder(&path)?;
+    create_output_folder(path)?;
 
     let all_licenses = collect_licenses(file_io, filtered_packages, &config.crate_configs)?;
 
@@ -31,7 +31,7 @@ pub fn collect(
         print!("{statuses}");
     }
 
-    copy_licenses(file_io, all_licenses, &path, &config.crate_configs)?;
+    copy_licenses(file_io, all_licenses, path, &config.crate_configs)?;
     Ok(())
 }
 
@@ -81,11 +81,11 @@ pub fn diff(
     file_io: &impl FileIO,
     config: &Config,
     filtered_packages: &[Package],
-    path: PathBuf,
+    path: &Path,
 ) -> anyhow::Result<ExitCode> {
     let diff = diff_licenses(
         file_io,
-        &path,
+        path,
         &config.crate_configs,
         collect_licenses(file_io, filtered_packages, &config.crate_configs)?,
     )?;

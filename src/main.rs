@@ -24,7 +24,7 @@ fn main() -> anyhow::Result<ExitCode> {
 
     let exit_code = match command {
         LicensesSubcommand::Collect { path } => {
-            subcommand::collect(&file_system, &config, &filtered_packages, path)?;
+            subcommand::collect(&file_system, &config, &filtered_packages, &path)?;
             ExitCode::SUCCESS
         }
         LicensesSubcommand::Summary(args) => {
@@ -33,7 +33,7 @@ fn main() -> anyhow::Result<ExitCode> {
         }
         LicensesSubcommand::Check => subcommand::check(&file_system, &config, &filtered_packages)?,
         LicensesSubcommand::Diff { path } => {
-            subcommand::diff(&file_system, &config, &filtered_packages, path)?
+            subcommand::diff(&file_system, &config, &filtered_packages, &path)?
         }
     };
 
