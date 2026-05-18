@@ -88,11 +88,15 @@ fn find_matching_index(
     candidates: &[(DirEntry, Option<TextData>)],
     expected: &TextData,
 ) -> Option<usize> {
-    candidates.iter().position(|(_, text_data)| {
-        text_data
-            .as_ref()
-            .is_some_and(|text_data| text_data.match_score(expected) >= CONFIDENCE_THRESHOLD)
-    })
+    candidates
+        .iter()
+        .enumerate()
+        .filter_map(|(index, (_, text_data))| {
+            let score = text_data.as_ref()?.match_score(expected);
+            (score >= CONFIDENCE_THRESHOLD).then_some((index, score))
+        })
+        .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap_or(Ordering::Equal))
+        .map(|(index, _)| index)
 }
 
 fn to_file_names(entries: Vec<DirEntry>) -> Vec<String> {
@@ -400,5 +404,59 @@ mod tests {
                 }]
             )
         );
+    }
+
+    #[test]
+    fn additional_file_reported_is_independent_of_input_order() {
+        let mit = license_text("MIT");
+        let apache = license_text("Apache-2.0");
+        let weak_apache = format!("{apache}\n\n{}", "extra unrelated text ".repeat(50));
+
+        let entries_in_order = |names: [&str; 3]| {
+            names
+                .into_iter()
+                .map(|name| DirEntry {
+                    name: OsString::from(name),
+                    path: PathBuf::from(name),
+                    is_file: true,
+                })
+                .collect::<Vec<_>>()
+        };
+
+        let read_file_for = |mit: String, apache: String, weak: String| {
+            move |path: &PathBuf| {
+                let name = path.file_name().unwrap().to_string_lossy().to_string();
+                Ok(match name.as_str() {
+                    "LICENSE-MIT" => mit.clone(),
+                    "LICENSE-APACHE" => apache.clone(),
+                    "LICENSE-THIRD-PARTY" => weak.clone(),
+                    _ => String::new(),
+                })
+            }
+        };
+
+        for order in [
+            ["LICENSE-MIT", "LICENSE-APACHE", "LICENSE-THIRD-PARTY"],
+            ["LICENSE-THIRD-PARTY", "LICENSE-MIT", "LICENSE-APACHE"],
+            ["LICENSE-APACHE", "LICENSE-THIRD-PARTY", "LICENSE-MIT"],
+            ["LICENSE-THIRD-PARTY", "LICENSE-APACHE", "LICENSE-MIT"],
+        ] {
+            let file_io_spy = FileIOSpy::default();
+            file_io_spy.read_file.returns.set_fn(read_file_for(
+                mit.clone(),
+                apache.clone(),
+                weak_apache.clone(),
+            ));
+
+            assert_eq!(
+                LicenseStatus::Additional(vec!["LICENSE-THIRD-PARTY".to_string()]),
+                validate_licenses(
+                    &file_io_spy,
+                    Some(&License::parse("MIT OR Apache-2.0")),
+                    &entries_in_order(order),
+                ),
+                "input order {order:?} produced the wrong additional file"
+            );
+        }
     }
 }
