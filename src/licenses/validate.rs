@@ -66,6 +66,7 @@ fn unmatched_license_files(
             (entry.clone(), text_data)
         })
         .collect();
+    candidates.sort_by(|(a, _), (b, _)| a.name.cmp(&b.name));
 
     for expected in expected_texts {
         if let Some(index) = find_matching_index(&candidates, expected) {
@@ -455,6 +456,35 @@ mod tests {
                     Some(&License::parse("MIT OR Apache-2.0")),
                     &entries_in_order(order),
                 ),
+                "input order {order:?} produced the wrong additional file"
+            );
+        }
+    }
+
+    #[test]
+    fn ties_resolve_deterministically_by_filename() {
+        let mit = license_text("MIT");
+
+        for order in [["LICENSE", "LICENSE-MIT.md"], ["LICENSE-MIT.md", "LICENSE"]] {
+            let file_io_spy = FileIOSpy::default();
+            let mit_text = mit.clone();
+            file_io_spy
+                .read_file
+                .returns
+                .set_fn(move |_: &PathBuf| Ok(mit_text.clone()));
+
+            let entries = order
+                .into_iter()
+                .map(|name| DirEntry {
+                    name: OsString::from(name),
+                    path: PathBuf::from(name),
+                    is_file: true,
+                })
+                .collect::<Vec<_>>();
+
+            assert_eq!(
+                LicenseStatus::Additional(vec!["LICENSE".to_string()]),
+                validate_licenses(&file_io_spy, Some(&License::parse("MIT")), &entries),
                 "input order {order:?} produced the wrong additional file"
             );
         }
