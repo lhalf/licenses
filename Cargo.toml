@@ -14,7 +14,7 @@ name = "cargo-licenses"
 path = "src/main.rs"
 
 [dependencies]
-anyhow = { version = "1.0.102", default-features = false }
+anyhow = { version = "1.0.103", default-features = false }
 itertools = { version = "0.15.0", default-features = false, features = ["use_std"] }
 clap = { version = "4.6.1", default-features = false, features = ["derive", "std", "help", "usage"] }
 cargo_metadata = { version = "0.23.1", default-features = false }
@@ -30,4 +30,4 @@ indicatif = { version = "0.18.4", default-features = false }
 autospy = { version = "1.6.1", default-features = false, features = ["test"] }
 strip-ansi-escapes = { version = "0.2.1", default-features = false }
 tempfile = { version = "3.27.0", default-features = false }
-cargo_toml = { version = "0.22.3", default-features = false }
+cargo_toml = { version = "1.0.0", default-features = false }
