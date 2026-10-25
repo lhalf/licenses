@@ -166,19 +166,19 @@ mod tests {
 
     #[test]
     fn display_no_license_statuses() {
-        assert!(LicenseStatuses(HashMap::new()).to_string().is_empty());
+        assert_eq!(LicenseStatuses(HashMap::new()).to_string(), "");
     }
 
     #[test]
     fn display_ignores_valid_license_statuses() {
-        assert!(
+        assert_eq!(
             LicenseStatuses(
                 vec![(Package::called("example"), LicenseStatus::Valid)]
                     .into_iter()
                     .collect()
             )
-            .to_string()
-            .is_empty()
+            .to_string(),
+            ""
         );
     }
 

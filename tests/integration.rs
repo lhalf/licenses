@@ -144,7 +144,7 @@ fn collect_into_temp_dir_creates_expected_files() {
         .filter_map(|e| e.file_name().into_string().ok())
         .collect();
 
-    assert!(!files.is_empty());
+    assert_ne!(files, [] as [String; 0]);
     // all files should contain a dash (crate_name-LICENSE_FILE format)
     assert!(files.iter().all(|f| f.contains('-')));
 }

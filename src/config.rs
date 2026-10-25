@@ -306,7 +306,7 @@ mod tests {
 
         assert!(load_config(&file_io_spy, GlobalArgs::default()).is_ok());
 
-        assert!(file_io_spy.read_file.arguments.take().is_empty());
+        assert_eq!(file_io_spy.read_file.arguments.take(), [] as [PathBuf; 0]);
     }
 
     #[test]

@@ -85,7 +85,7 @@ mod tests {
             .is_ok()
         );
 
-        assert!(file_io_spy.copy_file.arguments.take().is_empty());
+        assert_eq!(file_io_spy.copy_file.arguments.take(), []);
     }
 
     #[test]

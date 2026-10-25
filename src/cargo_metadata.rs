@@ -265,7 +265,7 @@ mod tests {
         let packages = vec![Package::called("alpha")];
         let crates_we_want: BTreeSet<String> = std::iter::once("beta").map(String::from).collect();
 
-        assert!(filtered_packages(packages, &crates_we_want).is_empty());
+        assert_eq!(filtered_packages(packages, &crates_we_want), []);
     }
 
     #[test]
@@ -273,7 +273,7 @@ mod tests {
         use super::filtered_packages;
         use std::collections::BTreeSet;
 
-        assert!(filtered_packages(vec![], &BTreeSet::new()).is_empty());
+        assert_eq!(filtered_packages(vec![], &BTreeSet::new()), []);
     }
 
     #[test]

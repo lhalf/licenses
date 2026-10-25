@@ -320,13 +320,13 @@ mod tests {
 
     #[test]
     fn display_empty_diff() {
-        assert!(
+        assert_eq!(
             LicenseDiff {
                 additional: BTreeSet::new(),
                 missing: BTreeSet::new(),
             }
-            .to_string()
-            .is_empty()
+            .to_string(),
+            ""
         );
     }
 

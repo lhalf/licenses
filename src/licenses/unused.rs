@@ -383,7 +383,7 @@ mod tests {
     #[test]
     fn display_empty_unused_configs() {
         let unused = UnusedConfigs(Vec::new());
-        assert!(unused.to_string().is_empty());
+        assert_eq!(unused.to_string(), "");
     }
 
     fn license_text(id: &str) -> String {

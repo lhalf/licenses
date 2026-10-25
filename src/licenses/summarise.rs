@@ -39,19 +39,19 @@ mod tests {
 
     #[test]
     fn no_packages() {
-        assert!(summarise(crates_per_license(Vec::new())).is_empty());
+        assert_eq!(summarise(crates_per_license(Vec::new())), "");
     }
 
     #[test]
     fn single_package_with_no_license() {
-        assert!(
+        assert_eq!(
             summarise(crates_per_license(vec![Package {
                 normalised_name: "no_license".to_string(),
                 path: Utf8PathBuf::new(),
                 url: None,
                 license: None,
-            }]))
-            .is_empty()
+            }])),
+            ""
         );
     }
 

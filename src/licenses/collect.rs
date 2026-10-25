@@ -263,7 +263,7 @@ mod tests {
         .unwrap();
 
         // alpha has COPYING skipped, beta does not
-        assert!(result[&Package::called("alpha")].is_empty());
+        assert_eq!(result[&Package::called("alpha")], []);
         assert_eq!(vec![license], result[&Package::called("beta")]);
     }
 }
