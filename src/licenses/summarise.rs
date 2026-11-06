@@ -5,15 +5,21 @@ use itertools::Itertools;
 use std::collections::HashMap;
 
 pub fn crates_per_license(filtered_packages: Vec<Package>) -> HashMap<License, Vec<String>> {
-    filtered_packages
+    let mut crates_per_license = filtered_packages
         .into_iter()
-        .unique()
         .filter_map(|package| {
             package
                 .license
                 .map(|license| (License::parse(&license), package.normalised_name))
         })
-        .into_group_map()
+        .into_group_map();
+
+    for normalised_names in crates_per_license.values_mut() {
+        normalised_names.sort();
+        normalised_names.dedup();
+    }
+
+    crates_per_license
 }
 
 pub fn summarise(crates_per_license: HashMap<License, Vec<String>>) -> String {
@@ -47,6 +53,7 @@ mod tests {
         assert_eq!(
             summarise(crates_per_license(vec![Package {
                 normalised_name: "no_license".to_string(),
+                version: "0.0.0".to_string(),
                 path: Utf8PathBuf::new(),
                 url: None,
                 license: None,
@@ -61,6 +68,7 @@ mod tests {
             "MIT - example",
             strip_ansi_escapes::strip_str(summarise(crates_per_license(vec![Package {
                 normalised_name: "example".to_string(),
+                version: "0.0.0".to_string(),
                 path: Utf8PathBuf::new(),
                 url: None,
                 license: Some("MIT".to_string()),
@@ -75,12 +83,14 @@ mod tests {
             strip_ansi_escapes::strip_str(summarise(crates_per_license(vec![
                 Package {
                     normalised_name: "example".to_string(),
+                    version: "0.0.0".to_string(),
                     path: Utf8PathBuf::new(),
                     url: None,
                     license: Some("MIT".to_string()),
                 },
                 Package {
                     normalised_name: "another".to_string(),
+                    version: "0.0.0".to_string(),
                     path: Utf8PathBuf::new(),
                     url: None,
                     license: Some("Apache-2.0".to_string()),
@@ -96,18 +106,21 @@ mod tests {
             strip_ansi_escapes::strip_str(summarise(crates_per_license(vec![
                 Package {
                     normalised_name: "c".to_string(),
+                    version: "0.0.0".to_string(),
                     path: Utf8PathBuf::new(),
                     url: None,
                     license: Some("MIT".to_string()),
                 },
                 Package {
                     normalised_name: "a".to_string(),
+                    version: "0.0.0".to_string(),
                     path: Utf8PathBuf::new(),
                     url: None,
                     license: Some("MIT".to_string()),
                 },
                 Package {
                     normalised_name: "b".to_string(),
+                    version: "0.0.0".to_string(),
                     path: Utf8PathBuf::new(),
                     url: None,
                     license: Some("MIT".to_string()),
@@ -123,12 +136,14 @@ mod tests {
             strip_ansi_escapes::strip_str(summarise(crates_per_license(vec![
                 Package {
                     normalised_name: "example".to_string(),
+                    version: "0.1.0".to_string(),
                     path: Utf8PathBuf::from("/some/version/path/1"),
                     url: None,
                     license: Some("MIT".to_string()),
                 },
                 Package {
                     normalised_name: "example".to_string(),
+                    version: "0.2.0".to_string(),
                     path: Utf8PathBuf::from("/some/version/path/2"),
                     url: None,
                     license: Some("MIT".to_string()),

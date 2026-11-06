@@ -80,6 +80,7 @@ mod tests {
             (
                 Package {
                     normalised_name: "bad".to_string(),
+                    version: "0.0.0".to_string(),
                     path: Utf8PathBuf::default(),
                     url: None,
                     license: None,
@@ -89,6 +90,7 @@ mod tests {
             (
                 Package {
                     normalised_name: "good".to_string(),
+                    version: "0.0.0".to_string(),
                     path: Utf8PathBuf::default(),
                     url: None,
                     license: Some("MIT".to_string()),
@@ -109,6 +111,7 @@ mod tests {
                 (
                     Package {
                         normalised_name: "good".to_string(),
+                        version: "0.0.0".to_string(),
                         path: Utf8PathBuf::default(),
                         url: None,
                         license: Some("MIT".to_string()),
@@ -145,6 +148,7 @@ mod tests {
         let all_licenses: HashMap<_, _> = std::iter::once((
             Package {
                 normalised_name: "some_crate".to_string(),
+                version: "0.0.0".to_string(),
                 path: Utf8PathBuf::default(),
                 url: None,
                 license: Some("MIT".to_string()),
@@ -216,6 +220,7 @@ mod tests {
         let all_licenses: HashMap<_, _> = std::iter::once((
             Package {
                 normalised_name: "zstd_sys".to_string(),
+                version: "0.0.0".to_string(),
                 path: Utf8PathBuf::default(),
                 url: None,
                 license: Some("MIT/Apache-2.0".to_string()),

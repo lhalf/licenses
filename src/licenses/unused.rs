@@ -213,6 +213,7 @@ mod tests {
 
         let package = Package {
             normalised_name: "some_crate".to_string(),
+            version: "0.0.0".to_string(),
             path: Utf8PathBuf::default(),
             url: None,
             license: Some("MIT".to_string()),
@@ -254,6 +255,7 @@ mod tests {
 
         let package = Package {
             normalised_name: "some_crate".to_string(),
+            version: "0.0.0".to_string(),
             path: Utf8PathBuf::default(),
             url: None,
             license: Some("MIT".to_string()),
@@ -402,6 +404,7 @@ mod tests {
 
         let package = Package {
             normalised_name: "some_crate".to_string(),
+            version: "0.0.0".to_string(),
             path: Utf8PathBuf::default(),
             url: None,
             license: Some("MIT".to_string()),

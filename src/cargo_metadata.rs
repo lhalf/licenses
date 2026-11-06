@@ -7,6 +7,7 @@ use std::hash::{Hash, Hasher};
 #[derive(Debug, Eq, Clone)]
 pub struct Package {
     pub normalised_name: String,
+    pub version: String,
     pub path: Utf8PathBuf,
     pub url: Option<String>,
     pub license: Option<String>,
@@ -18,6 +19,7 @@ impl Package {
         Self {
             path: Utf8PathBuf::default(),
             normalised_name: name.to_string(),
+            version: "0.0.0".to_string(),
             url: None,
             license: None,
         }
@@ -28,6 +30,7 @@ impl Package {
     fn try_from_metadata(package: cargo_metadata::Package) -> anyhow::Result<Self> {
         Ok(Self {
             normalised_name: package.name.to_string().replace('-', "_"),
+            version: package.version.to_string(),
             path: package
                 .manifest_path
                 .parent()
@@ -41,7 +44,9 @@ impl Package {
 
 impl PartialEq for Package {
     fn eq(&self, other: &Self) -> bool {
-        self.normalised_name == other.normalised_name && self.license == other.license
+        self.normalised_name == other.normalised_name
+            && self.version == other.version
+            && self.license == other.license
     }
 }
 
@@ -49,6 +54,7 @@ impl Ord for Package {
     fn cmp(&self, other: &Self) -> Ordering {
         self.normalised_name
             .cmp(&other.normalised_name)
+            .then_with(|| self.version.cmp(&other.version))
             .then_with(|| self.license.cmp(&other.license))
     }
 }
@@ -62,6 +68,7 @@ impl PartialOrd for Package {
 impl Hash for Package {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.normalised_name.hash(state);
+        self.version.hash(state);
         self.license.hash(state);
     }
 }
@@ -172,16 +179,18 @@ mod tests {
     }
 
     #[test]
-    fn packages_with_same_name_and_license_are_equal() {
+    fn packages_with_same_name_version_and_license_are_equal() {
         assert_eq!(
             Package {
                 normalised_name: "toml".to_string(),
+                version: "0.0.0".to_string(),
                 path: Utf8PathBuf::from("/some/path/1"),
                 url: Some("https://github.com/toml-rs/toml".to_string()),
                 license: Some("MIT".to_string()),
             },
             Package {
                 normalised_name: "toml".to_string(),
+                version: "0.0.0".to_string(),
                 path: Utf8PathBuf::from("/some/path/2"),
                 url: Some("https://github.com/toml-rs/toml".to_string()),
                 license: Some("MIT".to_string()),
@@ -194,12 +203,14 @@ mod tests {
         assert_ne!(
             Package {
                 normalised_name: "toml".to_string(),
+                version: "0.0.0".to_string(),
                 path: Utf8PathBuf::from("/some/path/1"),
                 url: Some("https://github.com/toml-rs/toml".to_string()),
                 license: Some("MIT".to_string()),
             },
             Package {
                 normalised_name: "toml".to_string(),
+                version: "0.0.0".to_string(),
                 path: Utf8PathBuf::from("/some/path/2"),
                 url: Some("https://github.com/toml-rs/toml".to_string()),
                 license: Some("Apache-2.0".to_string()),
@@ -208,34 +219,41 @@ mod tests {
     }
 
     #[test]
-    fn packages_are_hashed_based_on_name_and_license() {
+    fn packages_are_hashed_based_on_name_version_and_license() {
         let package_1 = Package {
             normalised_name: "toml".to_string(),
+            version: "0.0.0".to_string(),
             path: Utf8PathBuf::from("/some/path/1"),
             url: None,
             license: Some("MIT".to_string()),
         };
         let package_2 = Package {
             normalised_name: "toml".to_string(),
+            version: "0.0.0".to_string(),
             path: Utf8PathBuf::from("/some/path/2"),
             url: None,
             license: Some("MIT".to_string()),
         };
         let package_3 = Package {
             normalised_name: "toml".to_string(),
+            version: "0.0.0".to_string(),
             path: Utf8PathBuf::from("/some/path/3"),
             url: None,
             license: Some("Apache-2.0".to_string()),
         };
+        let mut package_4 = package_1.clone();
+        package_4.version = "0.1.0".to_string();
 
         let mut set = HashSet::new();
         set.insert(package_1.clone());
         set.insert(package_2);
         set.insert(package_3.clone());
+        set.insert(package_4.clone());
 
-        assert_eq!(set.len(), 2);
+        assert_eq!(set.len(), 3);
         assert!(set.contains(&package_1));
         assert!(set.contains(&package_3));
+        assert!(set.contains(&package_4));
     }
 
     #[test]
@@ -303,16 +321,55 @@ mod tests {
     fn packages_are_ordered_by_name_then_license() {
         let a = Package {
             normalised_name: "alpha".to_string(),
+            version: "0.0.0".to_string(),
             path: Utf8PathBuf::new(),
             url: None,
             license: Some("MIT".to_string()),
         };
         let b = Package {
             normalised_name: "beta".to_string(),
+            version: "0.0.0".to_string(),
             path: Utf8PathBuf::new(),
             url: None,
             license: Some("MIT".to_string()),
         };
         assert!(a < b);
+    }
+
+    #[test]
+    fn package_versions_are_captured_as_strings() {
+        let mut metadata_package = metadata_package();
+        metadata_package.version = "1.2.3-rc.1+build.4".parse().unwrap();
+
+        assert_eq!(
+            "1.2.3-rc.1+build.4",
+            Package::try_from_metadata(metadata_package)
+                .unwrap()
+                .version
+        );
+    }
+
+    #[test]
+    fn packages_with_same_name_and_license_but_different_versions_are_not_equal() {
+        let mut package = Package::called("example");
+        package.license = Some("MIT".to_string());
+        let mut different_version = package.clone();
+        different_version.version = "0.1.0".to_string();
+
+        assert_ne!(package, different_version);
+    }
+
+    #[test]
+    fn packages_with_same_name_are_ordered_by_version_before_license() {
+        let mut package = Package::called("example");
+        package.license = Some("MIT".to_string());
+        let mut different_version = package.clone();
+        different_version.version = "0.1.0".to_string();
+
+        assert!(package < different_version);
+
+        different_version.license = Some("Apache-2.0".to_string());
+
+        assert!(package < different_version);
     }
 }

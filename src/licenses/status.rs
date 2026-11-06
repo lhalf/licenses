@@ -192,6 +192,7 @@ mod tests {
                         (
                             Package {
                                 normalised_name: "example".to_string(),
+                                version: "0.0.0".to_string(),
                                 path: Utf8PathBuf::new(),
                                 url: Some("example.url".to_string()),
                                 license: None,
@@ -201,6 +202,7 @@ mod tests {
                         (
                             Package {
                                 normalised_name: "example2".to_string(),
+                                version: "0.0.0".to_string(),
                                 path: Utf8PathBuf::new(),
                                 url: None,
                                 license: None,
