@@ -78,6 +78,7 @@ pub fn filtered_packages(
 
 pub fn try_get_packages() -> anyhow::Result<Vec<Package>> {
     cargo_metadata::MetadataCommand::new()
+        .features(cargo_metadata::CargoOpt::AllFeatures)
         .exec()
         .context("failed to call cargo metadata")?
         .packages
