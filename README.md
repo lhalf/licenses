@@ -228,3 +228,13 @@ compliance with all legal licensing requirements.** It is
 the user's responsibility to ensure that all applicable licenses are collected, reviewed and adhered to. The authors and
 contributors of this tool accept no liability for missing,
 incomplete or inaccurate licenses files, or for any consequences arising from its use.
+
+## Nix
+
+Requires flakes and Cargo on PATH.
+
+```bash
+$ nix profile install github:lhalf/licenses
+```
+
+Append `/<tag-or-commit>` to pin a version containing the flake.
