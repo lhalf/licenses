@@ -64,21 +64,11 @@ pub fn find_unused_configs(
     all_licenses: &HashMap<Package, Vec<DirEntry>>,
     crate_configs: &HashMap<String, CrateConfig>,
 ) -> anyhow::Result<UnusedConfigs> {
-    let package_map: HashMap<&str, (&Package, &Vec<DirEntry>)> = all_licenses
-        .iter()
-        .map(|(package, licenses)| (package.normalised_name.as_str(), (package, licenses)))
-        .collect();
-
     let unused = crate_configs
         .iter()
         .sorted_by(|(left_name, _), (right_name, _)| left_name.cmp(right_name))
         .map(|(crate_name, config)| {
-            find_unused_for_crate(
-                file_io,
-                crate_name,
-                config,
-                package_map.get(crate_name.as_str()),
-            )
+            find_unused_for_crate(file_io, crate_name, config, all_licenses)
         })
         .collect::<anyhow::Result<Vec<_>>>()?
         .into_iter()
@@ -92,22 +82,30 @@ fn find_unused_for_crate(
     file_io: &impl FileIO,
     crate_name: &str,
     config: &CrateConfig,
-    package_entry: Option<&(&Package, &Vec<DirEntry>)>,
+    all_licenses: &HashMap<Package, Vec<DirEntry>>,
 ) -> anyhow::Result<Vec<(String, UnusedConfigReason)>> {
-    let Some((package, licenses)) = package_entry else {
+    let packages: Vec<&Package> = all_licenses
+        .keys()
+        .filter(|package| package.normalised_name == crate_name)
+        .sorted()
+        .collect();
+
+    if packages.is_empty() {
         return Ok(vec![(
             crate_name.to_string(),
             UnusedConfigReason::CrateNotFound,
         )]);
-    };
+    }
 
     let mut unused = Vec::new();
 
-    if let Some(reason) = check_unused_allow(file_io, config, package, licenses) {
-        unused.push((crate_name.to_string(), reason));
+    if packages.iter().all(|package| {
+        check_unused_allow(file_io, config, package, &all_licenses[*package]).is_some()
+    }) {
+        unused.push((crate_name.to_string(), UnusedConfigReason::AllowNotRequired));
     }
 
-    if let Some(reason) = check_unused_skip(file_io, config, package)? {
+    if let Some(reason) = check_unused_skip(file_io, config, &packages)? {
         unused.push((crate_name.to_string(), reason));
     }
 
@@ -133,13 +131,16 @@ fn check_unused_allow(
 fn check_unused_skip(
     file_io: &impl FileIO,
     config: &CrateConfig,
-    package: &Package,
+    packages: &[&Package],
 ) -> anyhow::Result<Option<UnusedConfigReason>> {
     if config.skip.is_empty() {
         return Ok(None);
     }
 
-    let unused_skips = find_unused_skip_files(file_io, package, &config.skip)?;
+    let mut unused_skips = config.skip.clone();
+    for package in packages {
+        unused_skips = find_unused_skip_files(file_io, package, &unused_skips)?;
+    }
     Ok((!unused_skips.is_empty()).then_some(UnusedConfigReason::SkipNotRequired(unused_skips)))
 }
 
@@ -354,6 +355,195 @@ mod tests {
 
         let unused = find_unused_configs(&file_io_spy, &all_licenses, &crate_configs).unwrap();
         assert!(!unused.any());
+    }
+
+    #[test]
+    fn no_unused_allow_when_one_version_needs_it() {
+        let file_io_spy = FileIOSpy::default();
+        file_io_spy.read_file.returns.set([Ok(license_text("MIT"))]);
+
+        let first_version = Package {
+            normalised_name: "some_crate".to_string(),
+            version: "1.0.0".to_string(),
+            path: Utf8PathBuf::from("example/1.0.0"),
+            url: None,
+            license: Some("MIT".to_string()),
+        };
+        let second_version = Package {
+            version: "2.0.0".to_string(),
+            path: Utf8PathBuf::from("example/2.0.0"),
+            ..first_version.clone()
+        };
+
+        let mut all_licenses = HashMap::new();
+        all_licenses.insert(
+            first_version,
+            vec![DirEntry {
+                name: OsString::from("LICENSE"),
+                path: PathBuf::from("example/1.0.0/LICENSE"),
+                is_file: true,
+            }],
+        );
+        all_licenses.insert(second_version, vec![]);
+
+        let crate_configs = std::iter::once((
+            "some_crate".to_string(),
+            CrateConfig {
+                skip: vec![],
+                allow: Some(LicenseStatus::Empty),
+                include: vec![],
+            },
+        ))
+        .collect();
+
+        let unused = find_unused_configs(&file_io_spy, &all_licenses, &crate_configs).unwrap();
+        assert!(!unused.any());
+    }
+
+    #[test]
+    fn unused_allow_when_all_versions_are_valid() {
+        let file_io_spy = FileIOSpy::default();
+        file_io_spy
+            .read_file
+            .returns
+            .set([Ok(license_text("MIT")), Ok(license_text("MIT"))]);
+
+        let first_version = Package {
+            normalised_name: "some_crate".to_string(),
+            version: "1.0.0".to_string(),
+            path: Utf8PathBuf::from("example/1.0.0"),
+            url: None,
+            license: Some("MIT".to_string()),
+        };
+        let second_version = Package {
+            version: "2.0.0".to_string(),
+            path: Utf8PathBuf::from("example/2.0.0"),
+            ..first_version.clone()
+        };
+
+        let mut all_licenses = HashMap::new();
+        all_licenses.insert(
+            first_version,
+            vec![DirEntry {
+                name: OsString::from("LICENSE"),
+                path: PathBuf::from("example/1.0.0/LICENSE"),
+                is_file: true,
+            }],
+        );
+        all_licenses.insert(
+            second_version,
+            vec![DirEntry {
+                name: OsString::from("LICENSE"),
+                path: PathBuf::from("example/2.0.0/LICENSE"),
+                is_file: true,
+            }],
+        );
+
+        let crate_configs = std::iter::once((
+            "some_crate".to_string(),
+            CrateConfig {
+                skip: vec![],
+                allow: Some(LicenseStatus::Empty),
+                include: vec![],
+            },
+        ))
+        .collect();
+
+        let unused = find_unused_configs(&file_io_spy, &all_licenses, &crate_configs).unwrap();
+        assert_eq!(
+            unused.0,
+            vec![(
+                "some_crate".to_string(),
+                UnusedConfigReason::AllowNotRequired
+            )]
+        );
+        assert_eq!(2, file_io_spy.read_file.arguments.take().len());
+    }
+
+    #[test]
+    fn no_unused_skip_when_file_exists_in_one_version() {
+        let file_io_spy = FileIOSpy::default();
+        file_io_spy.read_dir.returns.set_fn(|path| {
+            if path == &PathBuf::from("example/2.0.0") {
+                Ok(vec![DirEntry {
+                    name: OsString::from("COPYING"),
+                    path: PathBuf::from("example/2.0.0/COPYING"),
+                    is_file: true,
+                }])
+            } else {
+                Ok(vec![])
+            }
+        });
+
+        let first_version = Package {
+            version: "1.0.0".to_string(),
+            path: Utf8PathBuf::from("example/1.0.0"),
+            ..Package::called("some_crate")
+        };
+        let second_version = Package {
+            version: "2.0.0".to_string(),
+            path: Utf8PathBuf::from("example/2.0.0"),
+            ..Package::called("some_crate")
+        };
+
+        let mut all_licenses = HashMap::new();
+        all_licenses.insert(first_version, vec![]);
+        all_licenses.insert(second_version, vec![]);
+
+        let crate_configs = std::iter::once((
+            "some_crate".to_string(),
+            CrateConfig {
+                skip: vec!["COPYING".to_string()],
+                allow: None,
+                include: vec![],
+            },
+        ))
+        .collect();
+
+        let unused = find_unused_configs(&file_io_spy, &all_licenses, &crate_configs).unwrap();
+        assert!(!unused.any());
+        assert_eq!(2, file_io_spy.read_dir.arguments.take().len());
+    }
+
+    #[test]
+    fn unused_skip_when_file_absent_from_all_versions() {
+        let file_io_spy = FileIOSpy::default();
+        file_io_spy.read_dir.returns.set([Ok(vec![]), Ok(vec![])]);
+
+        let first_version = Package {
+            version: "1.0.0".to_string(),
+            path: Utf8PathBuf::from("example/1.0.0"),
+            ..Package::called("some_crate")
+        };
+        let second_version = Package {
+            version: "2.0.0".to_string(),
+            path: Utf8PathBuf::from("example/2.0.0"),
+            ..Package::called("some_crate")
+        };
+
+        let mut all_licenses = HashMap::new();
+        all_licenses.insert(first_version, vec![]);
+        all_licenses.insert(second_version, vec![]);
+
+        let crate_configs = std::iter::once((
+            "some_crate".to_string(),
+            CrateConfig {
+                skip: vec!["COPYING".to_string()],
+                allow: None,
+                include: vec![],
+            },
+        ))
+        .collect();
+
+        let unused = find_unused_configs(&file_io_spy, &all_licenses, &crate_configs).unwrap();
+        assert_eq!(
+            unused.0,
+            vec![(
+                "some_crate".to_string(),
+                UnusedConfigReason::SkipNotRequired(vec!["COPYING".to_string()])
+            )]
+        );
+        assert_eq!(2, file_io_spy.read_dir.arguments.take().len());
     }
 
     #[test]
