@@ -52,8 +52,9 @@ pub fn diff_licenses(
     found_licenses: HashMap<Package, Vec<DirEntry>>,
 ) -> anyhow::Result<LicenseDiff> {
     let current_licenses = set_of_current_licenses(file_io.read_dir(path)?);
+    let included_licenses = included_licenses(crate_configs, &found_licenses);
     let mut found_licenses = flatten(found_licenses);
-    found_licenses.extend(included_licenses(crate_configs));
+    found_licenses.extend(included_licenses);
 
     Ok(LicenseDiff {
         additional: current_licenses
@@ -79,31 +80,30 @@ fn flatten(found_licenses: HashMap<Package, Vec<DirEntry>>) -> BTreeSet<String> 
     found_licenses
         .into_iter()
         .flat_map(|(package, dir_entries)| {
-            dir_entries.into_iter().map(move |dir_entry| {
-                format!(
-                    "{}-{}",
-                    package.normalised_name,
-                    dir_entry.name.to_string_lossy()
-                )
-            })
+            dir_entries
+                .into_iter()
+                .map(move |dir_entry| package.license_filename(&dir_entry.name.to_string_lossy()))
         })
         .collect()
 }
 
-fn included_licenses(crate_configs: &HashMap<String, CrateConfig>) -> BTreeSet<String> {
-    crate_configs
-        .iter()
-        .flat_map(|(crate_name, config)| {
-            config.include.iter().map(move |license| {
-                format!(
-                    "{crate_name}-{}",
-                    match license {
-                        IncludedLicense::Text { name, .. } => name,
+fn included_licenses(
+    crate_configs: &HashMap<String, CrateConfig>,
+    found_licenses: &HashMap<Package, Vec<DirEntry>>,
+) -> BTreeSet<String> {
+    let mut included_licenses = BTreeSet::new();
+    for package in found_licenses.keys() {
+        if let Some(config) = crate_configs.get(&package.normalised_name) {
+            for license in &config.include {
+                match license {
+                    IncludedLicense::Text { name, .. } => {
+                        included_licenses.insert(package.license_filename(name));
                     }
-                )
-            })
-        })
-        .collect()
+                }
+            }
+        }
+    }
+    included_licenses
 }
 
 #[cfg(test)]
@@ -140,7 +140,7 @@ mod tests {
         let file_io_spy = FileIOSpy::default();
 
         let current_dir_entries = vec![DirEntry {
-            name: OsString::from("example-LICENSE"),
+            name: OsString::from("example-0.0.0-LICENSE"),
             path: PathBuf::new(),
             is_file: true,
         }];
@@ -174,7 +174,7 @@ mod tests {
         let file_io_spy = FileIOSpy::default();
         let current_dir_entries = vec![
             DirEntry {
-                name: OsString::from("example-LICENSE"),
+                name: OsString::from("example-0.0.0-LICENSE"),
                 path: PathBuf::new(),
                 is_file: true,
             },
@@ -225,7 +225,7 @@ mod tests {
 
         let expected_diff = LicenseDiff {
             additional: BTreeSet::new(),
-            missing: BTreeSet::from(["example-LICENSE".to_string()]),
+            missing: BTreeSet::from(["example-0.0.0-LICENSE".to_string()]),
         };
 
         assert_eq!(
@@ -244,7 +244,7 @@ mod tests {
     fn additional_licenses() {
         let file_io_spy = FileIOSpy::default();
         file_io_spy.read_dir.returns.set([Ok(vec![DirEntry {
-            name: OsString::from("example-LICENSE"),
+            name: OsString::from("example-0.0.0-LICENSE"),
             path: PathBuf::new(),
             is_file: true,
         }])]);
@@ -252,7 +252,7 @@ mod tests {
         let found_licenses = HashMap::new();
 
         let expected_diff = LicenseDiff {
-            additional: BTreeSet::from(["example-LICENSE".to_string()]),
+            additional: BTreeSet::from(["example-0.0.0-LICENSE".to_string()]),
             missing: BTreeSet::new(),
         };
 
@@ -272,12 +272,13 @@ mod tests {
     fn additional_licenses_are_okay_if_they_are_from_included_section_in_config() {
         let file_io_spy = FileIOSpy::default();
         file_io_spy.read_dir.returns.set([Ok(vec![DirEntry {
-            name: OsString::from("example-LICENSE"),
+            name: OsString::from("example-0.0.0-LICENSE"),
             path: PathBuf::new(),
             is_file: true,
         }])]);
 
-        let found_licenses = HashMap::new();
+        let mut found_licenses = HashMap::new();
+        found_licenses.insert(Package::called("example"), vec![]);
 
         let config = std::iter::once((
             "example".to_string(),
@@ -305,7 +306,7 @@ mod tests {
         );
 
         file_io_spy.read_dir.returns.set([Ok(vec![DirEntry {
-            name: OsString::from("example-LICENSE"),
+            name: OsString::from("example-0.0.0-LICENSE"),
             path: PathBuf::new(),
             is_file: true,
         }])]);
@@ -403,12 +404,12 @@ mod tests {
         let file_io_spy = FileIOSpy::default();
         file_io_spy.read_dir.returns.set([Ok(vec![
             DirEntry {
-                name: OsString::from("alpha-LICENSE"),
+                name: OsString::from("alpha-0.0.0-LICENSE"),
                 path: PathBuf::new(),
                 is_file: true,
             },
             DirEntry {
-                name: OsString::from("beta-LICENSE"),
+                name: OsString::from("beta-0.0.0-LICENSE"),
                 path: PathBuf::new(),
                 is_file: true,
             },
@@ -444,6 +445,105 @@ mod tests {
             )
             .unwrap()
             .is_empty()
+        );
+    }
+
+    #[test]
+    fn diff_tracks_copied_and_included_licenses_for_each_version() {
+        let file_io_spy = FileIOSpy::default();
+        let mut first_version = Package::called("example");
+        first_version.version = "1.0.0".to_string();
+        first_version.license = Some("MIT".to_string());
+        let mut second_version = first_version.clone();
+        second_version.version = "2.0.0".to_string();
+
+        let mut found_licenses = HashMap::new();
+        found_licenses.insert(
+            first_version,
+            vec![DirEntry {
+                name: OsString::from("LICENSE"),
+                path: PathBuf::from("example-1.0.0/LICENSE"),
+                is_file: true,
+            }],
+        );
+        found_licenses.insert(
+            second_version,
+            vec![DirEntry {
+                name: OsString::from("LICENSE"),
+                path: PathBuf::from("example-2.0.0/LICENSE"),
+                is_file: true,
+            }],
+        );
+        let mut config = HashMap::new();
+        config.insert(
+            "example".to_string(),
+            CrateConfig {
+                include: vec![IncludedLicense::Text {
+                    name: "LICENSE-CUSTOM".to_string(),
+                    text: "custom license text".to_string(),
+                }],
+                ..CrateConfig::default()
+            },
+        );
+
+        let current_licenses = [
+            "example-1.0.0-LICENSE",
+            "example-1.0.0-LICENSE-CUSTOM",
+            "example-2.0.0-LICENSE",
+            "example-2.0.0-LICENSE-CUSTOM",
+        ]
+        .map(|name| DirEntry {
+            name: OsString::from(name),
+            path: PathBuf::new(),
+            is_file: true,
+        });
+        file_io_spy.read_dir.returns.set([
+            Ok(current_licenses.to_vec()),
+            Ok(current_licenses[..2].to_vec()),
+        ]);
+
+        assert!(
+            diff_licenses(
+                &file_io_spy,
+                &PathBuf::new(),
+                &config,
+                found_licenses.clone()
+            )
+            .unwrap()
+            .is_empty()
+        );
+
+        let diff = diff_licenses(&file_io_spy, &PathBuf::new(), &config, found_licenses).unwrap();
+        assert!(diff.additional.is_empty());
+        assert_eq!(
+            diff.missing,
+            BTreeSet::from([
+                "example-2.0.0-LICENSE".to_string(),
+                "example-2.0.0-LICENSE-CUSTOM".to_string(),
+            ])
+        );
+    }
+
+    #[test]
+    fn included_licenses_for_unselected_crates_are_not_expected() {
+        let file_io_spy = FileIOSpy::default();
+        file_io_spy.read_dir.returns.set([Ok(vec![])]);
+        let mut config = HashMap::new();
+        config.insert(
+            "example".to_string(),
+            CrateConfig {
+                include: vec![IncludedLicense::Text {
+                    name: "LICENSE".to_string(),
+                    text: "custom license text".to_string(),
+                }],
+                ..CrateConfig::default()
+            },
+        );
+
+        assert!(
+            diff_licenses(&file_io_spy, &PathBuf::new(), &config, HashMap::new())
+                .unwrap()
+                .is_empty()
         );
     }
 }

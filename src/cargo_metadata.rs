@@ -27,6 +27,10 @@ impl Package {
 }
 
 impl Package {
+    pub fn license_filename(&self, filename: &str) -> String {
+        format!("{}-{}-{filename}", self.normalised_name, self.version)
+    }
+
     fn try_from_metadata(package: cargo_metadata::Package) -> anyhow::Result<Self> {
         Ok(Self {
             normalised_name: package.name.to_string().replace('-', "_"),

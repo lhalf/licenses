@@ -195,7 +195,7 @@ The below is an example of a TOML configuration file that could be used via the 
 dev = true
 build = true
 depth = 1
-all_features = true
+all-features = true
 exclude = ["workspace"]
 ignore = ["crate"]
 

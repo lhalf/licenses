@@ -29,15 +29,15 @@ fn copy_licenses_to_output_folder(
     for license in licenses {
         file_io.copy_file(
             &license.path,
-            &output_folder.join(format!(
-                "{}-{}",
-                package.normalised_name,
-                license
-                    .path
-                    .file_name()
-                    .context("license name contained invalid UTF-8")?
-                    .to_string_lossy()
-            )),
+            &output_folder.join(
+                package.license_filename(
+                    &license
+                        .path
+                        .file_name()
+                        .context("license name contained invalid UTF-8")?
+                        .to_string_lossy(),
+                ),
+            ),
         )?;
     }
     Ok(())
@@ -52,10 +52,9 @@ fn add_included_licenses_to_output_folder(
     if let Some(config) = crate_configs.get(&package.normalised_name) {
         for included_license in &config.include {
             match included_license {
-                IncludedLicense::Text { name, text } => file_io.write_file(
-                    &output_folder.join(format!("{}-{name}", package.normalised_name)),
-                    text,
-                )?,
+                IncludedLicense::Text { name, text } => {
+                    file_io.write_file(&output_folder.join(package.license_filename(name)), text)?
+                }
             }
         }
     }
@@ -116,15 +115,19 @@ mod tests {
     }
 
     #[test]
-    fn included_license_calls_write_file() {
+    fn included_licenses_are_written_for_each_version() {
         use crate::config::{CrateConfig, IncludedLicense};
 
         let file_io_spy = FileIOSpy::default();
-        file_io_spy.write_file.returns.set([Ok(())]);
+        file_io_spy.write_file.returns.set([Ok(()), Ok(())]);
 
-        let all_licenses = vec![(Package::called("example"), vec![])]
-            .into_iter()
-            .collect();
+        let mut first_version = Package::called("example");
+        first_version.version = "1.0.0".to_string();
+        let mut second_version = first_version.clone();
+        second_version.version = "2.0.0".to_string();
+        let mut all_licenses = HashMap::new();
+        all_licenses.insert(first_version, vec![]);
+        all_licenses.insert(second_version, vec![]);
 
         let crate_configs = HashMap::from([(
             "example".to_string(),
@@ -147,13 +150,19 @@ mod tests {
             .is_ok()
         );
 
+        let mut write_args = file_io_spy.write_file.arguments.take();
+        write_args.sort();
+        assert_eq!(write_args.len(), 2);
         assert_eq!(
-            file_io_spy.write_file.arguments.take(),
-            vec![(
-                PathBuf::from("output/example-LICENSE-CUSTOM"),
-                "custom license text".to_string()
-            )]
+            write_args[0].0,
+            PathBuf::from("output/example-1.0.0-LICENSE-CUSTOM")
         );
+        assert_eq!(write_args[0].1, "custom license text");
+        assert_eq!(
+            write_args[1].0,
+            PathBuf::from("output/example-2.0.0-LICENSE-CUSTOM")
+        );
+        assert_eq!(write_args[1].1, "custom license text");
     }
 
     #[test]
@@ -224,8 +233,59 @@ mod tests {
             copy_args[0],
             (
                 PathBuf::from("/src/my_crate/LICENSE"),
-                PathBuf::from("licenses/my_crate-LICENSE")
+                PathBuf::from("licenses/my_crate-0.0.0-LICENSE")
             )
+        );
+    }
+
+    #[test]
+    fn different_versions_copy_licenses_to_distinct_paths() {
+        let file_io_spy = FileIOSpy::default();
+        file_io_spy.copy_file.returns.set([Ok(()), Ok(())]);
+
+        let mut first_version = Package::called("example");
+        first_version.version = "1.0.0".to_string();
+        first_version.license = Some("MIT".to_string());
+        let mut second_version = first_version.clone();
+        second_version.version = "2.0.0".to_string();
+        let mut all_licenses = HashMap::new();
+        all_licenses.insert(
+            first_version,
+            vec![DirEntry {
+                name: OsString::from("LICENSE"),
+                path: PathBuf::from("example-1.0.0/LICENSE"),
+                is_file: true,
+            }],
+        );
+        all_licenses.insert(
+            second_version,
+            vec![DirEntry {
+                name: OsString::from("LICENSE"),
+                path: PathBuf::from("example-2.0.0/LICENSE"),
+                is_file: true,
+            }],
+        );
+
+        copy_licenses(
+            &file_io_spy,
+            all_licenses,
+            &PathBuf::from("licenses"),
+            &HashMap::new(),
+        )
+        .unwrap();
+
+        let mut copy_args = file_io_spy.copy_file.arguments.take();
+        copy_args.sort();
+        assert_eq!(copy_args.len(), 2);
+        assert_eq!(copy_args[0].0, PathBuf::from("example-1.0.0/LICENSE"));
+        assert_eq!(
+            copy_args[0].1,
+            PathBuf::from("licenses/example-1.0.0-LICENSE")
+        );
+        assert_eq!(copy_args[1].0, PathBuf::from("example-2.0.0/LICENSE"));
+        assert_eq!(
+            copy_args[1].1,
+            PathBuf::from("licenses/example-2.0.0-LICENSE")
         );
     }
 }
