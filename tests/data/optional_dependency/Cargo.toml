@@ -1,0 +1,14 @@
+[package]
+name = "optional_dependency_test"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+[lib]
+path = "lib.rs"
+
+[workspace]
+exclude = ["optional_dep"]
+
+[dependencies]
+optional_dep = { path = "optional_dep", optional = true }

@@ -159,3 +159,32 @@ fn invalid_subcommand_fails() {
 
     assert!(!output.status.success());
 }
+
+#[test]
+fn collect_includes_optional_dependencies_with_all_features() {
+    let project = tempfile::TempDir::new().unwrap();
+    let fixture = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/data/optional_dependency");
+    let collected = project.path().join("licenses");
+
+    std::fs::create_dir(project.path().join("optional_dep")).unwrap();
+    for file in [
+        "Cargo.toml",
+        "lib.rs",
+        "optional_dep/Cargo.toml",
+        "optional_dep/lib.rs",
+        "optional_dep/LICENSE",
+    ] {
+        std::fs::copy(fixture.join(file), project.path().join(file)).unwrap();
+    }
+
+    let output = Command::new(env!("CARGO_BIN_EXE_cargo-licenses"))
+        .current_dir(project.path())
+        .env("CARGO_NET_OFFLINE", "true")
+        .args(["licenses", "collect", "--all-features", "--path"])
+        .arg(&collected)
+        .output()
+        .unwrap();
+
+    assert!(output.status.success(), "{output:?}");
+    assert!(collected_dependencies(&collected).contains("optional_dep"));
+}
