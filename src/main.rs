@@ -1,5 +1,5 @@
 use crate::cargo_metadata::{filtered_packages, try_get_packages};
-use crate::cargo_tree::crate_names;
+use crate::cargo_tree::package_keys;
 use crate::config::load_config;
 use crate::file_io::FileSystem;
 use crate::licenses::subcommand;
@@ -20,7 +20,7 @@ fn main() -> anyhow::Result<ExitCode> {
 
     let file_system = FileSystem {};
     let config = load_config(&file_system, args)?;
-    let filtered_packages = filtered_packages(try_get_packages()?, &crate_names(&config)?);
+    let filtered_packages = filtered_packages(try_get_packages()?, &package_keys(&config)?);
 
     let exit_code = match command {
         LicensesSubcommand::Collect { path } => {

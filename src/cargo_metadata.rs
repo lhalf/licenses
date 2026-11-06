@@ -79,11 +79,13 @@ impl Hash for Package {
 
 pub fn filtered_packages(
     all_packages: Vec<Package>,
-    crates_we_want: &BTreeSet<String>,
+    packages_we_want: &BTreeSet<String>,
 ) -> Vec<Package> {
     all_packages
         .into_iter()
-        .filter(|package| crates_we_want.contains(&package.normalised_name))
+        .filter(|package| {
+            packages_we_want.contains(&format!("{}@{}", package.normalised_name, package.version))
+        })
         .collect()
 }
 
@@ -271,8 +273,10 @@ mod tests {
             Package::called("gamma"),
         ];
 
-        let crates_we_want: BTreeSet<String> =
-            ["alpha", "gamma"].into_iter().map(String::from).collect();
+        let crates_we_want: BTreeSet<String> = ["alpha@0.0.0", "gamma@0.0.0"]
+            .into_iter()
+            .map(String::from)
+            .collect();
 
         let result = filtered_packages(packages, &crates_we_want);
         assert_eq!(2, result.len());
@@ -286,7 +290,8 @@ mod tests {
         use std::collections::BTreeSet;
 
         let packages = vec![Package::called("alpha")];
-        let crates_we_want: BTreeSet<String> = std::iter::once("beta").map(String::from).collect();
+        let crates_we_want: BTreeSet<String> =
+            std::iter::once("beta@0.0.0").map(String::from).collect();
 
         assert_eq!(filtered_packages(packages, &crates_we_want), []);
     }
@@ -297,6 +302,43 @@ mod tests {
         use std::collections::BTreeSet;
 
         assert_eq!(filtered_packages(vec![], &BTreeSet::new()), []);
+    }
+
+    #[test]
+    fn filtered_packages_excludes_unselected_versions() {
+        use super::filtered_packages;
+        use std::collections::BTreeSet;
+
+        let mut selected = Package::called("example");
+        selected.version = "1.0.0".to_string();
+        let mut unselected = selected.clone();
+        unselected.version = "2.0.0".to_string();
+        let packages_we_want = BTreeSet::from(["example@1.0.0".to_string()]);
+
+        assert_eq!(
+            filtered_packages(vec![unselected, selected.clone()], &packages_we_want),
+            vec![selected]
+        );
+    }
+
+    #[test]
+    fn filtered_packages_preserves_selected_prerelease_and_release_versions() {
+        use super::filtered_packages;
+        use std::collections::BTreeSet;
+
+        let mut prerelease = Package::called("example_one");
+        prerelease.version = "1.2.3-rc.1+build-4".to_string();
+        let mut release = prerelease.clone();
+        release.version = "1.2.3".to_string();
+        let packages_we_want = BTreeSet::from([
+            "example_one@1.2.3-rc.1+build-4".to_string(),
+            "example_one@1.2.3".to_string(),
+        ]);
+
+        assert_eq!(
+            filtered_packages(vec![prerelease.clone(), release.clone()], &packages_we_want),
+            vec![prerelease, release]
+        );
     }
 
     #[test]

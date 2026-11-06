@@ -1,25 +1,43 @@
 use crate::config::Config;
 use anyhow::Context;
-use itertools::Itertools;
 use std::collections::BTreeSet;
 use std::process::Command;
 
-pub fn crate_names(config: &Config) -> anyhow::Result<BTreeSet<String>> {
-    to_crate_names(
+pub fn package_keys(config: &Config) -> anyhow::Result<BTreeSet<String>> {
+    to_package_keys(
         cargo_output_with_args(&args(config))?,
         config.global.ignore.as_slice(),
     )
 }
 
-fn to_crate_names(output: Vec<u8>, ignored_crates: &[String]) -> anyhow::Result<BTreeSet<String>> {
-    Ok(String::from_utf8(output)
+fn to_package_keys(output: Vec<u8>, ignored_crates: &[String]) -> anyhow::Result<BTreeSet<String>> {
+    String::from_utf8(output)
         .context("cargo tree output contained invalid UTF-8")?
-        .replace(' ', "")
-        .split('\n')
-        .map(|crate_name| crate_name.to_string().replace('-', "_"))
-        .filter(|crate_name| !crate_name.is_empty() && !ignored_crates.contains(crate_name))
-        .unique()
-        .collect())
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .filter_map(|line| parse_package_key(line, ignored_crates).transpose())
+        .collect()
+}
+
+fn parse_package_key(line: &str, ignored_crates: &[String]) -> anyhow::Result<Option<String>> {
+    let (crate_name, package_details) = line
+        .split_once('|')
+        .context("cargo tree output missing package details")?;
+
+    let crate_name = crate_name.trim().replace('-', "_");
+    if crate_name.is_empty() || ignored_crates.contains(&crate_name) {
+        return Ok(None);
+    }
+
+    let version = package_details
+        .split_whitespace()
+        .nth(1)
+        .and_then(|version| version.strip_prefix('v'))
+        .filter(|version| !version.is_empty())
+        .context("cargo tree output missing package version")?;
+
+    Ok(Some(format!("{crate_name}@{version}")))
 }
 
 fn cargo_output_with_args(args: &[String]) -> anyhow::Result<Vec<u8>> {
@@ -41,7 +59,7 @@ fn args(config: &Config) -> Vec<String> {
     let mut args = vec![
         "tree".to_string(),
         "--format".to_string(),
-        "{lib}".to_string(),
+        "{lib}|{p}".to_string(),
         "--prefix".to_string(),
         "none".to_string(),
         "--no-dedupe".to_string(),
@@ -90,7 +108,7 @@ fn args(config: &Config) -> Vec<String> {
 
 #[cfg(test)]
 mod tests {
-    use crate::cargo_tree::{args, to_crate_names};
+    use crate::cargo_tree::{args, to_package_keys};
     use crate::config::Config;
     use std::collections::BTreeSet;
 
@@ -100,7 +118,7 @@ mod tests {
             vec![
                 "tree".to_string(),
                 "--format".to_string(),
-                "{lib}".to_string(),
+                "{lib}|{p}".to_string(),
                 "--prefix".to_string(),
                 "none".to_string(),
                 "--no-dedupe".to_string(),
@@ -120,7 +138,7 @@ mod tests {
             vec![
                 "tree".to_string(),
                 "--format".to_string(),
-                "{lib}".to_string(),
+                "{lib}|{p}".to_string(),
                 "--prefix".to_string(),
                 "none".to_string(),
                 "--no-dedupe".to_string(),
@@ -140,7 +158,7 @@ mod tests {
             vec![
                 "tree".to_string(),
                 "--format".to_string(),
-                "{lib}".to_string(),
+                "{lib}|{p}".to_string(),
                 "--prefix".to_string(),
                 "none".to_string(),
                 "--no-dedupe".to_string(),
@@ -160,7 +178,7 @@ mod tests {
             vec![
                 "tree".to_string(),
                 "--format".to_string(),
-                "{lib}".to_string(),
+                "{lib}|{p}".to_string(),
                 "--prefix".to_string(),
                 "none".to_string(),
                 "--no-dedupe".to_string(),
@@ -181,7 +199,7 @@ mod tests {
             vec![
                 "tree".to_string(),
                 "--format".to_string(),
-                "{lib}".to_string(),
+                "{lib}|{p}".to_string(),
                 "--prefix".to_string(),
                 "none".to_string(),
                 "--no-dedupe".to_string(),
@@ -202,7 +220,7 @@ mod tests {
             vec![
                 "tree".to_string(),
                 "--format".to_string(),
-                "{lib}".to_string(),
+                "{lib}|{p}".to_string(),
                 "--prefix".to_string(),
                 "none".to_string(),
                 "--no-dedupe".to_string(),
@@ -224,7 +242,7 @@ mod tests {
             vec![
                 "tree".to_string(),
                 "--format".to_string(),
-                "{lib}".to_string(),
+                "{lib}|{p}".to_string(),
                 "--prefix".to_string(),
                 "none".to_string(),
                 "--no-dedupe".to_string(),
@@ -247,7 +265,7 @@ mod tests {
             vec![
                 "tree".to_string(),
                 "--format".to_string(),
-                "{lib}".to_string(),
+                "{lib}|{p}".to_string(),
                 "--prefix".to_string(),
                 "none".to_string(),
                 "--no-dedupe".to_string(),
@@ -264,7 +282,7 @@ mod tests {
     fn invalid_utf8_in_cargo_tree_output() {
         assert_eq!(
             "cargo tree output contained invalid UTF-8",
-            to_crate_names(vec![255], &[]).unwrap_err().to_string()
+            to_package_keys(vec![255], &[]).unwrap_err().to_string()
         );
     }
 
@@ -272,11 +290,11 @@ mod tests {
     fn strips_whitespace_from_cargo_tree_output() {
         assert_eq!(
             BTreeSet::new(),
-            to_crate_names(b"                 ".to_vec(), &[]).unwrap()
+            to_package_keys(b"                 ".to_vec(), &[]).unwrap()
         );
         assert_eq!(
-            BTreeSet::from(["example".to_string()]),
-            to_crate_names(b"       example".to_vec(), &[]).unwrap()
+            BTreeSet::from(["example@1.0.0".to_string()]),
+            to_package_keys(b"  example | example   v1.0.0 \r\n".to_vec(), &[]).unwrap()
         );
     }
 
@@ -284,44 +302,62 @@ mod tests {
     fn ignores_empty_entries_in_cargo_tree_output() {
         assert_eq!(
             BTreeSet::new(),
-            to_crate_names(b"\n\n\n".to_vec(), &[]).unwrap()
+            to_package_keys(b"\n\n\n".to_vec(), &[]).unwrap()
         );
         assert_eq!(
-            BTreeSet::from(["example".to_string()]),
-            to_crate_names(b"\nexample\n\n".to_vec(), &[]).unwrap()
+            BTreeSet::from(["example@1.0.0".to_string()]),
+            to_package_keys(b"\nexample|example v1.0.0\n\n".to_vec(), &[]).unwrap()
         );
     }
 
     #[test]
     fn normalises_crate_names_in_cargo_tree_output() {
         assert_eq!(
-            BTreeSet::from(["example_one".to_string(), "example_two".to_string()]),
-            to_crate_names(b"example-one\nexample_two".to_vec(), &[]).unwrap()
+            BTreeSet::from([
+                "example_one@1.0.0".to_string(),
+                "example_two@2.0.0".to_string()
+            ]),
+            to_package_keys(
+                b"example-one|example-one v1.0.0\nexample_two|example-two v2.0.0".to_vec(),
+                &[],
+            )
+            .unwrap()
         );
     }
 
     #[test]
-    fn only_returns_unique_crate_names_in_cargo_tree_output() {
+    fn only_returns_unique_package_keys_in_cargo_tree_output() {
         assert_eq!(
-            BTreeSet::from(["example".to_string()]),
-            to_crate_names(b"example\n   example    \n\nexample".to_vec(), &[]).unwrap()
+            BTreeSet::from(["example@1.0.0".to_string(), "example@2.0.0".to_string()]),
+            to_package_keys(
+                b"example|example v1.0.0\n example|example v1.0.0 \n\nexample|example v2.0.0"
+                    .to_vec(),
+                &[],
+            )
+            .unwrap()
         );
     }
 
     #[test]
     fn ignores_single_specified_crate() {
         assert_eq!(
-            BTreeSet::from(["one".to_string()]),
-            to_crate_names(b"one\nignore_two".to_vec(), &["ignore_two".to_string()]).unwrap()
+            BTreeSet::from(["one@1.0.0".to_string()]),
+            to_package_keys(
+                b"one|one v1.0.0\nignore_two|ignore-two v1.0.0\nignore_two|ignore-two v2.0.0"
+                    .to_vec(),
+                &["ignore_two".to_string()],
+            )
+            .unwrap()
         );
     }
 
     #[test]
     fn ignores_multiple_specified_crates() {
         assert_eq!(
-            BTreeSet::from(["one".to_string()]),
-            to_crate_names(
-                b"one\nignore_two\nignore_three".to_vec(),
+            BTreeSet::from(["one@1.0.0".to_string()]),
+            to_package_keys(
+                b"one|one v1.0.0\nignore_two|ignore-two v1.0.0\nignore_three|ignore-three v1.0.0"
+                    .to_vec(),
                 &["ignore_two".to_string(), "ignore_three".to_string()]
             )
             .unwrap()
@@ -331,8 +367,16 @@ mod tests {
     #[test]
     fn ignores_invalid_ignored_crates() {
         assert_eq!(
-            BTreeSet::from(["one".to_string(), "two".to_string(), "three".to_string()]),
-            to_crate_names(b"one\ntwo\nthree".to_vec(), &["four".to_string()]).unwrap()
+            BTreeSet::from([
+                "one@1.0.0".to_string(),
+                "two@1.0.0".to_string(),
+                "three@1.0.0".to_string(),
+            ]),
+            to_package_keys(
+                b"one|one v1.0.0\ntwo|two v1.0.0\nthree|three v1.0.0".to_vec(),
+                &["four".to_string()],
+            )
+            .unwrap()
         );
     }
 
@@ -346,7 +390,7 @@ mod tests {
             vec![
                 "tree".to_string(),
                 "--format".to_string(),
-                "{lib}".to_string(),
+                "{lib}|{p}".to_string(),
                 "--prefix".to_string(),
                 "none".to_string(),
                 "--no-dedupe".to_string(),
@@ -364,7 +408,7 @@ mod tests {
             vec![
                 "tree".to_string(),
                 "--format".to_string(),
-                "{lib}".to_string(),
+                "{lib}|{p}".to_string(),
                 "--prefix".to_string(),
                 "none".to_string(),
                 "--no-dedupe".to_string(),
@@ -391,7 +435,7 @@ mod tests {
             vec![
                 "tree".to_string(),
                 "--format".to_string(),
-                "{lib}".to_string(),
+                "{lib}|{p}".to_string(),
                 "--prefix".to_string(),
                 "none".to_string(),
                 "--no-dedupe".to_string(),
@@ -403,5 +447,51 @@ mod tests {
             ],
             args(&config)
         );
+    }
+
+    #[test]
+    fn preserves_prerelease_and_build_versions_with_source_paths() {
+        assert_eq!(
+            BTreeSet::from(["example_one@1.2.3-rc.1+build-4".to_string()]),
+            to_package_keys(
+                b"example-one|example-one v1.2.3-rc.1+build-4 (/some path/example-one)".to_vec(),
+                &[],
+            )
+            .unwrap()
+        );
+    }
+
+    #[test]
+    fn ignores_packages_without_libraries() {
+        assert_eq!(
+            BTreeSet::new(),
+            to_package_keys(b"|binary v1.0.0 (/some/path)".to_vec(), &[]).unwrap()
+        );
+    }
+
+    #[test]
+    fn missing_package_details_returns_error() {
+        assert_eq!(
+            "cargo tree output missing package details",
+            to_package_keys(b"example".to_vec(), &[])
+                .unwrap_err()
+                .to_string()
+        );
+    }
+
+    #[test]
+    fn missing_package_version_returns_error() {
+        for output in [
+            "example|example",
+            "example|example 1.0.0",
+            "example|example v",
+        ] {
+            assert_eq!(
+                "cargo tree output missing package version",
+                to_package_keys(output.as_bytes().to_vec(), &[])
+                    .unwrap_err()
+                    .to_string()
+            );
+        }
     }
 }
