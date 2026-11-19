@@ -1,0 +1,5 @@
+[advisories]
+ignore = [
+    # rustix xattr unsoundness - only pulled in via tempfile (dev-dependency)
+    "RUSTSEC-2026-0486",
+]
